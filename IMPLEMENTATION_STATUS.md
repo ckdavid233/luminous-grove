@@ -100,13 +100,14 @@
 
 - `game/main/main.gd` 超过 2,000 行，下一阶段必须拆编排、HUD 和画质控制。
 - 程序化关卡的单对象数量偏多，城市需要 MultiMesh/合批和灯光 LOD。
-- 部分大型场景回归仍有少量 Godot ObjectDB RefCounted leak warning（功能与流送结果通过）；
-  WorldStreamer/InteractiveLake 已增加退出清理，下一步需用 Godot 内存检查继续定位剩余资源。
+- 部分大型场景回归仍有少量 Godot ObjectDB RefCounted/Texture RID leak warning（功能与流送结果
+  通过）；WorldStreamer/InteractiveLake/4K 捕获视口已增加退出清理，下一步需用 Godot 内存检查
+  继续定位剩余资源，当前不能宣称零泄漏。
 - 画质档没有动态分辨率和逐项高级设置。
 - 没有输入重映射、字幕缩放或色盲设置。
 - 真实 Vulkan X11 捕获已完成；`VISUAL_VALIDATION_REPORT.md` 保存地面、泥滩、树皮、湖面、水花、
-  脚印和角色动作的前后对比。截图视口为 1280×720，4K 纹理已加载；3840×2160 输出与原生桌面
-  P95 仍需复测。
+  脚印和角色动作的前后对比。常规截图为 1280×720，同时已用独立 Vulkan `SubViewport` 输出并
+  校验地面、湿泥、树木、湖面、水花和角色的 3840×2160 PNG；原生 4K 桌面输出与 P95 仍需复测。
 - 4K runtime 已入库；8K 英雄材质仍需按真实 GPU 显存预算启用，Mossy Rock 湖石已完成扫描
   替换但 HDRI 仍待下载。
 

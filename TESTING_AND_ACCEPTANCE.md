@@ -23,6 +23,18 @@ DISPLAY=:1 /home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86
   --script res://tests/capture_surface_validation.gd
 ```
 
+4K 材质与湖面离屏复验（每次只跑一个镜头以控制显存峰值）：
+
+```bash
+DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=ground \
+  /home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64 \
+  --path /home/cenkai/game_dev_plan/game \
+  --script res://tests/capture_surface_validation.gd
+```
+
+将 `CAPTURE_ONLY` 改为 `wet_mud`、`tree` 或 `lake` 可分别验证湿泥、树木和湖面（水花）；脚本
+会断言输出 PNG 必须为 3840×2160。该命令验证 4K Vulkan 渲染目标，不替代原生 4K 桌面帧时。
+
 地面、泥滩、树皮、湖面、水花、脚印和角色动作的前后截图哈希见
 `VISUAL_VALIDATION_REPORT.md`；截图目录 `previews/` 不进入 Git。
 

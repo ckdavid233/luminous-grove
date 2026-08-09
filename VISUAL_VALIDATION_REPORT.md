@@ -5,11 +5,12 @@
 引擎：Godot 4.7.1 Stable，Vulkan Forward+
 显示表面：`DISPLAY=:1` / X11 VNC-0（1600×900，60 Hz）
 GPU：AMD Ryzen 5 PRO 4650U Renoir 集成显卡，RADV，Vulkan 1.3.255
-截图视口：1280×720
+常规截图视口：1280×720
 
-这次验证是真实 Vulkan 渲染，不是 `--headless` CPU 冒烟。画面采样使用项目运行时的 4K
-扫描贴图；截图视口受当前 X11 表面限制为 1280×720，因此“4K 纹理已加载并参与渲染”已验证，
-“3840×2160 输出与 4K 帧时”仍需在原生 4K 显示设备上复测。
+这次验证是真实 Vulkan 渲染，不是 `--headless` CPU 冒烟。常规前后对比使用当前 X11 表面可见的
+1280×720 窗口；另通过真实 Vulkan `SubViewport` 完成了不依赖桌面尺寸的 3840×2160 离屏截图。
+因此“4K 纹理和 3840×2160 渲染目标已工作”已验证，但“原生 4K 桌面输出与 4K 帧时”仍需在
+真实 3840×2160 显示设备上复测。
 
 ## 复验命令
 
@@ -17,7 +18,14 @@ GPU：AMD Ryzen 5 PRO 4650U Renoir 集成显卡，RADV，Vulkan 1.3.255
 env DISPLAY=:1 godot --path game --script res://tests/capture_forest_detail.gd
 env DISPLAY=:1 godot --path game --script res://tests/capture_water.gd
 env DISPLAY=:1 godot --path game --script res://tests/capture_surface_validation.gd
+env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=ground godot --path game --script res://tests/capture_surface_validation.gd
+env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=wet_mud godot --path game --script res://tests/capture_surface_validation.gd
+env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=tree godot --path game --script res://tests/capture_surface_validation.gd
+env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake godot --path game --script res://tests/capture_surface_validation.gd
 ```
+
+`CAPTURE_RESOLUTION=3840x2160` 会把主场景放入独立的 Vulkan `SubViewport`，并在保存 PNG 前断言
+实际图像尺寸；`CAPTURE_ONLY` 用于降低一次验证的显存峰值。该路径不是把 1280×720 图片放大。
 
 `before_*` 图片来自精细化提交前的 `d95f417` 临时工作树，使用相同的 Vulkan 相机脚本和
 机位；`after_*` 图片来自当前精细化工作树。截图目录 `previews/` 被 `.gitignore` 忽略，
@@ -39,13 +47,29 @@ env DISPLAY=:1 godot --path game --script res://tests/capture_surface_validation
 > 注：脚印“改造前”来自旧工作树（当时没有 `FootprintPool`，两张图均为空场）；这组证据明确
 > 表示“功能从无到有”。脚印纹理本身是运行时 96×160 程序纹理，不是外部图片素材。
 
+## 3840×2160 Vulkan 离屏证据
+
+以下文件由同一台 Renoir 设备的真实 Vulkan `SubViewport` 生成，`file` 检查均为
+`PNG image data, 3840 x 2160, 8-bit/color RGB`。它们证明 4K 目标尺寸、扫描材质、湖石和水面
+事件可以在运行时完成渲染；由于不是原生 4K 桌面，不能替代原生桌面帧时验收。
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 地面 | `previews/after_ground_4k.png` | `9e27e61e48cdfabb2012eda9daa754a18357b9f2a591c5ddd4b34b7a06776c10` |
+| 湿泥 | `previews/after_wet_mud_4k.png` | `230b7c6136b120168f3a20e9adff79c6ac6d6c511a251710a3be605ab3a9931b` |
+| 树皮/树冠 | `previews/after_tree_detail_4k.png` | `8cb5833106f3b8929c79891fa9bb5ee6c04ee76683e51a2c0dbc7d6aeeaeaf86` |
+| 湖面 | `previews/after_lake_4k.png` | `06e306fc66d94370c017be69dd7a72b3226c82b8c06c9dea0d81375fe5fc6ccb` |
+| 湖面水花 | `previews/after_lake_splash_4k.png` | `5b3682222badd06354d0e54e7b107e05dbb255288f24f0fcfe1dfcd234e7c430` |
+| 角色动作 | `previews/after_character_clean_4k.png` | `5ee50a151722298485ed4398df435a5d671d35b129653d350dffc5cd344bd6b6` |
+
 ## 视觉结论与剩余项
 
 - 地面、泥滩、树皮、湖面和角色动作均已在真实 Vulkan 表面完成同机位前后对比。
 - 水花最初截图不可见，原因是波面深度写入遮住了低位环；现已把环抬到波峰上方并加入低强度
   自发光，截图可复现三层环和水滴。
-- 4K runtime 贴图已确认加载；当前视口不是 4K，需在 3840×2160 显示设备上完成最终验收。
+- 4K runtime 贴图与 3840×2160 Vulkan 离屏目标已确认加载并输出；当前桌面仍不是原生 4K，需在
+  3840×2160 显示设备上完成最终输出与帧时验收。
 - 角色起步、急停、转身、面部表演和坡面 IK 的艺术资产仍是后续内容，不应以当前 Interact
   单帧截图宣称全部完成。
-- 截图脚本退出时仍会看到少量 Godot Texture RID 清理提示；完整流程功能通过，但需要后续
-  用 Godot 内存检查继续定位 RefCounted/渲染资源的退出时序。
+- 截图脚本退出时仍会看到 7 个 Godot Texture RID 和 1 个通用 RefCounted 清理提示；主场景、
+  水纹池和世界流送已增加显式退出清理，但尚未定位到全部资源的退出时序，不能宣称“零泄漏”。

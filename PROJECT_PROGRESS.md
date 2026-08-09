@@ -67,8 +67,9 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 生成方式和验收标准见 `TESTING_AND_ACCEPTANCE.md` 与 `PERFORMANCE_REPORT.md`。
 
 真实 Vulkan 截图已覆盖地面、泥滩、树皮、湖面、水花、脚印和角色动作，前后对比与 SHA-256
-见 `VISUAL_VALIDATION_REPORT.md`。当前视口仍是 1280×720，4K 纹理已加载但 3840×2160
-输出与帧时需要原生 4K 显示设备复测；JSON 原始结果保留在 `performance_runtime*.json`。
+见 `VISUAL_VALIDATION_REPORT.md`；同时已用独立 Vulkan `SubViewport` 输出并校验 3840×2160
+材质截图。桌面 P95 仍来自 1280×720 X11 表面，原生 4K 输出与帧时需要真实 4K 显示设备复测；
+JSON 原始结果保留在 `performance_runtime*.json`。
 
 ## Windows 发行状态
 
@@ -107,7 +108,8 @@ P95（目标约 41.7 ms）；当前 Renoir/X11 实测未达标，再继续角色
 刚体／浅水／植被反馈的边界案例；把整条主线按玩家路径再走通，记录每个交互提示、门控和失败
 恢复点，确保不会迷路或卡关；在真实 Windows 10/11 与至少两类 GPU 上完成启动、输入、存档、
 全屏、物理和发行包验收，继续定位剩余 Godot ObjectDB RefCounted/Texture RID 清理警告，最后
-同步更新许可、SHA-256、截图、性能报告和 Git 发布记录。
+同步更新许可、SHA-256、截图、性能报告和 Git 发布记录。当前 3840×2160 Vulkan 离屏截图已
+通过，但原生 4K 桌面帧时、Windows 实机和零泄漏仍是明确未解决项。
 
 ## 主要入口
 
