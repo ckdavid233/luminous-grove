@@ -7,10 +7,10 @@
 GPU：AMD Ryzen 5 PRO 4650U Renoir 集成显卡，RADV，Vulkan 1.3.255
 常规截图视口：1280×720
 
-这次验证是真实 Vulkan 渲染，不是 `--headless` CPU 冒烟。常规前后对比使用当前 X11 表面可见的
-1280×720 窗口；另通过真实 Vulkan `SubViewport` 完成了不依赖桌面尺寸的 3840×2160 离屏截图。
-因此“4K 纹理和 3840×2160 渲染目标已工作”已验证，但“原生 4K 桌面输出与 4K 帧时”仍需在
-真实 3840×2160 显示设备上复测。
+这次验证是真实 Vulkan 渲染，不是 `--headless` CPU 冒烟。常规前后对比使用 X11 表面可见的
+1280×720 窗口；另通过真实 Vulkan `SubViewport` 完成了不依赖桌面尺寸的 3840×2160 离屏截图，
+并在 X11 VNC 临时 3840×2160 mode 上完成了原生窗口湖面截图。实体 4K 显示器和 Windows 驱动
+仍需单独复测。
 
 ## 复验命令
 
@@ -22,10 +22,14 @@ env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=ground godot --path gam
 env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=wet_mud godot --path game --script res://tests/capture_surface_validation.gd
 env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=tree godot --path game --script res://tests/capture_surface_validation.gd
 env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake godot --path game --script res://tests/capture_surface_validation.gd
+# 先将 DISPLAY=:1 的输出切换到 3840×2160，再运行原生窗口验证：
+env DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake godot --path game --script res://tests/capture_surface_validation.gd
 ```
 
 `CAPTURE_RESOLUTION=3840x2160` 会把主场景放入独立的 Vulkan `SubViewport`，并在保存 PNG 前断言
 实际图像尺寸；`CAPTURE_ONLY` 用于降低一次验证的显存峰值。该路径不是把 1280×720 图片放大。
+`CAPTURE_NATIVE=1` 会跳过 SubViewport，直接从当前 X11 窗口读取，调用者必须先提供 3840×2160
+显示 mode。
 
 `before_*` 图片来自精细化提交前的 `d95f417` 临时工作树，使用相同的 Vulkan 相机脚本和
 机位；`after_*` 图片来自当前精细化工作树。截图目录 `previews/` 被 `.gitignore` 忽略，
@@ -84,13 +88,22 @@ env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake godot --path game 
 `063cae2ce3ed10f6879f53da13eb255557e029061a87a0d414b8a05abf6ad988`。该复验保持湖面反射和
 水纹路径有效；退出时仍报告 7 个 Texture RID 与 1 个通用 RefCounted，不能视为零泄漏。
 
+## 3840×2160 X11 原生窗口证据
+
+在同一 AMD Renoir Vulkan 设备上临时将 `VNC-0` 切到 3840×2160 mode，使用
+`CAPTURE_NATIVE=1` 直接捕获湖面：
+
+| 镜头 | 文件 | SHA-256 | 说明 |
+|---|---|---|---|
+| 湖面 | `previews/native4k_lake_4k.png` | `9bab7007c090701d167eab3407822b28196507406f1e0d9126358c5997787c8e` | `actual_resolution=3840×2160`, Forward+ |
+
 ## 视觉结论与剩余项
 
 - 地面、泥滩、树皮、湖面和角色动作均已在真实 Vulkan 表面完成同机位前后对比。
 - 水花最初截图不可见，原因是波面深度写入遮住了低位环；现已把环抬到波峰上方并加入低强度
   自发光，截图可复现三层环和水滴。
-- 4K runtime 贴图与 3840×2160 Vulkan 离屏目标已确认加载并输出；当前桌面仍不是原生 4K，需在
-  3840×2160 显示设备上完成最终输出与帧时验收。
+- 4K runtime 贴图、3840×2160 Vulkan 离屏目标和 X11 原生窗口湖面截图均已确认加载并输出；
+  实体 4K 显示设备、Windows 驱动和高质量帧时仍需最终验收。
 - 角色起步、急停、转身、面部表演和坡面 IK 的艺术资产仍是后续内容；运行时坡面法线对齐已由
   `surface_interaction_test.gd` 覆盖，不应以当前 Interact 单帧截图宣称表演资产全部完成。
 - 截图脚本退出时仍会看到 7 个 Godot Texture RID 和 1 个通用 RefCounted 清理提示；主场景、

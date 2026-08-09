@@ -23,6 +23,9 @@
 - 本轮补充幂等 `Main.shutdown()`、SurfaceProfile 物理材质缓存释放、门户停止处理和回归场景的
   显式 teardown 等待；23 项回归仍全部通过，但退出时仍观察到少量通用 ObjectDB/Texture RID
   警告，继续列为下一阶段内存检查任务。
+- 性能与截图入口新增 `PERFORMANCE_RESOLUTION=3840x2160` 和 `CAPTURE_NATIVE=1`；在真实
+  Renoir Vulkan Forward+ 的 3840×2160 X11 mode 完成高画质采样（平均 513.418 ms、P95 974.597 ms）
+  与湖面原生窗口截图，结果证明 4K 路径有效但目标性能未达成。
 - Windows/PCK release smoke 改为允许冷启动材质与 threaded PCK 最多 3600 帧，并在成功标志后直接
   退出探针；本轮导出包已通过 Linux 同版本自检和 ZIP 完整性检查。
 - 回归套件从 21 项扩展为 23 项，新增材质完整性和表面交互测试；真实 Vulkan 性能基线保留，

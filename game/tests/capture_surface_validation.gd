@@ -11,6 +11,7 @@ var _prefix := "after"
 var _resolution := DEFAULT_FRAME_SIZE
 var _resolution_label := ""
 var _only_shot := ""
+var _native_window := false
 var _main: Node3D
 var _camera: Camera3D
 var _capture_viewport: Viewport
@@ -22,6 +23,7 @@ func _initialize() -> void:
 	if _prefix.is_empty():
 		_prefix = "after"
 	_only_shot = OS.get_environment("CAPTURE_ONLY").strip_edges().to_lower()
+	_native_window = OS.get_environment("CAPTURE_NATIVE").strip_edges() == "1"
 	var requested_resolution := OS.get_environment("CAPTURE_RESOLUTION").strip_edges().to_lower()
 	if requested_resolution == "3840x2160":
 		_resolution = Vector2i(3840, 2160)
@@ -29,14 +31,15 @@ func _initialize() -> void:
 	DirAccess.remove_absolute(
 		ProjectSettings.globalize_path("user://save_slot_1.json")
 	)
-	# The X11 window is limited by the VNC desktop to 1280x720. For the 4K
-	# proof use a real Vulkan SubViewport so the rendered image—not just the
-	# logical window size—is 3840x2160.
-	root.size = DEFAULT_FRAME_SIZE
+	# The default 4K proof uses a real Vulkan SubViewport. When CAPTURE_NATIVE=1,
+	# use the actual X11 window instead; the caller must provide a 3840x2160 mode.
+	root.size = _resolution if _native_window else DEFAULT_FRAME_SIZE
+	if _native_window and DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_size(_resolution)
 	_capture_viewport = root
 	var main_scene := load("res://game/main/main.tscn") as PackedScene
 	_main = main_scene.instantiate() as Node3D
-	if _resolution_label == "_4k":
+	if _resolution_label == "_4k" and not _native_window:
 		_offscreen_viewport = SubViewport.new()
 		_offscreen_viewport.name = "FourKValidationViewport"
 		_offscreen_viewport.size = _resolution

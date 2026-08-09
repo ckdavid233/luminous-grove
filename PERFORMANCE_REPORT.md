@@ -9,6 +9,10 @@
 `Vulkan 1.3.255 - Forward+ - Using Device #0: AMD - AMD Unknown (RADV RENOIR)`；材质、反射探针、
 水纹和脚印均实际参与渲染。截图与前后对比见 `VISUAL_VALIDATION_REPORT.md`。
 
+本轮又在同一 X11 VNC 输出上临时切换到 3840×2160 mode，完成原生窗口尺寸的 Vulkan 采样；该
+surface 仍是虚拟显示输出，不等同于实体 4K 显示器或 Windows 驱动，但不再是 SubViewport/CPU
+冒烟。原始结果保存在 `performance_runtime_4k.json`。
+
 ## 1. 结论
 
 这台设备可以完成 Godot 开发、Blender 资产处理和完整战役运行。精细化后的 1280×720
@@ -26,8 +30,8 @@ P95 100.224 ms，性能 P95 59.794 ms。该结果是真实渲染证据，不应�
 增量成本；仍需在原生桌面和独立 GPU 上建立对照组。
 
 本轮另以真实 Vulkan `SubViewport` 输出了地面、湿泥、树木、湖面、水花和角色的
-3840×2160 PNG（哈希见 `VISUAL_VALIDATION_REPORT.md`）。这是 4K 材质/渲染目标验证，不是
-4K 桌面帧时测量；当前设备的 X11 VNC 表面仍限制在 1280×720，不能据此宣称高质量 P95 通过。
+3840×2160 PNG（哈希见 `VISUAL_VALIDATION_REPORT.md`），并在 3840×2160 X11 mode 完成了
+原生窗口湖面截图与性能采样。4K 高画质 P95 仍远超目标，不能据此宣称性能通过。
 
 ## 2. 实测设备
 
@@ -39,8 +43,8 @@ P95 100.224 ms，性能 P95 59.794 ms。该结果是真实渲染证据，不应�
 | Vulkan | 1.3.255 |
 | 驱动 | Mesa RADV 23.2.1 |
 | 系统 | Ubuntu 22.04.5 LTS，Linux 6.8 |
-| 显示表面 | X11 `:1`，VNC-0，1600×900，60 Hz |
-| 测试分辨率 | 1280×720 |
+| 显示表面 | X11 `:1`，VNC-0，默认 1600×900；另有临时 3840×2160 mode |
+| 测试分辨率 | 1280×720 基线；3840×2160 原生窗口探针 |
 
 Renoir 使用共享系统内存。`Performance.RENDER_VIDEO_MEM_USED` 是 Godot 的渲染资源
 监视值，并不等于一张独立显卡的专用显存占用；这里保留原始值，供同机版本间比较。
@@ -62,7 +66,8 @@ Renoir 使用共享系统内存。`Performance.RENDER_VIDEO_MEM_USED` 是 Godot 
 
 纯 `--headless` 环境会退化为 64×64、零 Draw call，不能代表实际 GPU 表现，因此结果只
 记录为 CPU 冒烟，不得用于 GPU 验收。本轮有效结果使用 X11 `:1` 的真实 Vulkan 表面，让
-Forward+、材质、门户和屏幕空间效果真正参与渲染；窗口本身仍限制为 1280×720。
+Forward+、材质、门户和屏幕空间效果真正参与渲染；同时保留 1280×720 基线和 3840×2160 原生
+窗口探针。
 
 林地基准：
 
@@ -89,6 +94,7 @@ game/tests/performance_chapters_test.gd
 
 ```text
 /home/cenkai/game_dev_plan/performance_runtime.json
+/home/cenkai/game_dev_plan/performance_runtime_4k.json
 /home/cenkai/game_dev_plan/performance_runtime_balanced.json
 /home/cenkai/game_dev_plan/performance_runtime_performance.json
 /home/cenkai/game_dev_plan/performance_chapters.json
@@ -109,9 +115,26 @@ game/tests/performance_chapters_test.gd
 | Primitives | 6,081,838 | 1,465,466 | 864,400 |
 | 渲染资源监视值 | 3,055,792,176 bytes | 2,624,338,880 bytes | 2,579,226,496 bytes |
 
-以上三份 JSON 的 `measurement_mode` 均为 `real_vulkan`，`display_server` 为 `X11`，GPU 指标
+以上三份基线 JSON 的 `measurement_mode` 均为 `real_vulkan`，`display_server` 为 `X11`，GPU 指标
 可用。X11/VNC 表面会引入额外合成与同步开销，不能直接等同于原生 Windows 桌面，但当前结果
 足以证明新材质和特效已进入 GPU 路径；高质量 P95 ≤ 41.7 ms 目标在这台机器上明确未通过。
+
+### 3840×2160 原生窗口 Vulkan 探针（2026-08-10）
+
+| 指标 | 高画质 |
+|---|---:|
+| 样本帧 | 600 |
+| 平均 FPS | 1.9 |
+| 平均帧时间 | 513.418 ms |
+| P95 | 974.597 ms |
+| P99 | 992.221 ms |
+| Draw calls | 397 |
+| Primitives | 6,113,658 |
+| 渲染资源监视值 | 4,039,829,168 bytes |
+
+结果中的 `actual_resolution=[3840,2160]`、`measurement_mode=real_vulkan`、`gpu_metrics_available=true`；
+该数据证明 4K 窗口路径确实运行在 Renoir Forward+，同时证明当前设备高画质完全不满足
+P95 ≤ 41.7 ms。
 
 ### 改造前真实 Vulkan 基线（Wayland，历史对照）
 
@@ -162,9 +185,11 @@ resolution = 1280×720
 - 雨眼的 Primitives 较多但对象和材质批次数较低，因此帧率明显高于城市。
 - 本轮高画质 primitives 从历史 5,715,718 增至 6,081,838；扫描 PBR、反射探针、32 槽水纹
   和脚印池已经进入真实 GPU 路径，显存监视值也升至约 3.06 GB（Renoir 为共享系统内存）。
-- 性能档关闭屏幕空间／全局光／体积雾和高成本角色材质，减少草量与阴影；在当前 X11/VNC
+- 性能档关闭屏幕空间／全局光／体积雾和高成本角色材质，减少草量与阴影；在 1280×720 X11/VNC
   表面为 17.6 FPS，P95 59.794 ms、P99 106.463 ms，说明仍需要原生桌面复测和更积极的
   动态分辨率/资源流送。
+- 3840×2160 原生窗口探针平均只有 1.9 FPS、P95 974.597 ms，当前设备只能把 4K 用作材质
+  验收或低帧率镜头捕获，不能作为可玩高画质档。
 - 城市进入雨眼后完整关卡实例回到 2，说明异步流送与 LRU 驱逐没有随章节累计实例。
 - P95/P99 是当前最重要的流畅度指标；城市此岸 P99 约 99 ms，仍存在肉眼可见卡顿。
 
@@ -175,13 +200,14 @@ resolution = 1280×720
 1. 城市场景静态合批或 MultiMesh，降低 598 次 Draw call。
 2. 门户按距离进一步降低更新频率，并为性能档降低内部渲染比例。
 3. 为城市灯光、角色 SSS 和复杂材质建立距离 LOD。
-4. 在原生桌面（非 VNC 合成）上复测平衡档，并为性能档建立 30 FPS（P95 ≤ 33.3 ms）帧时间预算。
+4. 在实体 4K 显示器与非 VNC 合成桌面上复测平衡档，并为性能档建立 30 FPS（P95 ≤ 33.3 ms）帧时间预算。
 5. 在真实 Windows AMD、NVIDIA、Intel 三类机器上记录帧时间、驱动版本和崩溃日志。
 6. 以 30 FPS 为这台集显的性能档现实目标；高端独显再验证 60 FPS。
 
 ## 8. 可复验边界
 
-- 结果只代表上述 Linux/Mesa/Renoir 设备，不代表 Windows 驱动或独立显卡。
+- 结果只代表上述 Linux/Mesa/Renoir 设备，不代表 Windows 驱动或独立显卡；3840×2160 探针使用
+  X11 VNC 的临时 mode，不代表实体面板的合成延迟。
 - Windows Release 已完成官方模板导出和 PCK 等价自检，但当前设备没有 Windows/Wine，
   因此性能表不能作为 Windows 可执行文件的实机帧率。
 - 每次修改材质、灯光、门户分辨率、角色网格或场景构件后，都应重新生成两份 JSON，

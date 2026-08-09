@@ -66,14 +66,16 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 - 高画质：8.4 FPS，P95 120.904 ms，P99 123.745 ms，显存监视值约 3.06 GB，用于画面验收；
 - 平衡：10.3 FPS，P95 100.224 ms，P99 110.850 ms；
 - 性能档：17.6 FPS，P95 59.794 ms，P99 106.463 ms，暂不能宣称为 30 FPS 建议档。
+- 3840×2160 原生 X11 窗口探针：1.9 FPS，P95 974.597 ms，P99 992.221 ms，显存监视值约
+  4.04 GB；证明 4K Forward+ 路径有效，但高画质不可玩。
 
 当前已保存的视觉证据位于 `previews/`（该目录被 Git 忽略，避免提交大量生成截图）；重新
 生成方式和验收标准见 `TESTING_AND_ACCEPTANCE.md` 与 `PERFORMANCE_REPORT.md`。
 
 真实 Vulkan 截图已覆盖地面、泥滩、树皮、湖面、水花、脚印和角色动作，前后对比与 SHA-256
 见 `VISUAL_VALIDATION_REPORT.md`；同时已用独立 Vulkan `SubViewport` 输出并校验 3840×2160
-材质截图。桌面 P95 仍来自 1280×720 X11 表面，原生 4K 输出与帧时需要真实 4K 显示设备复测；
-JSON 原始结果保留在 `performance_runtime*.json`。
+材质截图，并用临时 3840×2160 X11 mode 完成湖面原生窗口截图。JSON 原始结果保留在
+`performance_runtime*.json`，实体 4K 显示设备与 Windows 性能仍需复测。
 
 ## Windows 发行状态
 
@@ -93,9 +95,9 @@ JSON 原始结果保留在 `performance_runtime*.json`。
 
 ## 下一阶段：8K 英雄资产、原生桌面性能复测与角色镜头精修
 
-4K runtime 已接入，下一阶段只为英雄镜头启用 8K，并在原生桌面/独立 GPU 上重新测量高质量档
-P95（目标约 41.7 ms）；当前 Renoir/X11 实测未达标，再继续角色起步／急停／转身和面部
-表演资产。
+4K runtime 已接入，原生 X11 3840×2160 窗口已完成实测但 P95 仍远超 41.7 ms；下一阶段只为
+英雄镜头启用 8K，并在实体 4K 桌面/独立 GPU/Windows 上重新测量高质量档，再继续角色起步、
+急停、转身和面部表演资产。
 
 当前一次性收包范围为 27 张 PNG，完整命名、尺寸、提示词、Alpha 和许可记录要求见
 `USER_ASSET_PACKAGE_BRIEF.md`。素材包应命名为 `luminous_grove_asset_pack_v2.zip`，并包含
@@ -113,8 +115,8 @@ P95（目标约 41.7 ms）；当前 Renoir/X11 实测未达标，再继续角色
 刚体／浅水／植被反馈的边界案例；把整条主线按玩家路径再走通，记录每个交互提示、门控和失败
 恢复点，确保不会迷路或卡关；在真实 Windows 10/11 与至少两类 GPU 上完成启动、输入、存档、
 全屏、物理和发行包验收，继续定位剩余 Godot ObjectDB RefCounted/Texture RID 清理警告，最后
-同步更新许可、SHA-256、截图、性能报告和 Git 发布记录。当前 3840×2160 Vulkan 离屏截图已
-通过，但原生 4K 桌面帧时、Windows 实机和零泄漏仍是明确未解决项。
+同步更新许可、SHA-256、截图、性能报告和 Git 发布记录。当前 3840×2160 Vulkan 离屏截图与
+X11 原生窗口湖面截图已通过，但实体 Windows 实机、多 GPU、性能目标和零泄漏仍是明确未解决项。
 
 ## 主要入口
 

@@ -35,6 +35,18 @@ DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=ground \
 将 `CAPTURE_ONLY` 改为 `wet_mud`、`tree` 或 `lake` 可分别验证湿泥、树木和湖面（水花）；脚本
 会断言输出 PNG 必须为 3840×2160。该命令验证 4K Vulkan 渲染目标，不替代原生 4K 桌面帧时。
 
+原生 4K X11 窗口复验（先用 `xrandr` 将 `DISPLAY=:1` 的输出切到 3840×2160；完成后恢复原分辨率）：
+
+```bash
+DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake \
+  /home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64 \
+  --path /home/cenkai/game_dev_plan/game \
+  --script res://tests/capture_surface_validation.gd
+```
+
+该入口直接读取 3840×2160 X11 窗口，不使用 SubViewport；当前 Renoir 结果已记录在
+`VISUAL_VALIDATION_REPORT.md`，不代表实体 4K 面板或 Windows 驱动。
+
 地面、泥滩、树皮、湖面、水花、脚印和角色动作的前后截图哈希见
 `VISUAL_VALIDATION_REPORT.md`；截图目录 `previews/` 不进入 Git。
 
@@ -91,7 +103,8 @@ Godot 编辑器级解析检查：
 正式性能数据必须同时满足：
 
 1. 日志明确显示 `Vulkan ... Forward+` 和目标 GPU；
-2. `actual_resolution=[1280,720]`（同时保留 `requested_resolution`）；
+2. 基线必须为 `actual_resolution=[1280,720]`；原生 4K 探针必须为
+   `actual_resolution=[3840,2160]`（同时保留 `requested_resolution`）；
 3. Draw calls 和 primitives 大于 0；
 4. Vulkan surface 无创建失败；
 5. 明确指定并在结果中记录高画质或性能档；
@@ -105,6 +118,15 @@ Godot 编辑器级解析检查：
 ```text
 game/tests/performance_test.gd
 game/tests/performance_chapters_test.gd
+```
+
+原生 4K 高画质性能探针：
+
+```bash
+DISPLAY=:1 PERFORMANCE_RESOLUTION=3840x2160 \
+  /home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64 \
+  --path /home/cenkai/game_dev_plan/game \
+  --script res://tests/performance_test.gd
 ```
 
 ## Windows 包验收

@@ -1,0 +1,23 @@
+{
+	"actual_resolution": [
+		3840,
+		2160
+	],
+	"average_fps": 1.9,
+	"average_frame_ms": 513.418,
+	"display_server": "X11",
+	"draw_calls": 397,
+	"gpu_metrics_available": true,
+	"measurement_mode": "real_vulkan",
+	"p95_frame_ms": 974.597,
+	"p99_frame_ms": 992.221,
+	"primitives": 6113658,
+	"quality_profile": "high",
+	"renderer": "forward_plus",
+	"requested_resolution": [
+		3840,
+		2160
+	],
+	"sample_frames": 600,
+	"video_memory_bytes": 4039829168
+}

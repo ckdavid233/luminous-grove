@@ -3,13 +3,19 @@ extends SceneTree
 const OUTPUT_DIRECTORY := "/home/cenkai/game_dev_plan"
 const WARMUP_FRAMES := 60
 const SAMPLE_FRAMES := 600
+const DEFAULT_RESOLUTION := Vector2i(1280, 720)
+
+var _resolution := DEFAULT_RESOLUTION
 
 
 func _initialize() -> void:
 	DirAccess.remove_absolute(
 		ProjectSettings.globalize_path("user://save_slot_1.json")
 	)
-	root.size = Vector2i(1280, 720)
+	_resolution = _requested_resolution()
+	root.size = _resolution
+	if DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_size(_resolution)
 	var main_scene := load("res://game/main/main.tscn") as PackedScene
 	var main := main_scene.instantiate()
 	root.add_child(main)
@@ -36,7 +42,7 @@ func _initialize() -> void:
 	var result := {
 		"quality_profile": str(quality_profile),
 		"measurement_mode": "real_vulkan" if gpu_metrics_available else "headless_cpu_smoke",
-		"requested_resolution": [1280, 720],
+		"requested_resolution": [_resolution.x, _resolution.y],
 		"actual_resolution": [root.size.x, root.size.y],
 		"renderer": RenderingServer.get_current_rendering_method(),
 		"display_server": DisplayServer.get_name(),
@@ -51,7 +57,9 @@ func _initialize() -> void:
 		"video_memory_bytes": int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)),
 	}
 	var output_path := (
-		OUTPUT_DIRECTORY + "/performance_runtime.json"
+		OUTPUT_DIRECTORY + "/performance_runtime_4k.json"
+		if _resolution == Vector2i(3840, 2160) and quality_profile == &"high"
+		else OUTPUT_DIRECTORY + "/performance_runtime.json"
 		if quality_profile == &"high"
 		else OUTPUT_DIRECTORY + "/performance_runtime_%s.json" % quality_profile
 	)
@@ -69,6 +77,17 @@ func _requested_quality_profile() -> StringName:
 			if value in [&"high", &"balanced", &"performance"]:
 				return value
 	return &"high"
+
+
+func _requested_resolution() -> Vector2i:
+	var value := OS.get_environment("PERFORMANCE_RESOLUTION").strip_edges().to_lower()
+	if value.is_empty():
+		for argument in OS.get_cmdline_user_args():
+			if argument.begins_with("--resolution="):
+				value = argument.trim_prefix("--resolution=").to_lower()
+	if value == "3840x2160":
+		return Vector2i(3840, 2160)
+	return DEFAULT_RESOLUTION
 
 
 func _percentile(values: Array[float], fraction: float) -> float:
