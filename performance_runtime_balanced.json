@@ -1,17 +1,17 @@
 {
-	"measurement_mode": "headless_cpu_smoke",
 	"actual_resolution": [
-		64,
-		64
+		1280,
+		720
 	],
-	"average_fps": 144.9,
-	"average_frame_ms": 6.9,
-	"display_server": "headless",
-	"draw_calls": 0,
-	"gpu_metrics_available": false,
-	"p95_frame_ms": 7.499,
-	"p99_frame_ms": 7.659,
-	"primitives": 0,
+	"average_fps": 10.3,
+	"average_frame_ms": 97.556,
+	"display_server": "X11",
+	"draw_calls": 367,
+	"gpu_metrics_available": true,
+	"measurement_mode": "real_vulkan",
+	"p95_frame_ms": 100.224,
+	"p99_frame_ms": 110.85,
+	"primitives": 1465466,
 	"quality_profile": "balanced",
 	"renderer": "forward_plus",
 	"requested_resolution": [
@@ -19,5 +19,5 @@
 		720
 	],
 	"sample_frames": 600,
-	"video_memory_bytes": 0
+	"video_memory_bytes": 2624338880
 }

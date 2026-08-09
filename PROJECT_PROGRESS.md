@@ -56,18 +56,19 @@ REGRESSION_OK tests=23
 RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 ```
 
-目标设备为 Ryzen 5 PRO 4650U / Renoir 集成显卡，1280×720 真实 Vulkan 表面实测：
+目标设备为 Ryzen 5 PRO 4650U / Renoir 集成显卡。本轮已在 `DISPLAY=:1` 的真实 X11/Vulkan
+表面以 1280×720 重测：
 
-- 高画质：13.8 FPS，P95 73.491 ms，用于画面验收；
-- 性能档：38.8 FPS，P95 26.820 ms，作为该集成显卡的建议游玩档。
+- 高画质：8.4 FPS，P95 120.904 ms，P99 123.745 ms，显存监视值约 3.06 GB，用于画面验收；
+- 平衡：10.3 FPS，P95 100.224 ms，P99 110.850 ms；
+- 性能档：17.6 FPS，P95 59.794 ms，P99 106.463 ms，暂不能宣称为 30 FPS 建议档。
 
 当前已保存的视觉证据位于 `previews/`（该目录被 Git 忽略，避免提交大量生成截图）；重新
 生成方式和验收标准见 `TESTING_AND_ACCEPTANCE.md` 与 `PERFORMANCE_REPORT.md`。
 
-本轮容器的 GPU 虽可由 Vulkan 枚举，但没有可用的 Wayland/X11 显示表面（Xorg 无法打开 tty），
-新增性能运行只作为 64×64 headless CPU 冒烟，
-不会覆盖真实 GPU 基线；真实 Vulkan 结果仍保留在 `performance_runtime*.json`，待有显示设备时
-再按 1280×720 重新捕获升级后的画面。
+真实 Vulkan 截图已覆盖地面、泥滩、树皮、湖面、水花、脚印和角色动作，前后对比与 SHA-256
+见 `VISUAL_VALIDATION_REPORT.md`。当前视口仍是 1280×720，4K 纹理已加载但 3840×2160
+输出与帧时需要原生 4K 显示设备复测；JSON 原始结果保留在 `performance_runtime*.json`。
 
 ## Windows 发行状态
 
@@ -77,17 +78,17 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 - 官方 Godot 4.7.1 release 模板导出；
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
-- ZIP `unzip -t` 通过，SHA-256 为
-  `273eb4e551445d234e35cf9d93a3e161455c86ec8e19d0959591c57db23c5ea4`。
+- ZIP `unzip -t` 通过，更新材质与水花逻辑后的 SHA-256 为
+  `d4977f49eaae9543b7a1c7cef7ae0f391f38bc8dcdbf76f79f0a848f9f116e06`（564,943,923 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、
 驱动、全屏、手柄和 SmartScreen 仍是发布前人工验收项。
 
-## 下一阶段：8K 英雄资产、实机性能复测与角色镜头精修
+## 下一阶段：8K 英雄资产、原生桌面性能复测与角色镜头精修
 
-4K runtime 已接入，下一阶段只为英雄镜头启用 8K，并在真实 Vulkan 表面重新测量高质量档 P95
-（目标约 41.7 ms），再继续角色起步／急停／转身和面部
+4K runtime 已接入，下一阶段只为英雄镜头启用 8K，并在原生桌面/独立 GPU 上重新测量高质量档
+P95（目标约 41.7 ms）；当前 Renoir/X11 实测未达标，再继续角色起步／急停／转身和面部
 表演资产。
 
 当前一次性收包范围为 27 张 PNG，完整命名、尺寸、提示词、Alpha 和许可记录要求见
@@ -100,12 +101,12 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 
 ## Goal：后续推进目标清单
 
-接下来要把“已能完整通关的工程精细化”推进到可验收的美术与发行质量：在真实 Vulkan
-显示设备上重新捕获 4K 地表、湖石扫描材质、湖面反射、湿润联动、脚印和角色动作的前后对比，
-记录显存与 P95/P99 帧时并完成 8K 英雄材质取舍；继续补齐起步／急停／转身、坡面 IK 和面部
-表演资产，完善刚体／浅水／植被反馈的边界案例；把整条主线再按玩家路径走通，记录每个交互提示、
-门控和失败恢复点，确保不会迷路或卡关；在真实 Windows 10/11 与至少两类 GPU 上完成启动、
-输入、存档、全屏、物理和发行包验收，并继续消除 Godot ObjectDB RefCounted 清理警告，最后
+接下来要把“已能完整通关的工程精细化”推进到可验收的美术与发行质量：在原生桌面和独立 GPU
+上复测 4K 地表、湖石扫描材质、湖面反射、湿润联动、脚印和角色动作，记录显存与 P95/P99
+并决定 8K 英雄材质的可用范围；继续补齐起步／急停／转身、坡面 IK 和面部表演资产，完善
+刚体／浅水／植被反馈的边界案例；把整条主线按玩家路径再走通，记录每个交互提示、门控和失败
+恢复点，确保不会迷路或卡关；在真实 Windows 10/11 与至少两类 GPU 上完成启动、输入、存档、
+全屏、物理和发行包验收，继续定位剩余 Godot ObjectDB RefCounted/Texture RID 清理警告，最后
 同步更新许可、SHA-256、截图、性能报告和 Git 发布记录。
 
 ## 主要入口

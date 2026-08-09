@@ -32,13 +32,20 @@ func _initialize() -> void:
 
 	var water = main.get("_water")
 	assert(water != null)
+	water.set_visual_quality_profile(&"high")
+	water.set("visual_effects_enabled", true)
+	water.set("visual_effects_auto_cleanup", false)
+	# Use a closer, low angle for the event frame so the pooled rings are not
+	# lost against the broad lake surface.
+	camera.position = Vector3(-8.0, 2.15, -3.75)
+	camera.look_at(Vector3(-8.0, 0.06, -6.4))
 	water.call(
 		"_create_surface_splash",
 		Vector3(-8.0, water.global_position.y, -6.4),
 		1.3,
 		&"water_entry",
 	)
-	for _frame in 9:
+	for _frame in 4:
 		await physics_frame
 		await process_frame
 	var splash_image := root.get_texture().get_image()
@@ -48,4 +55,8 @@ func _initialize() -> void:
 		"WATER_CAPTURE_OK outputs=", OUTPUT_PATH, ",", SPLASH_OUTPUT_PATH,
 		" size=", image.get_size(),
 	)
+	main.queue_free()
+	for _frame in 12:
+		await process_frame
+		await physics_frame
 	quit()

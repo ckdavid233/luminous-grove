@@ -1,17 +1,17 @@
 {
-	"measurement_mode": "real_vulkan",
 	"actual_resolution": [
 		1280,
 		720
 	],
-	"average_fps": 13.8,
-	"average_frame_ms": 72.384,
-	"display_server": "wayland",
+	"average_fps": 8.4,
+	"average_frame_ms": 118.444,
+	"display_server": "X11",
 	"draw_calls": 397,
 	"gpu_metrics_available": true,
-	"p95_frame_ms": 73.491,
-	"p99_frame_ms": 75.468,
-	"primitives": 5715718,
+	"measurement_mode": "real_vulkan",
+	"p95_frame_ms": 120.904,
+	"p99_frame_ms": 123.745,
+	"primitives": 6081838,
 	"quality_profile": "high",
 	"renderer": "forward_plus",
 	"requested_resolution": [
@@ -19,5 +19,5 @@
 		720
 	],
 	"sample_frames": 600,
-	"video_memory_bytes": 1254167456
+	"video_memory_bytes": 3055792176
 }

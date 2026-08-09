@@ -21,7 +21,9 @@ func _ready() -> void:
 		var mesh := QuadMesh.new()
 		mesh.size = FOOTPRINT_SIZE
 		var material := StandardMaterial3D.new()
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_HASH
+		# Alpha blend keeps the procedural sole edge smooth on wet ground. The
+		# previous alpha-hash mode produced visible Bayer stippling in close-ups.
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 		material.albedo_texture = _footprint_texture
 		material.albedo_color = Color(0.18, 0.12, 0.08, 0.0)
@@ -72,11 +74,13 @@ func stamp(world_position: Vector3, normal: Vector3, surface_type: StringName, s
 	var footprint := _decals[_cursor]
 	var material := _materials[_cursor]
 	_cursor = (_cursor + 1) % _decals.size()
-	var color := Color(0.18, 0.12, 0.08, 0.64)
+	# Keep the imprint readable against the scanned forest floor while still
+	# letting the albedo/normal detail show through the alpha texture.
+	var color := Color(0.24, 0.14, 0.065, 0.82)
 	if surface_type == &"wet_mud":
-		color = Color(0.11, 0.09, 0.07, 0.78)
+		color = Color(0.075, 0.052, 0.03, 0.9)
 	elif surface_type == &"moss":
-		color = Color(0.16, 0.2, 0.12, 0.48)
+		color = Color(0.14, 0.2, 0.1, 0.62)
 	material.albedo_color = Color(color.r, color.g, color.b, color.a * clampf(strength, 0.35, 1.0))
 	footprint.global_position = world_position + normal.normalized() * 0.018
 	var up_axis := Vector3.FORWARD if absf(normal.normalized().dot(Vector3.UP)) > 0.96 else Vector3.UP
@@ -103,14 +107,24 @@ func active_count() -> int:
 
 
 func _create_footprint_texture() -> ImageTexture:
-	var image := Image.create(64, 96, false, Image.FORMAT_RGBA8)
+	var image := Image.create(96, 160, false, Image.FORMAT_RGBA8)
 	for y in image.get_height():
 		for x in image.get_width():
 			var normalized := Vector2(
 				(float(x) + 0.5) / float(image.get_width()) * 2.0 - 1.0,
 				(float(y) + 0.5) / float(image.get_height()) * 2.0 - 1.0,
 			)
-			var ellipse := normalized.x * normalized.x * 1.5 + normalized.y * normalized.y
-			var alpha := clampf(1.0 - smoothstep(0.42, 0.98, ellipse), 0.0, 1.0)
+			# A small union of toe, bridge and heel lobes reads as a shoe sole
+			# instead of a generic oval, while remaining inexpensive to generate.
+			var toe := _footprint_lobe(normalized, Vector2(0.0, 0.42), Vector2(0.7, 0.52))
+			var bridge := _footprint_lobe(normalized, Vector2(0.0, -0.02), Vector2(0.32, 0.5))
+			var heel := _footprint_lobe(normalized, Vector2(0.0, -0.55), Vector2(0.48, 0.35))
+			var alpha := maxf(maxf(toe, bridge), heel)
 			image.set_pixel(x, y, Color(1.0, 1.0, 1.0, alpha))
 	return ImageTexture.create_from_image(image)
+
+
+func _footprint_lobe(point: Vector2, center: Vector2, radius: Vector2) -> float:
+	var distance := (point - center) / radius
+	var ellipse := distance.x * distance.x + distance.y * distance.y
+	return clampf(1.0 - smoothstep(0.68, 1.0, ellipse), 0.0, 1.0)

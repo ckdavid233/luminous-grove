@@ -335,7 +335,9 @@ func _create_surface_splash(
 		return
 
 	var effect_root := _obtain_splash_root()
-	effect_root.global_position = position + Vector3.UP * 0.1
+	# Keep pooled rings above the animated Gerstner crest. At the old 0.1 m
+	# offset the water depth pass could hide the splash completely.
+	effect_root.global_position = position + Vector3.UP * 0.24
 
 	var rings: Array[MeshInstance3D] = []
 	var ring_materials: Array[StandardMaterial3D] = []
@@ -358,9 +360,13 @@ func _create_surface_splash(
 		ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 		ring_material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
 		ring_material.roughness = 0.12 + ring_index * 0.06
+		ring_material.no_depth_test = true
+		ring_material.emission_enabled = true
+		ring_material.emission = Color(0.2, 0.72, 0.68)
+		ring_material.emission_energy_multiplier = 0.72
 		ring_mesh.material = ring_material
 		ring.mesh = ring_mesh
-		ring.scale = Vector3.ONE * (0.22 + ring_index * 0.04)
+		ring.scale = Vector3.ONE * (0.3 + ring_index * 0.05)
 		ring.rotation.y = randf_range(-0.18, 0.18)
 		effect_root.add_child(ring)
 		rings.append(ring)

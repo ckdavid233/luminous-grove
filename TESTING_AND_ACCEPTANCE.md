@@ -1,7 +1,7 @@
 # 测试与验收规范
 
 版本：0.6.2-alpha
-最近全量回归：2026-08-09
+最近全量回归：2026-08-10
 
 ## 一键回归
 
@@ -14,6 +14,17 @@ bash /home/cenkai/game_dev_plan/tools/run_regression.sh
 ```text
 REGRESSION_OK tests=23
 ```
+
+真实 Vulkan 视觉复验：
+
+```bash
+DISPLAY=:1 /home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64 \
+  --path /home/cenkai/game_dev_plan/game \
+  --script res://tests/capture_surface_validation.gd
+```
+
+地面、泥滩、树皮、湖面、水花、脚印和角色动作的前后截图哈希见
+`VISUAL_VALIDATION_REPORT.md`；截图目录 `previews/` 不进入 Git。
 
 Godot 编辑器级解析检查：
 
