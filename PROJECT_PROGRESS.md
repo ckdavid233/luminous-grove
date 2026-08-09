@@ -56,9 +56,13 @@
 ## 自动化与实机证据
 
 ```text
-REGRESSION_OK tests=23
+REGRESSION_OK tests=24
 RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 ```
+
+本轮新增 `runtime_teardown_test.gd`，验证退出时 76 个 Mesh、8 个 MultiMesh、6 组粒子和
+WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但剩余 ObjectDB/Texture RID 警告仍未
+达到零泄漏验收。
 
 目标设备为 Ryzen 5 PRO 4650U / Renoir 集成显卡。本轮已在 `DISPLAY=:1` 的真实 X11/Vulkan
 表面以 1280×720 重测：

@@ -88,6 +88,12 @@ env DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake g
 `063cae2ce3ed10f6879f53da13eb255557e029061a87a0d414b8a05abf6ad988`。该复验保持湖面反射和
 水纹路径有效；退出时仍报告 7 个 Texture RID 与 1 个通用 RefCounted，不能视为零泄漏。
 
+在加入 `Main._release_runtime_references()` 后重新执行同一 4K 湖面离屏捕获：
+`previews/postteardown_lake_4k.png`，尺寸 3840×2160，SHA-256 为
+`76399e976f1d48339cd848c46e87e46c2895592c42957cb77fa1d534a2cd248d`。截图和 Vulkan 渲染均通过，
+但 Godot 退出时仍报告 7 个 Texture RID 与 1 个 ObjectDB 实例；运行时引用解绑已覆盖主要节点，
+剩余引擎资源仍需内存检查确认。
+
 ## 3840×2160 X11 原生窗口证据
 
 在同一 AMD Renoir Vulkan 设备上临时将 `VNC-0` 切到 3840×2160 mode，使用

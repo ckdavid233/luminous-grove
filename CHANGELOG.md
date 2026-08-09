@@ -21,8 +21,11 @@
 - 水花根节点改由 `InteractiveLake` 所有，门户、脚印 Tween 和环境射线增加退出清理；已记录仍会
   偶发出现的 Godot ObjectDB/Texture RID 警告，当前不宣称零泄漏。
 - 本轮补充幂等 `Main.shutdown()`、SurfaceProfile 物理材质缓存释放、门户停止处理和回归场景的
-  显式 teardown 等待；23 项回归仍全部通过，但退出时仍观察到少量通用 ObjectDB/Texture RID
+  显式 teardown 等待；当时 23 项回归全部通过，但退出时仍观察到少量通用 ObjectDB/Texture RID
   警告，继续列为下一阶段内存检查任务。
+- 新增统一 `Main._release_runtime_references()` 与 `runtime_teardown_test.gd`，在退出前解绑网格、
+  MultiMesh、粒子、音频和环境引用；回归套件扩展为 24 项，仍保留 ObjectDB/Texture RID 警告作为
+  未完成的零泄漏验收项。
 - 性能与截图入口新增 `PERFORMANCE_RESOLUTION=3840x2160` 和 `CAPTURE_NATIVE=1`；在真实
   Renoir Vulkan Forward+ 的 3840×2160 X11 mode 完成高画质采样（平均 513.418 ms、P95 974.597 ms）
   与湖面原生窗口截图，结果证明 4K 路径有效但目标性能未达成。

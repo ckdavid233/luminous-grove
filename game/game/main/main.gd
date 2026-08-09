@@ -162,6 +162,7 @@ func shutdown() -> void:
 			var collision_object := node as CollisionObject3D
 			if collision_object.physics_material_override != null:
 				collision_object.physics_material_override = null
+	_release_runtime_references()
 	if _wetness_controller != null and is_instance_valid(_wetness_controller):
 		_wetness_controller.set_process(false)
 	if _world_streamer != null and is_instance_valid(_world_streamer):
@@ -200,6 +201,61 @@ func shutdown() -> void:
 	_narrative = null
 	_player = null
 	_rng = null
+
+
+func _release_runtime_references() -> void:
+	# Detach runtime-created GPU/physics references before the scene tree starts
+	# removing children. Imported meshes are shared resources, while the
+	# material/particle instances below are generated per scene; clearing both
+	# sides prevents a streamed or captured scene from retaining Texture RIDs
+	# through a still-referenced mesh after shutdown.
+	for node in find_children("*", "", true, false):
+		if node is GeometryInstance3D:
+			var visual := node as GeometryInstance3D
+			visual.material_override = null
+			if visual is GPUParticles3D:
+				var particles := visual as GPUParticles3D
+				particles.emitting = false
+				particles.process_material = null
+				if particles.draw_passes >= 4:
+					particles.draw_pass_4 = null
+				if particles.draw_passes >= 3:
+					particles.draw_pass_3 = null
+				if particles.draw_passes >= 2:
+					particles.draw_pass_2 = null
+				particles.draw_pass_1 = null
+			elif visual is MeshInstance3D:
+				var mesh_instance := visual as MeshInstance3D
+				# Only detach the node reference. Mutating a PrimitiveMesh here can
+				# modify a shared PackedScene resource and break the next instance.
+				mesh_instance.mesh = null
+			elif visual is MultiMeshInstance3D:
+				var multimesh_instance := visual as MultiMeshInstance3D
+				multimesh_instance.multimesh = null
+				# Do not mutate MultiMesh.mesh after detaching the instance: the
+				# renderer may still be rebuilding its AABB on the render thread.
+				# Dropping the instance reference is sufficient to release the
+				# per-scene MultiMesh and its mesh when the parent is freed.
+		elif node is AudioStreamPlayer:
+			var audio := node as AudioStreamPlayer
+			audio.stop()
+			audio.stream = null
+		elif node is AudioStreamPlayer2D:
+			var audio_2d := node as AudioStreamPlayer2D
+			audio_2d.stop()
+			audio_2d.stream = null
+		elif node is AudioStreamPlayer3D:
+			var audio_3d := node as AudioStreamPlayer3D
+			audio_3d.stop()
+			audio_3d.stream = null
+		elif node is AnimationTree:
+			var animation_tree := node as AnimationTree
+			animation_tree.active = false
+			animation_tree.tree_root = null
+		elif node is SkeletonIK3D:
+			(node as SkeletonIK3D).stop()
+		elif node is WorldEnvironment:
+			(node as WorldEnvironment).environment = null
 
 
 func _process(_delta: float) -> void:

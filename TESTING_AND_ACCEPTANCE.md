@@ -12,7 +12,7 @@ bash /home/cenkai/game_dev_plan/tools/run_regression.sh
 通过标志：
 
 ```text
-REGRESSION_OK tests=23
+REGRESSION_OK tests=24
 ```
 
 真实 Vulkan 视觉复验：
@@ -57,7 +57,7 @@ Godot 编辑器级解析检查：
   --headless --path /home/cenkai/game_dev_plan/game --editor --quit
 ```
 
-## 23 项自动化覆盖
+## 24 项自动化覆盖
 
 | 测试 | 主要验收 |
 |---|---|
@@ -75,6 +75,7 @@ Godot 编辑器级解析检查：
 | `interactive_water_test.gd` | 空中移动无脚步波纹、入水／出水状态、扩散环与水滴效果 |
 | `material_library_test.gd` | 6 个 MaterialProfile `.tres` 映射、6 张 PBR 贴图完整性、扫描 CC0 运行资源和表面摩擦关系 |
 | `surface_interaction_test.gd` | SurfaceProbe、PhysicsMaterial、脚印池、坡面法线双脚 IK、32 槽水纹事件接口 |
+| `runtime_teardown_test.gd` | shutdown 后网格、MultiMesh、粒子和 WorldEnvironment 的运行时引用解绑 |
 | `presentation_test.gd` | PBR 套装、粒子图集和程序音频 |
 | `quality_settings_test.gd` | 三档画质、默认高画质和暂停菜单 |
 | `input_regression_test.gd` | 真实 Escape、暂停中真实鼠标点击、画质按钮和真实 E 交互 |
@@ -137,7 +138,7 @@ Windows ZIP 发布前必须满足：
 - `file` 识别为 PE32+ x86-64 GUI executable。
 - EXE 与 PCK 都存在，PCK 不是旧开发包。
 - PCK 在 Linux 同版本 Godot 中通过 `--release-smoke`，确认版本、campaign v6、默认高画质
-  和 Echo Ruins 异步加载；23 项完整回归在未过滤的工程目录单独执行。
+  和 Echo Ruins 异步加载；24 项完整回归在未过滤的工程目录单独执行。
 - ZIP 可无错误列出与解压。
 - 生成 SHA-256 清单和构建清单。
 - 不包含 `tests/`、`.godot/`、Blender 源文件和开发工具。

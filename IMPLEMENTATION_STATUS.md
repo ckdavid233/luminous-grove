@@ -34,7 +34,7 @@
 | 保存 | 已验证 | schema v2、备份恢复、旧档迁移、完成态恢复 |
 | Linux 运行 | 已验证 | Godot 4.7.1 本机完整回归 |
 | Windows x86_64 | 已导出 | 官方 release 模板、PE32+、独立 PCK |
-| 自动化 | 已验证 | 23/23 回归通过 |
+| 自动化 | 已验证 | 24/24 回归通过 |
 
 ## 主线规模
 
@@ -105,8 +105,9 @@
 - `game/main/main.gd` 超过 2,000 行，下一阶段必须拆编排、HUD 和画质控制。
 - 程序化关卡的单对象数量偏多，城市需要 MultiMesh/合批和灯光 LOD。
 - 部分大型场景回归仍有少量 Godot ObjectDB RefCounted/Texture RID leak warning（功能与流送结果
-  通过）；WorldStreamer/InteractiveLake/4K 捕获视口已增加退出清理，下一步需用 Godot 内存检查
-  继续定位剩余资源，当前不能宣称零泄漏。
+  通过）；WorldStreamer/InteractiveLake/4K 捕获视口和 Main 运行时引用解绑已增加退出清理，且
+  `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子和 WorldEnvironment 已脱钩；仍需用 Godot
+  内存检查继续定位剩余资源，当前不能宣称零泄漏。
 - 画质档没有动态分辨率和逐项高级设置。
 - 没有输入重映射、字幕缩放或色盲设置。
 - 真实 Vulkan X11 捕获已完成；`VISUAL_VALIDATION_REPORT.md` 保存地面、泥滩、树皮、湖面、水花、
