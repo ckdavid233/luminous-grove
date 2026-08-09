@@ -1,0 +1,103 @@
+# 测试与验收规范
+
+版本：0.6.1-alpha  
+最近全量回归：2026-08-01
+
+## 一键回归
+
+```bash
+bash /home/cenkai/game_dev_plan/tools/run_regression.sh
+```
+
+通过标志：
+
+```text
+REGRESSION_OK tests=21
+```
+
+Godot 编辑器级解析检查：
+
+```bash
+/home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64 \
+  --headless --path /home/cenkai/game_dev_plan/game --editor --quit
+```
+
+## 21 项自动化覆盖
+
+| 测试 | 主要验收 |
+|---|---|
+| `environment_capability_test.gd` | Forward+ 环境能力与关键效果属性 |
+| `environment_geometry_test.gd` | 65×65 地形、54 棵树、15 个岸石碰撞、16,000 草簇与椭圆湖面 |
+| `realistic_character_import_test.gd` | 14 网格、53 骨、39,840 三角面、14 材质、7 套动画 |
+| `player_import_test.gd` | 角色场景和 7 套动画资源可导入 |
+| `player_animation_test.gd` | Idle/Walk/Run/Jump/Fall/Land/Interact 状态与写实材质规则 |
+| `movement_regression_test.gd` | 平滑加速、步行／冲刺速度、跳跃／坠落／落地状态和回到 Idle |
+| `save_service_test.gd` | schema v2、原子替换、备份恢复、v1 迁移 |
+| `smoke_test.gd` | 主场景、角色、神龛、风铃和异步 Echo 加载 |
+| `world_streamer_test.gd` | LRU 驱逐、缓存忽略、释放后重新加载 |
+| `jolt_physics_test.gd` | 独立线程、连续碰撞、刚体冲量、档案配重机关 |
+| `cinematic_director_test.gd` | 过场开始、字幕、跳过和结束恢复 |
+| `interactive_water_test.gd` | 空中移动无脚步波纹、入水／出水状态、扩散环与水滴效果 |
+| `presentation_test.gd` | PBR 套装、粒子图集和程序音频 |
+| `quality_settings_test.gd` | 三档画质、默认高画质和暂停菜单 |
+| `input_regression_test.gd` | 真实 Escape、暂停中真实鼠标点击、画质按钮和真实 E 交互 |
+| `phase_shift_test.gd` | 100 次往返、层掩码、碰撞隔离、单实例常驻 |
+| `portal_preview_test.gd` | 640×360 反相门户、更新节流 |
+| `lantern_city_level_test.gd` | 双时相桥、列车、16 刚体、3 残响、4 回路、2 证词 |
+| `rain_eye_level_test.gd` | 7 段道路、14 刚体、3 印记、3 试炼、3 结局 |
+| `narrative_finale_test.gd` | 三结局、潮汐门槛、campaign v6 与旧档迁移 |
+| `gameplay_test.gd` | 从风铃到潮汐结局、章节流送、保存和完成态恢复 |
+
+## 关键通过结果
+
+- 完整主线：`stage=complete`。
+- 档案机关：3/3，其中配重由真实 Jolt 刚体触发。
+- 城市残响：3/3；行灯回路：4/4；证词分支：2 选 1。
+- 雨眼印记：3/3；共振试炼：3/3。
+- 结局：合流、守界、潮汐均可到达；潮汐错误条件会被拒绝。
+- 正常流送：`resident_levels=2`、`resident_limit=2`。
+- 100 次时相切换后只保留一份 Echo 关卡实例。
+- 存档：主档损坏时成功恢复上一备份。
+
+## 性能测试规则
+
+纯 `--headless` 会把 Godot 4.7 降为 64×64 且 Draw Call 为 0，此结果必须作废。
+正式性能数据必须同时满足：
+
+1. 日志明确显示 `Vulkan ... Forward+` 和目标 GPU；
+2. `resolution=[1280,720]`；
+3. Draw calls 和 primitives 大于 0；
+4. Vulkan surface 无创建失败；
+5. 明确指定并在结果中记录高画质或性能档；
+6. 保存原始 JSON。
+
+入口：
+
+```text
+game/tests/performance_test.gd
+game/tests/performance_chapters_test.gd
+```
+
+## Windows 包验收
+
+Windows ZIP 发布前必须满足：
+
+- 使用 Godot 4.7.1 官方 `windows_release_x86_64.exe` 模板。
+- `file` 识别为 PE32+ x86-64 GUI executable。
+- EXE 与 PCK 都存在，PCK 不是旧开发包。
+- PCK 在 Linux 同版本 Godot 中通过 `--release-smoke`，确认版本、campaign v6、默认高画质
+  和 Echo Ruins 异步加载；21 项完整回归在未过滤的工程目录单独执行。
+- ZIP 可无错误列出与解压。
+- 生成 SHA-256 清单和构建清单。
+- 不包含 `tests/`、`.godot/`、Blender 源文件和开发工具。
+- 在真实 Windows 10/11 上进行最终启动、输入、保存、全屏和退出验收。
+
+## 人工验收清单
+
+- 键鼠和 Xbox 布局分别走完至少一次主线。
+- 每个时相切换点检查玩家不会落入无碰撞区域。
+- 三个画质档各切换三次，场景灯光和 UI 不丢失。
+- 城市移动列车不把玩家永久卡入建筑。
+- 推石至少从三个角度可完成，压力板反馈清楚。
+- 暂停时物理、粒子逻辑和剧情计时停止，恢复后控制正常。
+- 断电式测试：保存过程中终止进程，下一次仍能读取主档或备份。

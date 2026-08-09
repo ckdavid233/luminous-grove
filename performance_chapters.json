@@ -1,0 +1,53 @@
+{
+	"city_echo": {
+		"average_fps": 14.4,
+		"average_frame_ms": 69.385,
+		"draw_calls": 576,
+		"label": "city_echo",
+		"p95_frame_ms": 78.897,
+		"p99_frame_ms": 80.464,
+		"primitives": 65970,
+		"sample_frames": 240,
+		"video_memory_bytes": 1771865344
+	},
+	"city_present": {
+		"average_fps": 14.3,
+		"average_frame_ms": 69.997,
+		"draw_calls": 598,
+		"label": "city_present",
+		"p95_frame_ms": 92.319,
+		"p99_frame_ms": 99.005,
+		"primitives": 119860,
+		"sample_frames": 240,
+		"video_memory_bytes": 1771865344
+	},
+	"rain_eye_echo": {
+		"average_fps": 32.0,
+		"average_frame_ms": 31.22,
+		"draw_calls": 188,
+		"label": "rain_eye_echo",
+		"p95_frame_ms": 40.516,
+		"p99_frame_ms": 40.763,
+		"primitives": 227486,
+		"sample_frames": 240,
+		"video_memory_bytes": 1772439824
+	},
+	"rain_eye_present": {
+		"average_fps": 31.2,
+		"average_frame_ms": 32.092,
+		"draw_calls": 407,
+		"label": "rain_eye_present",
+		"p95_frame_ms": 42.63,
+		"p99_frame_ms": 43.258,
+		"primitives": 348200,
+		"sample_frames": 240,
+		"video_memory_bytes": 1772439824
+	},
+	"renderer": "forward_plus",
+	"resident_levels": 2,
+	"resident_limit": 2,
+	"resolution": [
+		1280,
+		720
+	]
+}

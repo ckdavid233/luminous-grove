@@ -1,0 +1,26 @@
+# Godot editor/import cache and generated import metadata
+game/.godot/
+**/.godot/
+**/*.import
+
+# Generated builds and runtime captures
+build/
+releases/
+test_artifacts/
+previews/
+
+# Python/Blender temporary files
+tools/__pycache__/
+game/tools/__pycache__/
+art_source/**/*.blend1
+art_source/**/*.blend2
+
+# Local editor and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local asset drop folders; keep the brief and manifest templates tracked
+asset_inbox/
+*.zip
