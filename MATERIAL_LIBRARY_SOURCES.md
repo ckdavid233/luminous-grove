@@ -21,6 +21,11 @@ Poliigon 或 Substance 3D。使用前必须记录订单/领取凭证、版本、
 当前已下载运行贴图的逐文件校验和见 `MATERIAL_LIBRARY_SHA256.txt`。校验和覆盖仓库内的
 4K runtime 文件，不代表外置的原始 8K 包；替换分辨率后必须重新生成该清单。
 
+运行时表面到 `MaterialProfile` 的显式映射位于 `game/content/materials/profiles/`：
+`dry_soil.tres`、`wet_mud.tres`、`moss.tres`、`wood.tres`、`stone.tres` 和 `water.tres`。
+前五套资源引用扫描 Albedo/Normal/Roughness/AO/Height，并引用对应的 Cavity 运行图；水面使用
+程序化 Shader，因此 profile 保留物理、湿润和水纹标签而不伪造 PBR 贴图。
+
 ## 替换规则
 
 每套 PBR 必须提供 `albedo`、OpenGL `normal`、`roughness`、`ao`；近景英雄材质再提供

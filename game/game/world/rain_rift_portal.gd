@@ -13,25 +13,41 @@ var _preview_camera: Camera3D
 var _source_camera: Camera3D
 var _preview_layer := ECHO_VISUAL_LAYER
 var _frame_index := 0
+var _shutdown_requested := false
+var _tearing_down := false
 var preview_update_count := 0
 
 
 func _exit_tree() -> void:
+	_tearing_down = true
 	shutdown()
 
 
 func shutdown() -> void:
+	if _shutdown_requested:
+		return
+	_shutdown_requested = true
 	if _preview_viewport != null and is_instance_valid(_preview_viewport):
 		_preview_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		_preview_viewport.world_3d = null
+		if not _tearing_down:
+			_preview_viewport.queue_free()
 	var surface := get_node_or_null("RiftSurface") as MeshInstance3D
 	if surface != null:
 		surface.material_override = null
+		if surface.mesh is PrimitiveMesh:
+			(surface.mesh as PrimitiveMesh).material = null
 		surface.mesh = null
 	if _surface_material != null:
 		_surface_material.set_shader_parameter("alternate_texture", null)
 		_surface_material.shader = null
-	_surface_material = null
+		_surface_material = null
+	if _ring != null and is_instance_valid(_ring):
+		for shard in _ring.find_children("*", "MeshInstance3D", true, false):
+			var shard_mesh := shard as MeshInstance3D
+			if shard_mesh.mesh is PrimitiveMesh:
+				(shard_mesh.mesh as PrimitiveMesh).material = null
+			shard_mesh.mesh = null
 	_preview_camera = null
 	_source_camera = null
 	_preview_viewport = null

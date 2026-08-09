@@ -14,6 +14,7 @@
       "surface_type": "dry_soil",
       "status": "installed_4k_cc0",
       "runtime": "content/materials/scanned/forest_ground/",
+      "profile": "content/materials/profiles/dry_soil.tres",
       "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
       "source": "Poly Haven Forest Ground 01"
     },
@@ -22,6 +23,7 @@
       "surface_type": "wet_mud",
       "status": "installed_4k_cc0",
       "runtime": "content/materials/scanned/mud_forest/",
+      "profile": "content/materials/profiles/wet_mud.tres",
       "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
       "source": "Poly Haven Mud Forest"
     },
@@ -30,6 +32,7 @@
       "surface_type": "moss",
       "status": "installed_4k_cc0",
       "runtime": "content/materials/scanned/forest_leaves/",
+      "profile": "content/materials/profiles/moss.tres",
       "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
       "source": "Poly Haven Forest Leaves 02"
     },
@@ -38,6 +41,7 @@
       "surface_type": "wood",
       "status": "installed_4k_cc0",
       "runtime": "content/materials/scanned/pine_bark/",
+      "profile": "content/materials/profiles/wood.tres",
       "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
       "source": "Poly Haven Pine Bark"
     },
@@ -46,8 +50,18 @@
       "surface_type": "stone",
       "status": "installed_4k_cc0",
       "runtime": "content/materials/scanned/lake_stone/",
+      "profile": "content/materials/profiles/stone.tres",
       "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
       "source": "Poly Haven Mossy Rock"
+    },
+    {
+      "id": "water_surface",
+      "surface_type": "water",
+      "status": "procedural_shader",
+      "runtime": "shaders/realistic_lake.gdshader",
+      "profile": "content/materials/profiles/water.tres",
+      "maps": [],
+      "source": "Godot water shader with runtime ripple events"
     }
   ]
 }

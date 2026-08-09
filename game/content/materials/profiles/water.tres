@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SurfaceProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://game/world/surface_profile.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+material_id = &"water"
+surface_type = &"water"
+friction = 0.12
+bounce = 0.0
+roughness = 0.18
+wetness_response = 1.0
+speed_multiplier = 0.64
+footstep_tag = &"water"
+ripple_tag = &"water"

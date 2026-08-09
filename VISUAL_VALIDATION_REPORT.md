@@ -62,6 +62,23 @@ env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake godot --path game 
 | 湖面水花 | `previews/after_lake_splash_4k.png` | `5b3682222badd06354d0e54e7b107e05dbb255288f24f0fcfe1dfcd234e7c430` |
 | 角色动作 | `previews/after_character_clean_4k.png` | `5ee50a151722298485ed4398df435a5d671d35b129653d350dffc5cd344bd6b6` |
 
+### Profile 映射后的湖面复验
+
+在显式 `MaterialProfile` 接入地表 Shader 后，重新用真实 Vulkan `SubViewport` 单独捕获地面、湿泥、
+树木和湖面；所有 PNG 均通过 `file` 校验为 3840×2160 RGB，证明 profile 贴图映射没有让材质或
+湖面/水花路径回退：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 地面 | `previews/finalprofile_ground_4k.png` | `1b8d87cfeb461a826c6abdc9099d217f2231b128714618226f3f0a4478afe0a7` |
+| 湿泥 | `previews/finalprofile_wet_mud_4k.png` | `4a7d887e5c4cfbf8d56b5126cf331b85258f1beb69060aca436b7a3f97c66eef` |
+| 树皮/树冠 | `previews/finalprofile_tree_detail_4k.png` | `45eae1363d94c5e568a724632c68b07dd904bf32f67bd0a50e9a813329a5efd7` |
+| 湖面 | `previews/finalprofile_lake_4k.png` | `a24b21bdf2c244dba1f329d4b408f8398600257548507463a6d536f58217d1bc` |
+| 湖面水花 | `previews/finalprofile_lake_splash_4k.png` | `50b0ab3b2debb4e8e2e226ab3994b378b2f19fb682322b6b9df1d5a9355210d5` |
+| 脚印空场 | `previews/finalprofile_footprints_before_4k.png` | `5b4029a091a444bd468bdffc2bc74248a620654a3308184acae7a728459c4683` |
+| 脚印反馈 | `previews/finalprofile_footprints_after_4k.png` | `32c8498765c9acece80764e266354b8a92a5faff9aa3c2e2017dbcd2ebf8b707` |
+| 角色动作 | `previews/finalprofile_character_clean_4k.png` | `251512d2b00fc3586d61c02d1692d4a505a2534a93d1e3d80f49850c0692dcf2` |
+
 ## 视觉结论与剩余项
 
 - 地面、泥滩、树皮、湖面和角色动作均已在真实 Vulkan 表面完成同机位前后对比。
@@ -69,7 +86,7 @@ env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake godot --path game 
   自发光，截图可复现三层环和水滴。
 - 4K runtime 贴图与 3840×2160 Vulkan 离屏目标已确认加载并输出；当前桌面仍不是原生 4K，需在
   3840×2160 显示设备上完成最终输出与帧时验收。
-- 角色起步、急停、转身、面部表演和坡面 IK 的艺术资产仍是后续内容，不应以当前 Interact
-  单帧截图宣称全部完成。
+- 角色起步、急停、转身、面部表演和坡面 IK 的艺术资产仍是后续内容；运行时坡面法线对齐已由
+  `surface_interaction_test.gd` 覆盖，不应以当前 Interact 单帧截图宣称表演资产全部完成。
 - 截图脚本退出时仍会看到 7 个 Godot Texture RID 和 1 个通用 RefCounted 清理提示；主场景、
   水纹池和世界流送已增加显式退出清理，但尚未定位到全部资源的退出时序，不能宣称“零泄漏”。

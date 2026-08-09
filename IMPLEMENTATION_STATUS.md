@@ -23,10 +23,10 @@
 | 玩家 | 已验证 | 键鼠/手柄、平滑加减速、空中控制、土狼时间、跳跃缓冲、交互、检查点 |
 | 写实角色 | 已验证 | 14 网格、53 骨、39,840 三角面、14 材质、7 套独立动作、19 条骨骼轨道 |
 | 高画质渲染 | 已验证 | Forward+ 全特效与三档切换 |
-| 扫描 PBR 材质管线 | 已实装 | MaterialProfile/SurfaceProfile、Poly Haven CC0 4K runtime、AO/Cavity/Height 校验 |
+| 扫描 PBR 材质管线 | 已实装 | MaterialProfile/SurfaceProfile、6 个显式 `.tres` profile、Poly Haven CC0 4K runtime、AO/Cavity/Height 校验 |
 | 林地地表分层 | 已实装 | 129×129 渲染网格、65×65 碰撞网格、坡度/岸线/湿润/视差 Shader |
 | 湖面事件与反射 | 已实装 | 32 槽水纹池、8 槽飞溅池、Fresnel/深度吸收/泡沫、湖区反射探针 |
-| 地表探测与脚步 | 已实装 | SurfaceProbe、6 类表面、动画相位脚步+距离 fallback、24 槽脚印池、双脚 SkeletonIK3D |
+| 地表探测与脚步 | 已实装 | SurfaceProbe、6 类表面、动画相位脚步+距离 fallback、24 槽脚印池、坡面法线双脚 SkeletonIK3D |
 | 刚体与植被反馈 | 已实装 | Jolt 摩擦/质量、浅水浮力/阻力/事件、角色与刚体近场草叶弯曲 |
 | 全流程可玩性 | 已验证 | 真实附近交互提示 + 四幕全流程、三结局、完成态恢复 |
 | 物理 | 已验证 | Jolt 独立线程、14+ 章节刚体、可完成配重 |
@@ -65,11 +65,15 @@
 - 高 / 均衡 / 性能三档实时切换。
 - 扫描 PBR 运行目录和材质来源登记；环境材质具备 Albedo、Normal、Roughness、AO，近景
   目录具备 Cavity/Height（当前运行贴图为 4K，8K 英雄原包外置）。
+- `content/materials/profiles/` 的六个资源是运行时唯一表面映射；地表 Shader、湖岸石和树皮
+  PBR 创建函数直接从 profile 读取贴图，避免视觉材质与物理表面标签分叉。
 - 林地地表使用独立高密度渲染网格与低密度 HeightMap 碰撞，避免视觉高度和物理高度混淆。
 - 湖面使用 Fresnel、双层法线、深度吸收、岸线泡沫、湿度粗糙度和反射探针；雨滴、脚步、入水、
   出水、落水和刚体落水统一进入 `emit_surface_event`，最多保留 32 个事件。
 - 土、泥、苔藓、石、木、水具备表面采样和物理参数；湿泥减速、石面坡滑、浅水阻力、落地冲击、
   脚印和双脚 IK 已接入角色运行时。
+- 脚部与交互射线、SurfaceProbe 和恢复落点复用 `PhysicsRayQueryParameters3D`，水体飞溅根节点
+  改为湖体所有并在运行时退出时清理材质/粒子引用；当前仍有少量 Godot 退出时序警告待定位。
 - `MaterialProfile` 作为 `SurfaceProfile` 基类统一持有 Albedo、Normal、Roughness、AO、Cavity、
   Height 与物理字段；Walk/Run 的动画时间相位触发脚步，距离检测仅在动画不可用时工作。
 - 刚体可注册到湖面反馈，获得受淹比例浮力、水平阻力、入/出水事件和边界校正；草地 Shader 同时
@@ -123,9 +127,10 @@
 - Godot 4.7.1 官方 Windows x86_64 release 模板已 CRC 校验；
 - Windows Desktop preset 已加入；
 - EXE + PCK 结构已导出；
-- v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；564,943,923 字节 ZIP 已通过
+- v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；564,947,496 字节 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- ZIP SHA-256 为 `d4977f49eaae9543b7a1c7cef7ae0f391f38bc8dcdbf76f79f0a848f9f116e06`；
+- ZIP SHA-256 为 `0810dc8b6a4d1b21098c631e2b603c77e8c76671ca2d3fac4ad7735904f993d9`；PCK SHA-256 为
+  `b43b05c14d49f1a1012719c458acb071eadc9dada1accc4aec653ff7a2235cca`；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

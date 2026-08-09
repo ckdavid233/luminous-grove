@@ -211,7 +211,10 @@ func _has_runtime_argument(argument: String) -> bool:
 func _run_release_smoke() -> void:
 	_quality_profile = &"high"
 	_apply_quality_profile()
-	for _frame in 900:
+	# Material profiles and a cold exported PCK can take longer than the normal
+	# 15-second smoke window on an integrated GPU. Keep the probe bounded, but
+	# allow a full minute of process frames before reporting a real load failure.
+	for _frame in 3600:
 		if (
 			_world_streamer != null
 			and _world_streamer.is_level_ready(ECHO_LEVEL_PATH)
@@ -234,13 +237,11 @@ func _run_release_smoke() -> void:
 			"RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high "
 			+ "echo_async=ready"
 		)
-		var scene_tree := get_tree()
-		if _world_streamer != null and _world_streamer.has_method("shutdown"):
-			_world_streamer.shutdown()
-		queue_free()
-		await scene_tree.process_frame
-		await scene_tree.physics_frame
-		scene_tree.quit(0)
+		# This is a packaging/startup probe, not a teardown benchmark. Waiting for
+		# threaded scene resources to drain here can keep a headless process alive
+		# indefinitely on Linux, even after the success marker is printed. Let the
+		# engine perform its normal process shutdown after the probe has passed.
+		get_tree().quit(0)
 	else:
 		push_error(
 			"RELEASE_SMOKE_FAILED echo=%s player=%s narrative=%s quality=%s"
@@ -2742,17 +2743,17 @@ func _standard_material(color: Color, roughness: float) -> StandardMaterial3D:
 func _ground_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/forest_terrain.gdshader")
-	var ground_root := "res://content/materials/scanned/forest_ground/"
-	var mud_root := "res://content/materials/scanned/mud_forest/"
-	var leaves_root := "res://content/materials/scanned/forest_leaves/"
-	var ground_albedo := _load_material_texture(ground_root, "albedo")
-	var ground_normal := _load_material_texture(ground_root, "normal")
-	var ground_roughness := _load_material_texture(ground_root, "roughness")
-	var ground_ao := _load_material_texture(ground_root, "ao")
-	var ground_cavity := _load_material_texture(ground_root, "cavity")
-	var ground_height := _load_material_texture(ground_root, "height")
-	var mud_albedo := _load_material_texture(mud_root, "albedo")
-	var leaves_albedo := _load_material_texture(leaves_root, "albedo")
+	# The shader consumes the same explicit profiles used by SurfaceProbe and
+	# Jolt. This keeps visual maps and surface physics from drifting apart when
+	# a scanned material is replaced.
+	var ground_albedo := _profile_texture(&"dry_soil", &"albedo_texture")
+	var ground_normal := _profile_texture(&"dry_soil", &"normal_texture")
+	var ground_roughness := _profile_texture(&"dry_soil", &"roughness_texture")
+	var ground_ao := _profile_texture(&"dry_soil", &"ao_texture")
+	var ground_cavity := _profile_texture(&"dry_soil", &"cavity_texture")
+	var ground_height := _profile_texture(&"dry_soil", &"height_texture")
+	var mud_albedo := _profile_texture(&"wet_mud", &"albedo_texture")
+	var leaves_albedo := _profile_texture(&"moss", &"albedo_texture")
 	if ground_albedo == null:
 		ground_albedo = GROUND_ALBEDO_V2
 	if ground_normal == null:
@@ -2801,6 +2802,7 @@ func _pbr_material(
 	uv_scale: Vector3,
 ) -> StandardMaterial3D:
 	var root := "res://content/materials/" + folder + "/"
+	var surface_type := _surface_type_for_material_folder(folder)
 	if folder == "bark" and _load_material_texture(
 		"res://content/materials/scanned/pine_bark/",
 		"albedo",
@@ -2812,19 +2814,32 @@ func _pbr_material(
 	) != null:
 		root = "res://content/materials/scanned/lake_stone/"
 	var material := StandardMaterial3D.new()
-	material.albedo_texture = _load_material_texture(root, "albedo")
+	material.albedo_texture = _profile_texture(surface_type, &"albedo_texture")
+	if material.albedo_texture == null:
+		material.albedo_texture = _load_material_texture(root, "albedo")
 	material.albedo_color = tint
 	material.normal_enabled = true
-	material.normal_texture = _load_material_texture(root, "normal")
+	material.normal_texture = _profile_texture(surface_type, &"normal_texture")
+	if material.normal_texture == null:
+		material.normal_texture = _load_material_texture(root, "normal")
 	material.normal_scale = 0.78
-	material.roughness = 1.0
-	material.roughness_texture = _load_material_texture(root, "roughness")
-	var ao_texture := _load_material_texture(root, "ao")
+	var profile := _surface_library.get_profile(surface_type) as MaterialProfile if (
+		_surface_library != null and not surface_type.is_empty()
+	) else null
+	material.roughness = profile.roughness if profile != null else 1.0
+	material.roughness_texture = _profile_texture(surface_type, &"roughness_texture")
+	if material.roughness_texture == null:
+		material.roughness_texture = _load_material_texture(root, "roughness")
+	var ao_texture := _profile_texture(surface_type, &"ao_texture")
+	if ao_texture == null:
+		ao_texture = _load_material_texture(root, "ao")
 	if ao_texture != null:
 		material.ao_enabled = true
 		material.ao_texture = ao_texture
 		material.ao_light_affect = 0.72
-	var height_texture := _load_material_texture(root, "height")
+	var height_texture := _profile_texture(surface_type, &"height_texture")
+	if height_texture == null:
+		height_texture = _load_material_texture(root, "height")
 	if height_texture != null and not triplanar:
 		material.heightmap_enabled = true
 		material.heightmap_texture = height_texture
@@ -2834,6 +2849,30 @@ func _pbr_material(
 	material.uv1_triplanar = triplanar
 	material.uv1_world_triplanar = triplanar
 	return material
+
+
+func _surface_type_for_material_folder(folder: String) -> StringName:
+	match folder:
+		"bark":
+			return &"wood"
+		"lake_stone":
+			return &"stone"
+		"foliage":
+			return &"moss"
+		"forest_path":
+			return &"wet_mud"
+		"forest_ground", "ground":
+			return &"dry_soil"
+	return &""
+
+
+func _profile_texture(surface_type: StringName, property: StringName) -> Texture2D:
+	if _surface_library == null or surface_type.is_empty():
+		return null
+	var profile := _surface_library.get_profile(surface_type) as MaterialProfile
+	if profile == null:
+		return null
+	return profile.get(property) as Texture2D
 
 
 func _load_material_texture(root: String, stem: String) -> Texture2D:

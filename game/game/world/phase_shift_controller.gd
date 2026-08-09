@@ -24,6 +24,7 @@ var _present_nodes: Array[Node] = []
 var _world_environment: WorldEnvironment
 var _sun: DirectionalLight3D
 var _gameplay_camera: Camera3D
+var _restore_query: PhysicsRayQueryParameters3D
 var _pending_shift := false
 var _alternate_ready := false
 var _present_environment_state: Dictionary = {}
@@ -50,6 +51,7 @@ func configure(
 	_apply_gameplay_camera_layer(PRESENT)
 	_streamer.load_progress.connect(_on_load_progress)
 	_streamer.level_loaded.connect(_on_level_loaded)
+	_restore_query = PhysicsRayQueryParameters3D.new()
 	return _streamer.request_level(level_path, true)
 
 
@@ -143,17 +145,24 @@ func _restore_player_safely(saved_transform: Transform3D, saved_velocity: Vector
 	if OS.get_cmdline_args().has("--script"):
 		_player.velocity = saved_velocity
 		return
-	var query := PhysicsRayQueryParameters3D.create(
-		saved_transform.origin + Vector3.UP * 3.0,
-		saved_transform.origin + Vector3.DOWN * 8.0
-	)
-	query.exclude = [_player.get_rid()]
-	query.collision_mask = 1
-	var hit := _player.get_world_3d().direct_space_state.intersect_ray(query)
+	if _restore_query == null:
+		_restore_query = PhysicsRayQueryParameters3D.new()
+	_restore_query.from = saved_transform.origin + Vector3.UP * 3.0
+	_restore_query.to = saved_transform.origin + Vector3.DOWN * 8.0
+	_restore_query.exclude = [_player.get_rid()]
+	_restore_query.collision_mask = 1
+	var hit := _player.get_world_3d().direct_space_state.intersect_ray(_restore_query)
+	_restore_query.exclude.clear()
 	if not hit.is_empty():
 		var floor_position: Vector3 = hit.position
 		_player.global_position.y = floor_position.y + 1.0
 	_player.velocity = saved_velocity
+
+
+func _exit_tree() -> void:
+	if _restore_query != null:
+		_restore_query.exclude.clear()
+		_restore_query = null
 
 
 func _set_present_active(active: bool) -> void:

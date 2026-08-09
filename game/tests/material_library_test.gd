@@ -3,6 +3,14 @@ extends SceneTree
 const SURFACE_LIBRARY := preload("res://game/world/surface_library.gd")
 const FOLDERS := ["foliage", "bark", "lake_stone", "forest_path", "shrine_stone"]
 const MAPS := ["albedo", "normal", "roughness", "ao", "cavity", "height"]
+const PROFILE_PATHS := {
+	&"dry_soil": "res://content/materials/profiles/dry_soil.tres",
+	&"wet_mud": "res://content/materials/profiles/wet_mud.tres",
+	&"moss": "res://content/materials/profiles/moss.tres",
+	&"wood": "res://content/materials/profiles/wood.tres",
+	&"stone": "res://content/materials/profiles/stone.tres",
+	&"water": "res://content/materials/profiles/water.tres",
+}
 
 
 func _initialize() -> void:
@@ -36,6 +44,13 @@ func _initialize() -> void:
 	var library := SURFACE_LIBRARY.new()
 	root.add_child(library)
 	await process_frame
+	for surface_type in PROFILE_PATHS:
+		var profile_path: String = PROFILE_PATHS[surface_type]
+		assert(ResourceLoader.exists(profile_path, "Resource"), profile_path)
+		var resource_profile := load(profile_path) as MaterialProfile
+		assert(resource_profile != null, profile_path + " must be a MaterialProfile")
+		assert(resource_profile.material_id == surface_type)
+		assert(resource_profile.surface_type == surface_type)
 	var dry := library.sample(Vector3(0.0, 0.0, 0.0))
 	var mud := library.sample(Vector3(-8.0, 0.1, -2.4))
 	var stone := library.sample(Vector3(-17.2, 0.1, -8.0), Vector3(0.1, 0.7, 0.0))
@@ -46,8 +61,12 @@ func _initialize() -> void:
 	for surface_type in [&"dry_soil", &"wet_mud", &"moss", &"wood", &"stone"]:
 		var profile := library.get_profile(surface_type) as MaterialProfile
 		assert(profile != null)
+		assert(profile.resource_path == PROFILE_PATHS[surface_type])
 		assert(profile.has_required_maps(), str(surface_type) + " core maps must be wired")
 		assert(profile.cavity_texture != null and profile.height_texture != null)
+	var water_profile := library.get_profile(&"water") as MaterialProfile
+	assert(water_profile.resource_path == PROFILE_PATHS[&"water"])
+	assert(water_profile.ripple_tag == &"water")
 	print("MATERIAL_LIBRARY_TEST_OK maps=6 surfaces=dry_soil,wet_mud,stone normal=opengl")
 	library.queue_free()
 	await process_frame

@@ -71,6 +71,7 @@ func shutdown() -> void:
 func stamp(world_position: Vector3, normal: Vector3, surface_type: StringName, strength := 1.0) -> void:
 	if _decals.is_empty():
 		return
+	_prune_tweens()
 	var footprint := _decals[_cursor]
 	var material := _materials[_cursor]
 	_cursor = (_cursor + 1) % _decals.size()
@@ -96,6 +97,14 @@ func stamp(world_position: Vector3, normal: Vector3, surface_type: StringName, s
 func _on_footprint_tween_finished(footprint: MeshInstance3D) -> void:
 	if is_instance_valid(footprint):
 		footprint.visible = false
+	_prune_tweens()
+
+
+func _prune_tweens() -> void:
+	_tweens = _tweens.filter(
+		func(tween: Tween) -> bool:
+			return tween != null and tween.is_valid() and tween.is_running()
+	)
 
 
 func active_count() -> int:

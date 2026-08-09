@@ -31,7 +31,8 @@
 本次“林地湖区材质、视觉、光照与交互升级”已完成的工程化改造：
 
 - 材质管线：`build_user_pbr.gd` 改为扫描材质导入与完整性校验，不再从 Albedo 亮度伪造
-  Normal/Roughness；建立 `SurfaceProfile`/`SurfaceLibrary`，登记干土、湿泥、苔藓、石、木和水。
+  Normal/Roughness；建立 `SurfaceProfile`/`SurfaceLibrary`，并用 `content/materials/profiles/*.tres`
+  显式登记干土、湿泥、苔藓、石、木和水。
 - 运行资源：接入 Poly Haven CC0 的 Forest Ground 01、Mud Forest、Forest Leaves 02 和
   Pine Bark、Mossy Rock 4K PBR（英雄近景目标 8K）；AO、Cavity、Height 和 SHA-256/许可
   登记见 `MATERIAL_LIBRARY_SOURCES.md`、`MATERIAL_LIBRARY_SHA256.txt`。
@@ -42,10 +43,13 @@
 - 光照：增加湖面与神龛反射探针、湖面反射补光和湿润联动；保留 Forward+、SDFGI、SSAO、
   SSIL、SSR 与体积雾，不引入首轮昼夜循环。
 - 交互与物理：SurfaceProbe、土/泥/木/石 PhysicsMaterial、斜坡湿泥减速与石面滑动、浅水
-  反馈、脚步水纹、脚印池、双脚 SkeletonIK3D 和刚体接触反馈已接入；现有水体信号保持兼容。
+  反馈、脚步水纹、脚印池、双脚 SkeletonIK3D 和刚体接触反馈已接入；坡面测试确认脚部目标
+  法线随接触面旋转，现有水体信号保持兼容。
 - 资源与动画：`MaterialProfile` 统一承载六类 PBR 贴图与物理字段；Walk/Run 以动画相位触发
   脚步，距离检测保留为异常 fallback；刚体入/出水浮力、阻力和边界事件，以及角色/刚体近场
   草叶弯曲已接入。
+- 林地 Shader 和岸石/树皮 PBR 创建函数现在直接读取上述 profile 的贴图，SurfaceProbe、脚部
+  射线、交互查询和恢复落点复用查询参数，水花根节点由湖体统一拥有并在退出时释放 GPU 资源。
 - 全流程：`gameplay_test.gd` 已从风铃、三记忆、神龛、双时相档案、Jolt 配重、城市回路、雨眼
   试炼走到潮汐结局并验证完成态恢复；新增真实附近交互提示检查，避免只靠测试直接调用机关。
 
@@ -80,7 +84,8 @@ JSON 原始结果保留在 `performance_runtime*.json`。
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过，更新材质与水花逻辑后的 SHA-256 为
-  `d4977f49eaae9543b7a1c7cef7ae0f391f38bc8dcdbf76f79f0a848f9f116e06`（564,943,923 bytes）。
+  `0810dc8b6a4d1b21098c631e2b603c77e8c76671ca2d3fac4ad7735904f993d9`（564,947,496 bytes）；PCK
+  SHA-256 为 `b43b05c14d49f1a1012719c458acb071eadc9dada1accc4aec653ff7a2235cca`（527,426,640 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

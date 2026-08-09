@@ -16,6 +16,12 @@
   到距离检测；刚体获得浅水浮力/阻力/入出水事件，草地接收角色与刚体局部弯曲。
 - 全流程测试增加附近交互提示和真实 `request_interaction()` 检查，并从风铃完整走到潮汐结局、
   验证完成态恢复；WorldStreamer 与湖面事件池增加退出清理。
+- 新增六个可审计的 `MaterialProfile` `.tres` 资源，地表 Shader、岸石和树皮 PBR 直接读取 profile；
+  增加坡面法线脚部 IK 回归，并复用 SurfaceProbe/脚部/交互/恢复落点查询参数以降低临时 RID。
+- 水花根节点改由 `InteractiveLake` 所有，门户、脚印 Tween 和环境射线增加退出清理；已记录仍会
+  偶发出现的 Godot ObjectDB/Texture RID 警告，当前不宣称零泄漏。
+- Windows/PCK release smoke 改为允许冷启动材质与 threaded PCK 最多 3600 帧，并在成功标志后直接
+  退出探针；本轮导出包已通过 Linux 同版本自检和 ZIP 完整性检查。
 - 回归套件从 21 项扩展为 23 项，新增材质完整性和表面交互测试；真实 Vulkan 性能基线保留，
   当前容器仅能运行 64×64 headless CPU 冒烟。
 

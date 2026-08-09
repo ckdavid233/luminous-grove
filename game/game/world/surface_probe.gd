@@ -5,10 +5,19 @@ signal surface_changed(sample: Dictionary)
 
 var _library
 var _last_type: StringName = &""
+var _ray_query: PhysicsRayQueryParameters3D
 
 
 func configure(library) -> void:
 	_library = library
+	if _ray_query == null:
+		_ray_query = PhysicsRayQueryParameters3D.new()
+
+
+func _exit_tree() -> void:
+	if _ray_query != null:
+		_ray_query.exclude.clear()
+		_ray_query = null
 
 
 func sample(world_position: Vector3, normal := Vector3.UP) -> Dictionary:
@@ -33,13 +42,14 @@ func raycast_sample(body: CharacterBody3D, height := 0.72, depth := 1.42) -> Dic
 	if body == null or body.get_world_3d() == null:
 		return sample(global_position)
 	var origin := body.global_position + Vector3.UP * height
-	var query := PhysicsRayQueryParameters3D.create(
-		origin,
-		origin + Vector3.DOWN * depth,
-	)
-	query.exclude = [body.get_rid()]
-	query.collision_mask = 1
-	var hit := body.get_world_3d().direct_space_state.intersect_ray(query)
+	if _ray_query == null:
+		_ray_query = PhysicsRayQueryParameters3D.new()
+	_ray_query.from = origin
+	_ray_query.to = origin + Vector3.DOWN * depth
+	_ray_query.exclude = [body.get_rid()]
+	_ray_query.collision_mask = 1
+	var hit := body.get_world_3d().direct_space_state.intersect_ray(_ray_query)
+	_ray_query.exclude.clear()
 	if hit.is_empty():
 		return sample(body.global_position)
 	var collider := hit.get("collider") as Node

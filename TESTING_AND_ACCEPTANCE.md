@@ -61,8 +61,8 @@ Godot 编辑器级解析检查：
 | `jolt_physics_test.gd` | 独立线程、连续碰撞、刚体冲量、档案配重机关 |
 | `cinematic_director_test.gd` | 过场开始、字幕、跳过和结束恢复 |
 | `interactive_water_test.gd` | 空中移动无脚步波纹、入水／出水状态、扩散环与水滴效果 |
-| `material_library_test.gd` | MaterialProfile 清单、6 张 PBR 贴图完整性、扫描 CC0 运行资源和表面摩擦关系 |
-| `surface_interaction_test.gd` | SurfaceProbe、PhysicsMaterial、脚印池、双脚 IK、32 槽水纹事件接口 |
+| `material_library_test.gd` | 6 个 MaterialProfile `.tres` 映射、6 张 PBR 贴图完整性、扫描 CC0 运行资源和表面摩擦关系 |
+| `surface_interaction_test.gd` | SurfaceProbe、PhysicsMaterial、脚印池、坡面法线双脚 IK、32 槽水纹事件接口 |
 | `presentation_test.gd` | PBR 套装、粒子图集和程序音频 |
 | `quality_settings_test.gd` | 三档画质、默认高画质和暂停菜单 |
 | `input_regression_test.gd` | 真实 Escape、暂停中真实鼠标点击、画质按钮和真实 E 交互 |

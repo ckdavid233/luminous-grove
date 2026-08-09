@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 564,943,923 bytes
-SHA256: d4977f49eaae9543b7a1c7cef7ae0f391f38bc8dcdbf76f79f0a848f9f116e06
+size: 564,947,496 bytes
+SHA256: 0810dc8b6a4d1b21098c631e2b603c77e8c76671ca2d3fac4ad7735904f993d9
 integrity: unzip -t passed, 4 entries, no errors
 ```
 
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 4 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,415,520 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,426,640 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 
@@ -66,6 +66,8 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 - ZIP 已通过 `unzip -t` 完整性检查，4 个条目无错误；SHA256 已写入同名 `.sha256` 文件。
 
 PCK 自检证明导出的游戏数据与脚本可由 4.7.1 运行时读取；它不等于执行 Windows EXE。
+release smoke 在成功标志输出后会直接结束探针进程，避免等待 threaded scene teardown；退出仍有
+1 个通用 Godot ObjectDB 清理警告，已记录为工程技术债，不影响 PCK 启动标志。
 当前设备没有 Windows 或 Wine，因此不能声称已经完成真实 Windows 启动、驱动、全屏、
 音频、手柄热插拔和 SmartScreen 测试。
 

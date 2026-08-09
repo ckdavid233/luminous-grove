@@ -69,6 +69,11 @@ var _left_foot_target: Node3D
 var _right_foot_target: Node3D
 var _left_foot_ik: SkeletonIK3D
 var _right_foot_ik: SkeletonIK3D
+var _left_foot_query: PhysicsRayQueryParameters3D
+var _right_foot_query: PhysicsRayQueryParameters3D
+var _interaction_shape: SphereShape3D
+var _interaction_query: PhysicsShapeQueryParameters3D
+var _interaction_ray_query: PhysicsRayQueryParameters3D
 
 
 func _ready() -> void:
@@ -325,6 +330,14 @@ func _setup_animation_tree() -> void:
 	_animation_playback = _animation_tree.get("parameters/playback")
 	_animation_state = &"Idle"
 	_animation_playback.start(&"Idle")
+	_interaction_shape = SphereShape3D.new()
+	_interaction_shape.radius = interaction_distance
+	_interaction_query = PhysicsShapeQueryParameters3D.new()
+	_interaction_query.shape = _interaction_shape
+	_interaction_query.collision_mask = 1 << 2
+	_interaction_query.collide_with_bodies = true
+	_interaction_query.collide_with_areas = true
+	_interaction_ray_query = PhysicsRayQueryParameters3D.new()
 
 
 func _setup_foot_ik() -> void:
@@ -344,6 +357,8 @@ func _setup_foot_ik() -> void:
 	add_child(_right_foot_target)
 	_left_foot_ik = _create_foot_ik("thigh_l", "foot_l", _left_foot_target)
 	_right_foot_ik = _create_foot_ik("thigh_r", "foot_r", _right_foot_target)
+	_left_foot_query = PhysicsRayQueryParameters3D.new()
+	_right_foot_query = PhysicsRayQueryParameters3D.new()
 
 
 func _create_foot_ik(root_bone: StringName, tip_bone: StringName, target: Node3D) -> SkeletonIK3D:
@@ -362,22 +377,44 @@ func _create_foot_ik(root_bone: StringName, tip_bone: StringName, target: Node3D
 func _update_foot_ik(_delta: float) -> void:
 	if _skeleton == null or _left_foot_target == null or _right_foot_target == null:
 		return
-	var samples := [
-		[_left_foot_target, Vector3(-0.17, 0.0, 0.12)],
-		[_right_foot_target, Vector3(0.17, 0.0, 0.12)],
-	]
-	for sample in samples:
-		var target := sample[0] as Node3D
-		var local_offset: Vector3 = sample[1]
-		var origin := global_position + global_basis * local_offset + Vector3.UP * 0.74
-		var query := PhysicsRayQueryParameters3D.create(origin, origin + Vector3.DOWN * 1.42)
-		query.exclude = [get_rid()]
-		query.collision_mask = 1
-		var hit := get_world_3d().direct_space_state.intersect_ray(query)
-		if hit.is_empty():
-			target.global_position = global_position + global_basis * local_offset
-			continue
-		target.global_position = (hit.position as Vector3) + (hit.normal as Vector3) * 0.025
+	_update_foot_target(
+		_left_foot_target,
+		Vector3(-0.17, 0.0, 0.12),
+		_left_foot_query,
+	)
+	_update_foot_target(
+		_right_foot_target,
+		Vector3(0.17, 0.0, 0.12),
+		_right_foot_query,
+	)
+
+
+func _update_foot_target(
+	target: Node3D,
+	local_offset: Vector3,
+	query: PhysicsRayQueryParameters3D,
+) -> void:
+	if target == null or query == null or get_world_3d() == null:
+		return
+	var origin := global_position + global_basis * local_offset + Vector3.UP * 0.74
+	query.from = origin
+	query.to = origin + Vector3.DOWN * 1.42
+	query.exclude = [get_rid()]
+	query.collision_mask = 1
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	query.exclude.clear()
+	var normal := Vector3.UP
+	if hit.is_empty():
+		target.global_position = global_position + global_basis * local_offset
+		target.global_basis = global_basis
+		return
+	target.global_position = (hit.position as Vector3) + (hit.normal as Vector3) * 0.025
+	normal = (hit.normal as Vector3).normalized()
+	var forward := (-global_basis.z).slide(normal)
+	if forward.length_squared() < 0.001:
+		forward = Vector3.FORWARD.slide(normal)
+	if forward.length_squared() > 0.001:
+		target.global_basis = Basis.looking_at(forward.normalized(), normal)
 
 
 func _set_foot_ik_influence(value: float) -> void:
@@ -495,10 +532,14 @@ func _update_interaction_target() -> void:
 	var viewport_center := get_viewport().get_visible_rect().size * 0.5
 	var from := camera.project_ray_origin(viewport_center)
 	var to := from + camera.project_ray_normal(viewport_center) * interaction_distance
-	var query := PhysicsRayQueryParameters3D.create(from, to)
-	query.exclude = [get_rid()]
-	query.collision_mask = 0b101
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if _interaction_ray_query == null:
+		_interaction_ray_query = PhysicsRayQueryParameters3D.new()
+	_interaction_ray_query.from = from
+	_interaction_ray_query.to = to
+	_interaction_ray_query.exclude = [get_rid()]
+	_interaction_ray_query.collision_mask = 0b101
+	var hit := get_world_3d().direct_space_state.intersect_ray(_interaction_ray_query)
+	_interaction_ray_query.exclude.clear()
 	var candidate: Node = hit.get("collider") if not hit.is_empty() else null
 	var next_target := _find_interactable(candidate)
 	if next_target == null:
@@ -516,16 +557,16 @@ func _update_interaction_target() -> void:
 
 
 func _find_best_nearby_interactable() -> Node:
-	var sphere := SphereShape3D.new()
-	sphere.radius = interaction_distance
-	var parameters := PhysicsShapeQueryParameters3D.new()
-	parameters.shape = sphere
-	parameters.transform = Transform3D(Basis.IDENTITY, global_position + Vector3.UP * 1.0)
-	parameters.exclude = [get_rid()]
-	parameters.collision_mask = 1 << 2
-	parameters.collide_with_bodies = true
-	parameters.collide_with_areas = true
-	var hits := get_world_3d().direct_space_state.intersect_shape(parameters, 32)
+	if _interaction_query == null or _interaction_shape == null:
+		return null
+	_interaction_shape.radius = interaction_distance
+	_interaction_query.transform = Transform3D(
+		Basis.IDENTITY,
+		global_position + Vector3.UP * 1.0,
+	)
+	_interaction_query.exclude = [get_rid()]
+	var hits := get_world_3d().direct_space_state.intersect_shape(_interaction_query, 32)
+	_interaction_query.exclude.clear()
 	var camera_forward := -camera.global_basis.z.normalized()
 	var best_target: Node = null
 	var best_score := INF
@@ -549,6 +590,22 @@ func _find_best_nearby_interactable() -> Node:
 			best_score = score
 			best_target = target
 	return best_target
+
+
+func _exit_tree() -> void:
+	if _interaction_query != null:
+		_interaction_query.exclude.clear()
+		_interaction_query = null
+	_interaction_shape = null
+	if _interaction_ray_query != null:
+		_interaction_ray_query.exclude.clear()
+		_interaction_ray_query = null
+	if _left_foot_query != null:
+		_left_foot_query.exclude.clear()
+		_left_foot_query = null
+	if _right_foot_query != null:
+		_right_foot_query.exclude.clear()
+		_right_foot_query = null
 
 
 func _find_interactable(candidate: Node) -> Node:

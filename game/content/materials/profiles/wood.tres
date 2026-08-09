@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="SurfaceProfile" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://game/world/surface_profile.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/pine_bark/albedo.jpg" id="2_albedo"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/pine_bark/normal.jpg" id="3_normal"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/pine_bark/roughness.jpg" id="4_roughness"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/pine_bark/ao.jpg" id="5_ao"]
+[ext_resource type="Texture2D" path="res://content/materials/bark/cavity.png" id="6_cavity"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/pine_bark/height.jpg" id="7_height"]
+
+[resource]
+script = ExtResource("1_script")
+material_id = &"wood"
+surface_type = &"wood"
+albedo_texture = ExtResource("2_albedo")
+normal_texture = ExtResource("3_normal")
+roughness_texture = ExtResource("4_roughness")
+ao_texture = ExtResource("5_ao")
+cavity_texture = ExtResource("6_cavity")
+height_texture = ExtResource("7_height")
+friction = 0.66
+bounce = 0.05
+roughness = 0.78
+wetness_response = 0.52
+speed_multiplier = 0.98
+footstep_tag = &"wood"
+ripple_tag = &"none"

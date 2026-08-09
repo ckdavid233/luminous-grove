@@ -8,20 +8,33 @@ class PhysicsRayProbe:
 
 	var samples: Array[Vector2] = []
 	var hits: Array[Dictionary] = []
+	var rays: Array[PhysicsRayQueryParameters3D] = []
 	var completed := false
 
 
 	func _physics_process(_delta: float) -> void:
 		var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-		for sample in samples:
-			var ray := PhysicsRayQueryParameters3D.create(
-				Vector3(sample.x, 4.0, sample.y),
-				Vector3(sample.x, -3.0, sample.y),
-			)
+		if rays.is_empty():
+			for _sample in samples:
+				rays.append(PhysicsRayQueryParameters3D.new())
+		for index in samples.size():
+			var sample := samples[index]
+			var ray := rays[index]
+			ray.from = Vector3(sample.x, 4.0, sample.y)
+			ray.to = Vector3(sample.x, -3.0, sample.y)
 			ray.collision_mask = 1
+			ray.exclude.clear()
 			hits.append(space.intersect_ray(ray))
+		for ray in rays:
+			ray.exclude.clear()
 		completed = true
 		set_physics_process(false)
+
+
+	func _exit_tree() -> void:
+		for ray in rays:
+			ray.exclude.clear()
+		rays.clear()
 
 
 func _initialize() -> void:

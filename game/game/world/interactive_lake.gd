@@ -69,14 +69,15 @@ func shutdown() -> void:
 		return
 	_shutdown_requested = true
 	set_process(false)
-	# During a parent `_exit_tree` callback Godot is already walking the child
-	# list, so removing a splash root here is unsafe. Explicit runtime shutdown
-	# can detach its resources; parent teardown will reclaim the nodes itself.
-	if is_inside_tree() and not _tearing_down:
-		for effect_root in _splash_pool + _active_splash_roots:
-			if is_instance_valid(effect_root):
-				_clear_splash_root(effect_root)
-				effect_root.queue_free()
+	# Splash roots are owned by this lake. During parent teardown we detach their
+	# GPU resources but leave node removal to Godot's normal child traversal;
+	# during runtime shutdown it is safe to free the pooled roots immediately.
+	for effect_root in _splash_pool + _active_splash_roots:
+		if not is_instance_valid(effect_root):
+			continue
+		_clear_splash_root(effect_root, not _tearing_down)
+		if not _tearing_down:
+			effect_root.queue_free()
 	_splash_pool.clear()
 	_active_splash_roots.clear()
 	for tween in _splash_tweens:
@@ -430,7 +431,7 @@ func _obtain_splash_root() -> Node3D:
 	else:
 		effect_root = Node3D.new()
 		effect_root.name = "WaterSplash"
-		get_parent().add_child(effect_root)
+		add_child(effect_root)
 	effect_root.visible = true
 	_active_splash_roots.append(effect_root)
 	return effect_root
@@ -449,12 +450,14 @@ func _release_splash_root(effect_root: Node3D) -> void:
 	_splash_pool.append(effect_root)
 
 
-func _clear_splash_root(effect_root: Node3D) -> void:
+func _clear_splash_root(effect_root: Node3D, free_children := true) -> void:
 	if effect_root == null or not is_instance_valid(effect_root):
 		return
 	for child in effect_root.get_children():
 		if child is MeshInstance3D:
 			var mesh_instance := child as MeshInstance3D
+			if mesh_instance.mesh is PrimitiveMesh:
+				(mesh_instance.mesh as PrimitiveMesh).material = null
 			mesh_instance.material_override = null
 			mesh_instance.mesh = null
 		elif child is GPUParticles3D:
@@ -462,7 +465,8 @@ func _clear_splash_root(effect_root: Node3D) -> void:
 			particles.emitting = false
 			particles.process_material = null
 			particles.draw_pass_1 = null
-		child.free()
+		if free_children:
+			child.free()
 
 
 func _upload_ripples() -> void:

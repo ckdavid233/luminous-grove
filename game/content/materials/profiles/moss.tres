@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="SurfaceProfile" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://game/world/surface_profile.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/forest_leaves/albedo.jpg" id="2_albedo"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/forest_leaves/normal.jpg" id="3_normal"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/forest_leaves/roughness.jpg" id="4_roughness"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/forest_leaves/ao.jpg" id="5_ao"]
+[ext_resource type="Texture2D" path="res://content/materials/foliage/cavity.png" id="6_cavity"]
+[ext_resource type="Texture2D" path="res://content/materials/scanned/forest_leaves/height.jpg" id="7_height"]
+
+[resource]
+script = ExtResource("1_script")
+material_id = &"moss"
+surface_type = &"moss"
+albedo_texture = ExtResource("2_albedo")
+normal_texture = ExtResource("3_normal")
+roughness_texture = ExtResource("4_roughness")
+ao_texture = ExtResource("5_ao")
+cavity_texture = ExtResource("6_cavity")
+height_texture = ExtResource("7_height")
+friction = 0.64
+bounce = 0.01
+roughness = 0.91
+wetness_response = 0.82
+speed_multiplier = 0.92
+footstep_tag = &"moss"
+ripple_tag = &"soft"

@@ -326,8 +326,9 @@ func _initialize() -> void:
 	if first_streamer != null and first_streamer.has_method("shutdown"):
 		first_streamer.shutdown()
 	main.queue_free()
-	await process_frame
-	await physics_frame
+	for _frame in 30:
+		await process_frame
+		await physics_frame
 	var restored_main := main_scene.instantiate()
 	root.add_child(restored_main)
 	for _frame in 900:
@@ -354,7 +355,7 @@ func _initialize() -> void:
 	if restored_streamer.has_method("shutdown"):
 		restored_streamer.shutdown()
 		restored_main.queue_free()
-	for _frame in 30:
+	for _frame in 120:
 		await process_frame
 		await physics_frame
 	call_deferred("quit")

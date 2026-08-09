@@ -22,6 +22,33 @@ func _initialize() -> void:
 	assert(player.find_child("SurfaceProbe", true, false) != null)
 	assert(player.find_child("IK_foot_l", true, false) is SkeletonIK3D)
 	assert(player.find_child("IK_foot_r", true, false) is SkeletonIK3D)
+	player.set_physics_process(false)
+	var slope := StaticBody3D.new()
+	var slope_collision := CollisionShape3D.new()
+	var slope_shape := BoxShape3D.new()
+	slope_shape.size = Vector3(5.0, 0.2, 5.0)
+	slope_collision.shape = slope_shape
+	slope.add_child(slope_collision)
+	slope.position = Vector3(0.0, 1.6, 6.0)
+	slope.rotation.z = deg_to_rad(14.0)
+	main.add_child(slope)
+	player.global_position = Vector3(0.0, 1.8, 6.0)
+	await physics_frame
+	player.call("_update_foot_ik", 0.016)
+	var slope_normal := slope.global_basis.y.normalized()
+	var left_target := player.get_node("FootTargetL") as Node3D
+	var right_target := player.get_node("FootTargetR") as Node3D
+	assert(
+		left_target.global_basis.y.dot(slope_normal) > 0.96
+		and right_target.global_basis.y.dot(slope_normal) > 0.96,
+		"Foot IK targets must align to the contacted slope normal",
+	)
+	slope.queue_free()
+	slope_collision.shape = null
+	slope = null
+	slope_collision = null
+	slope_shape = null
+	await process_frame
 
 	var footprints := main.get_node("Footprints")
 	assert(footprints.has_method("active_count"))
