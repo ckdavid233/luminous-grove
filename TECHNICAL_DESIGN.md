@@ -1,6 +1,6 @@
 # 《微光林地：雨的名字》技术设计
 
-版本：0.6.1-alpha  
+版本：0.6.2-alpha
 基线：Godot 4.7.1 Stable、Forward+、Jolt Physics  
 校准日期：2026-08-01
 
@@ -215,7 +215,7 @@ SaveService 是唯一 autoload。schema v2 payload：
 ```json
 {
   "schema_version": 2,
-  "build_version": "0.6.1-alpha",
+  "build_version": "0.6.2-alpha",
   "saved_at_unix": 0,
   "current_level_id": "luminous_grove",
   "player_position": [0, 1, 0],

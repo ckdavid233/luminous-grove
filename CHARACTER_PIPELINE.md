@@ -1,6 +1,6 @@
 # 写实角色管线
 
-版本：0.6.1-alpha  
+版本：0.6.2-alpha
 角色：霁（Ji）  
 目标：在 Renoir 集成显卡可承受的范围内，建立可重复、可验证、可继续换装和重定向
 动画的写实人形基础。
@@ -11,12 +11,13 @@
 |---|---:|
 | Blender 源文件 | `art_source/realistic_player/ji_realistic.blend` |
 | Godot glTF | `game/content/characters/realistic_player/ji_realistic.glb` |
-| GLB 大小 | 23,186,916 bytes |
+| GLB 大小 | 23,192,992 bytes |
 | 网格 | 14 |
 | Blender 源顶点 | 21,744 |
 | Godot 导入三角面 | 39,840 |
 | 骨骼 | 53 |
 | 源动画 | Idle / Walk / Run / Jump / Fall / Land / Interact |
+| 骨骼轨道 | 每套动作 19 条（含二级脚踝、头部和手部运动） |
 | 运行时状态 | Idle / Walk / Run / Jump / Fall / Land / Interact |
 | 材质／表面 | 14；含身体、眼睛、头发、服装、鞋与旅行饰件 |
 
@@ -78,7 +79,7 @@ SHA256 b542127a8e25547c7c29c19f2d1d2adb9a664c80396ecd694095dbc8028a0107
 2. 创建专用 Godot 导出副本。
 3. 烘焙形态和修改器、删除 Helper。
 4. 应用深青服装、黑发等美术定向。
-5. 程序化建立 Idle、Walk、Run、Jump、Fall、Land、Interact Action。
+5. 程序化建立 Idle、Walk、Run、Jump、Fall、Land、Interact Action，并添加二级重叠运动。
 6. 保存 `.blend`。
 7. 导出单文件 `.glb`。
 8. 渲染角色预览。
@@ -145,7 +146,7 @@ Idle/Walk/Run -> Interact -> Idle/Walk/Run
 - 一个共享 Skeleton3D。
 - 53 根指定骨骼，包含 Root、骨盆、脊柱、头、四肢。
 - 14 个网格、14 个表面和 39,840 个导入三角面。
-- 7 套独立动画，每套 14 条骨骼轨道且时长正确。
+- 7 套独立动画，每套 19 条骨骼轨道且时长正确。
 - AnimationTree 从 Idle 启动，并能进入 Walk、Run、Jump、Fall、Land、Interact。
 - 腰带、斜挎带、记忆袋、扣件和雨纹饰件在 Run／Jump／Interact 中跟随骨架。
 - 皮肤、眼睛、头发和牙齿分别命中运行时材质规则。

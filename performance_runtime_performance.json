@@ -1,10 +1,10 @@
 {
-	"average_fps": 38.4,
-	"average_frame_ms": 26.074,
+	"average_fps": 38.8,
+	"average_frame_ms": 25.782,
 	"draw_calls": 247,
-	"p95_frame_ms": 27.191,
-	"p99_frame_ms": 27.481,
-	"primitives": 487648,
+	"p95_frame_ms": 26.82,
+	"p99_frame_ms": 27.165,
+	"primitives": 495760,
 	"quality_profile": "performance",
 	"renderer": "forward_plus",
 	"resolution": [
@@ -12,5 +12,5 @@
 		720
 	],
 	"sample_frames": 600,
-	"video_memory_bytes": 767002800
+	"video_memory_bytes": 773468464
 }

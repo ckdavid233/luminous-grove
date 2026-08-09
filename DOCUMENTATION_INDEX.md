@@ -1,6 +1,6 @@
 # 《微光林地：雨的名字》文档总索引
 
-版本：0.6.1-alpha  
+版本：0.6.2-alpha
 校准日期：2026-08-01  
 权威实现目录：`/home/cenkai/game_dev_plan/game`
 

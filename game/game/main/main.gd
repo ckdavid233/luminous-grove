@@ -34,6 +34,9 @@ const RAIN_EYE_ECHO_PATH := (
 const GROUND_ALBEDO := preload(
 	"res://content/environments/ground/forest_ground_albedo.png"
 )
+const GROUND_ALBEDO_V2 := preload(
+	"res://content/environments/ground/forest_ground_albedo_v2.png"
+)
 const GROUND_NORMAL := preload(
 	"res://content/environments/ground/forest_ground_normal.png"
 )
@@ -154,7 +157,7 @@ func _run_release_smoke() -> void:
 	)
 	if success:
 		print(
-			"RELEASE_SMOKE_OK build=0.6.1-alpha campaign=6 quality=high "
+			"RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high "
 			+ "echo_async=ready"
 		)
 		get_tree().quit(0)
@@ -1133,7 +1136,7 @@ func _create_pause_ui(canvas: CanvasLayer) -> void:
 	title.add_theme_color_override("font_color", Color("e9fff4"))
 	layout.add_child(title)
 	var version := Label.new()
-	version.text = "雨之名  v0.6.1-alpha"
+	version.text = "雨之名  v0.6.2-alpha"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version.add_theme_font_size_override("font_size", 15)
 	version.add_theme_color_override("font_color", Color(0.66, 0.84, 0.8, 0.8))
@@ -2512,7 +2515,7 @@ func _standard_material(color: Color, roughness: float) -> StandardMaterial3D:
 func _ground_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/forest_terrain.gdshader")
-	material.set_shader_parameter("albedo_texture", GROUND_ALBEDO)
+	material.set_shader_parameter("albedo_texture", GROUND_ALBEDO_V2)
 	material.set_shader_parameter("normal_texture", GROUND_NORMAL)
 	material.set_shader_parameter("roughness_texture", GROUND_ROUGHNESS)
 	return material

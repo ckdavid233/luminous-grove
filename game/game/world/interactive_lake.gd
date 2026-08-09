@@ -158,29 +158,41 @@ func _create_surface_splash(
 	get_parent().add_child(effect_root)
 	effect_root.global_position = position + Vector3.UP * 0.1
 
-	var ring := MeshInstance3D.new()
-	var ring_mesh := TorusMesh.new()
-	ring_mesh.inner_radius = 0.42
-	ring_mesh.outer_radius = 0.48
-	ring_mesh.rings = 24
-	ring_mesh.ring_segments = 8
-	var ring_material := StandardMaterial3D.new()
-	ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	ring_material.albedo_color = Color(0.63, 0.96, 0.94, 0.72)
-	ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	ring_material.emission_enabled = true
-	ring_material.emission = Color(0.28, 0.82, 0.8)
-	ring_material.emission_energy_multiplier = 0.92
-	ring_material.roughness = 0.18
-	ring_mesh.material = ring_material
-	ring.mesh = ring_mesh
-	ring.scale = Vector3.ONE * 0.28
-	effect_root.add_child(ring)
+	var rings: Array[MeshInstance3D] = []
+	var ring_materials: Array[StandardMaterial3D] = []
+	for ring_index in 3:
+		var ring := MeshInstance3D.new()
+		ring.name = "SplashRing_%d" % (ring_index + 1)
+		var ring_mesh := TorusMesh.new()
+		ring_mesh.inner_radius = 0.38 + ring_index * 0.12
+		ring_mesh.outer_radius = 0.425 + ring_index * 0.12
+		ring_mesh.rings = 28
+		ring_mesh.ring_segments = 10
+		var ring_material := StandardMaterial3D.new()
+		ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		ring_material.albedo_color = Color(
+			0.63,
+			0.96,
+			0.94,
+			0.74 - ring_index * 0.14,
+		)
+		ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		ring_material.emission_enabled = true
+		ring_material.emission = Color(0.28, 0.82, 0.8)
+		ring_material.emission_energy_multiplier = 0.92 - ring_index * 0.16
+		ring_material.roughness = 0.18
+		ring_mesh.material = ring_material
+		ring.mesh = ring_mesh
+		ring.scale = Vector3.ONE * (0.22 + ring_index * 0.04)
+		ring.rotation.y = randf_range(-0.18, 0.18)
+		effect_root.add_child(ring)
+		rings.append(ring)
+		ring_materials.append(ring_material)
 
 	var particles := GPUParticles3D.new()
 	particles.name = "SplashDroplets"
 	particles.one_shot = true
-	particles.amount = maxi(18, int(32.0 * strength))
+	particles.amount = maxi(28, int(46.0 * strength))
 	particles.lifetime = 0.86
 	particles.explosiveness = 0.95
 	particles.randomness = 0.42
@@ -217,8 +229,10 @@ func _create_surface_splash(
 		tween.set_parallel(true)
 		tween.set_trans(Tween.TRANS_QUAD)
 		tween.set_ease(Tween.EASE_OUT)
-		tween.tween_property(ring, "scale", Vector3.ONE * (1.25 + strength * 0.45), 0.72)
-		tween.tween_property(ring_material, "albedo_color:a", 0.0, 0.72)
+		for ring_index in rings.size():
+			var ring_scale := 1.18 + strength * 0.42 + ring_index * 0.14
+			tween.tween_property(rings[ring_index], "scale", Vector3.ONE * ring_scale, 0.72 + ring_index * 0.08)
+			tween.tween_property(ring_materials[ring_index], "albedo_color:a", 0.0, 0.72 + ring_index * 0.08)
 		tween.chain().tween_callback(effect_root.queue_free)
 
 

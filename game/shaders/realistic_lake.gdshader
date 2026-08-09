@@ -10,6 +10,7 @@ uniform vec3 deep_color : source_color = vec3(0.018, 0.12, 0.18);
 uniform vec3 reflection_color : source_color = vec3(0.32, 0.56, 0.61);
 uniform vec3 foam_color : source_color = vec3(0.78, 0.93, 0.88);
 uniform vec3 caustic_color : source_color = vec3(0.27, 0.68, 0.62);
+uniform vec3 ripple_color : source_color = vec3(0.47, 0.91, 0.86);
 
 group_uniforms optics;
 uniform float absorption = 0.72;
@@ -37,10 +38,12 @@ uniform float interaction_time = 0.0;
 uniform float ripple_speed : hint_range(0.1, 4.0) = 1.65;
 uniform float ripple_amplitude : hint_range(0.0, 0.3) = 0.065;
 uniform float ripple_lifetime : hint_range(0.5, 8.0) = 3.8;
+uniform float ripple_glow : hint_range(0.0, 2.0) = 0.72;
 
 varying vec3 world_position;
 varying float wave_elevation;
 varying float interaction_strength;
+varying float interaction_crest;
 
 
 float hash21(vec2 point) {
@@ -94,6 +97,21 @@ float interaction_height(vec2 point, float time) {
 }
 
 
+float interaction_crest_mask(vec2 point, float time) {
+	float mask = 0.0;
+	for (int index = 0; index < 16; index++) {
+		float age = time - ripple_start_times[index];
+		float active = step(0.0, age) * step(age, ripple_lifetime);
+		float distance_from_origin = distance(point, ripple_origins[index]);
+		float front_distance = distance_from_origin - age * ripple_speed;
+		float crest = exp(-front_distance * front_distance * 15.0);
+		float inner_ring = exp(-(front_distance + 0.18) * (front_distance + 0.18) * 24.0);
+		mask = max(mask, max(crest, inner_ring * 0.62) * exp(-age * 0.38) * active);
+	}
+	return clamp(mask, 0.0, 1.0);
+}
+
+
 void vertex() {
 	float time = TIME * wave_speed;
 	vec2 undeformed_world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xz;
@@ -109,6 +127,7 @@ void vertex() {
 	world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	wave_elevation = height;
 	interaction_strength = clamp(abs(interaction) * 12.0, 0.0, 1.0);
+	interaction_crest = interaction_crest_mask(undeformed_world_position, interaction_time);
 }
 
 
@@ -146,7 +165,8 @@ void fragment() {
 	float edge_mask = smoothstep(0.84, 0.985, radial);
 	edge_mask *= smoothstep(0.44, 0.76, foam_noise + edge_mask * 0.2);
 	float crest_mask = smoothstep(0.095, 0.15, wave_elevation) * foam_noise * 0.18;
-	float foam = clamp((edge_mask + crest_mask) * foam_intensity, 0.0, 1.0);
+	float ripple_foam = smoothstep(0.22, 0.72, interaction_crest) * (0.62 + foam_noise * 0.38);
+	float foam = clamp((edge_mask + crest_mask + ripple_foam * 0.66) * foam_intensity, 0.0, 1.0);
 
 	float fresnel = pow(1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0), fresnel_power);
 	fresnel = mix(0.025, 1.0, fresnel);
@@ -154,9 +174,12 @@ void fragment() {
 	vec3 final_color = mix(transmitted, reflected, fresnel * 0.62);
 	final_color = mix(final_color, foam_color, foam);
 	final_color = mix(final_color, foam_color, interaction_strength * 0.22);
+	float ring_highlight = interaction_crest * ripple_glow;
+	final_color += ripple_color * ring_highlight * 0.17;
 
 	ALBEDO = final_color;
-	ROUGHNESS = mix(surface_roughness, 0.72, foam);
+	ROUGHNESS = mix(surface_roughness, 0.72, max(foam, ring_highlight * 0.35));
 	SPECULAR = 0.92;
 	METALLIC = 0.0;
+	EMISSION = ripple_color * ring_highlight * 0.08;
 }

@@ -24,7 +24,7 @@ func _initialize() -> void:
 	assert(save_service.save_game(&"echo_archive", player) == OK)
 	var first: Dictionary = save_service.load_game()
 	assert(first.schema_version == 2)
-	assert(first.build_version == "0.6.1-alpha")
+	assert(first.build_version == "0.6.2-alpha")
 	assert(first.saved_at_unix > 0)
 	assert(first.player_position == [2.5, 1.25, -8.0])
 	assert(first.player_rotation.size() == 3)

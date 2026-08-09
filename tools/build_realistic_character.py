@@ -371,6 +371,108 @@ def create_action(armature, name, end_frame, poses):
     action.frame_end = end_frame
 
 
+def add_secondary_motion(armature):
+    """Add small overlapping motion so the clips do not read as rigid poses."""
+    key_sets = {
+        "Idle": [
+            (1, "neck_01", (radians(-0.8), radians(-1.4), radians(-0.8))),
+            (1, "head", (radians(-0.3), radians(1.0), radians(-0.6))),
+            (24, "neck_01", (radians(0.7), radians(1.2), radians(0.7))),
+            (24, "head", (radians(0.4), radians(-0.8), radians(0.5))),
+            (48, "neck_01", (radians(-0.8), radians(-1.4), radians(-0.8))),
+            (48, "head", (radians(-0.3), radians(1.0), radians(-0.6))),
+        ],
+        "Walk": [
+            (1, "foot_l", (radians(-4.0), 0.0, radians(-2.0))),
+            (1, "foot_r", (radians(4.0), 0.0, radians(2.0))),
+            (6, "foot_l", (radians(7.0), 0.0, radians(1.0))),
+            (6, "foot_r", (radians(-7.0), 0.0, radians(-1.0))),
+            (12, "foot_l", (radians(-5.0), 0.0, radians(2.0))),
+            (12, "foot_r", (radians(5.0), 0.0, radians(-2.0))),
+            (18, "foot_l", (radians(7.0), 0.0, radians(1.0))),
+            (18, "foot_r", (radians(-7.0), 0.0, radians(-1.0))),
+            (24, "foot_l", (radians(-4.0), 0.0, radians(-2.0))),
+            (24, "foot_r", (radians(4.0), 0.0, radians(2.0))),
+            (1, "neck_01", (radians(1.0), 0.0, radians(-1.0))),
+            (12, "neck_01", (radians(-1.0), 0.0, radians(1.0))),
+            (24, "neck_01", (radians(1.0), 0.0, radians(-1.0))),
+        ],
+        "Run": [
+            (1, "foot_l", (radians(-8.0), 0.0, radians(-3.0))),
+            (1, "foot_r", (radians(8.0), 0.0, radians(3.0))),
+            (5, "foot_l", (radians(12.0), 0.0, radians(2.0))),
+            (5, "foot_r", (radians(-12.0), 0.0, radians(-2.0))),
+            (10, "foot_l", (radians(-10.0), 0.0, radians(3.0))),
+            (10, "foot_r", (radians(10.0), 0.0, radians(-3.0))),
+            (14, "foot_l", (radians(12.0), 0.0, radians(2.0))),
+            (14, "foot_r", (radians(-12.0), 0.0, radians(-2.0))),
+            (18, "foot_l", (radians(-8.0), 0.0, radians(-3.0))),
+            (18, "foot_r", (radians(8.0), 0.0, radians(3.0))),
+            (1, "neck_01", (radians(2.0), 0.0, radians(-1.5))),
+            (10, "neck_01", (radians(-1.5), 0.0, radians(1.5))),
+            (18, "neck_01", (radians(2.0), 0.0, radians(-1.5))),
+        ],
+        "Jump": [
+            (1, "foot_l", (radians(-8.0), 0.0, radians(-2.0))),
+            (1, "foot_r", (radians(-8.0), 0.0, radians(2.0))),
+            (7, "foot_l", (radians(12.0), 0.0, radians(-1.0))),
+            (7, "foot_r", (radians(12.0), 0.0, radians(1.0))),
+            (14, "foot_l", (radians(7.0), 0.0, radians(-1.0))),
+            (14, "foot_r", (radians(7.0), 0.0, radians(1.0))),
+            (20, "foot_l", (radians(3.0), 0.0, radians(-1.0))),
+            (20, "foot_r", (radians(3.0), 0.0, radians(1.0))),
+        ],
+        "Fall": [
+            (1, "neck_01", (radians(2.0), 0.0, radians(-1.0))),
+            (12, "neck_01", (radians(-2.0), 0.0, radians(1.0))),
+            (24, "neck_01", (radians(2.0), 0.0, radians(-1.0))),
+            (1, "foot_l", (radians(4.0), 0.0, radians(-2.0))),
+            (1, "foot_r", (radians(4.0), 0.0, radians(2.0))),
+            (24, "foot_l", (radians(10.0), 0.0, radians(-2.0))),
+            (24, "foot_r", (radians(10.0), 0.0, radians(2.0))),
+        ],
+        "Land": [
+            (1, "foot_l", (radians(-12.0), 0.0, radians(-2.0))),
+            (1, "foot_r", (radians(-12.0), 0.0, radians(2.0))),
+            (7, "foot_l", (radians(5.0), 0.0, radians(-1.0))),
+            (7, "foot_r", (radians(5.0), 0.0, radians(1.0))),
+            (14, "foot_l", (radians(1.0), 0.0, radians(-1.0))),
+            (14, "foot_r", (radians(1.0), 0.0, radians(1.0))),
+        ],
+        "Interact": [
+            (1, "hand_l", (radians(-2.0), radians(-2.0), radians(-2.0))),
+            (1, "hand_r", (radians(-2.0), radians(2.0), radians(2.0))),
+            (15, "hand_l", (radians(-7.0), radians(-4.0), radians(-4.0))),
+            (15, "hand_r", (radians(-7.0), radians(4.0), radians(4.0))),
+            (27, "hand_l", (radians(-5.0), radians(-3.0), radians(-3.0))),
+            (27, "hand_r", (radians(-5.0), radians(3.0), radians(3.0))),
+            (42, "hand_l", (radians(-2.0), radians(-2.0), radians(-2.0))),
+            (42, "hand_r", (radians(-2.0), radians(2.0), radians(2.0))),
+        ],
+    }
+    for action_name, entries in key_sets.items():
+        action = bpy.data.actions.get(action_name)
+        if action is None:
+            continue
+        armature.animation_data.action = action
+        for frame, bone_name, rotation in entries:
+            bone = armature.pose.bones.get(bone_name)
+            if bone is None:
+                continue
+            bone.rotation_mode = "XYZ"
+            bone.rotation_euler = rotation
+            bone.keyframe_insert(
+                data_path="rotation_euler",
+                frame=frame,
+                group=bone_name,
+            )
+        for fcurve in action.fcurves:
+            for point in fcurve.keyframe_points:
+                point.interpolation = "BEZIER"
+                point.handle_left_type = "AUTO_CLAMPED"
+                point.handle_right_type = "AUTO_CLAMPED"
+
+
 def create_character_actions(export_root):
     if export_root.type != "ARMATURE":
         raise RuntimeError("Export root must be an armature")
@@ -888,6 +990,8 @@ def create_character_actions(export_root):
             },
         ],
     )
+
+    add_secondary_motion(export_root)
 
     bpy.context.scene.render.fps = 24
     export_root.animation_data.action = bpy.data.actions["Idle"]

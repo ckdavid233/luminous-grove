@@ -1,7 +1,7 @@
 # 测试与验收规范
 
-版本：0.6.1-alpha  
-最近全量回归：2026-08-01
+版本：0.6.2-alpha
+最近全量回归：2026-08-09
 
 ## 一键回归
 
@@ -28,7 +28,7 @@ Godot 编辑器级解析检查：
 |---|---|
 | `environment_capability_test.gd` | Forward+ 环境能力与关键效果属性 |
 | `environment_geometry_test.gd` | 65×65 地形、54 棵树、15 个岸石碰撞、16,000 草簇与椭圆湖面 |
-| `realistic_character_import_test.gd` | 14 网格、53 骨、39,840 三角面、14 材质、7 套动画 |
+| `realistic_character_import_test.gd` | 14 网格、53 骨、39,840 三角面、14 材质、7 套动画、19 条骨骼轨道 |
 | `player_import_test.gd` | 角色场景和 7 套动画资源可导入 |
 | `player_animation_test.gd` | Idle/Walk/Run/Jump/Fall/Land/Interact 状态与写实材质规则 |
 | `movement_regression_test.gd` | 平滑加速、步行／冲刺速度、跳跃／坠落／落地状态和回到 Idle |

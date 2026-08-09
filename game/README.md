@@ -1,6 +1,6 @@
 # Luminous Grove: The Name of Rain
 
-版本：0.6.1-alpha  
+版本：0.6.2-alpha
 中文名：《微光林地：雨的名字》  
 引擎：Godot 4.7.1 Stable
 
@@ -14,7 +14,7 @@
 发行目录：
 
 ```text
-/home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.1/
+/home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.2/
 ```
 
 ZIP 解压后必须把以下两个文件放在同一目录：
@@ -25,9 +25,9 @@ LuminousGrove.pck
 ```
 
 双击 `LuminousGrove.exe`。这是 64 位便携版，没有安装器、自动更新或代码签名。首次运行
-若 Windows SmartScreen 提示未知发布者，应只从自己校验过 SHA256 的包继续。当前 Linux
-开发机已完成官方模板导出、PE32+ 静态识别和 PCK 运行自检，但没有 Windows/Wine，真实
-Windows 驱动、全屏和手柄热插拔仍需在目标机验证。
+若 Windows SmartScreen 提示未知发布者，应只从自己校验过 SHA256 的包继续。0.6.1 基线包已
+完成官方模板导出、PE32+ 静态识别和 PCK 运行自检；0.6.2 精细化资产的 Windows 包需重新
+导出，且没有 Windows/Wine，真实 Windows 驱动、全屏和手柄热插拔仍需在目标机验证。
 
 详细说明见 `../WINDOWS_BUILD_AND_RELEASE.md`。
 
@@ -105,21 +105,21 @@ Godot 编辑器可直接打开：
 ```bash
 /home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64 \
   --headless \
-  --main-pack /home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.1/LuminousGrove.pck \
+  --main-pack /home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.2/LuminousGrove.pck \
   -- --release-smoke
 ```
 
 成功标志：
 
 ```text
-RELEASE_SMOKE_OK build=0.6.1-alpha campaign=6 quality=high echo_async=ready
+RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 ```
 
 ## 本机林地基准
 
 Ryzen 5 PRO 4650U / 15 GiB / Renoir 集显，1280×720、真实 Wayland/Vulkan 表面：
 
-- 当前高画质：13.6 FPS，P95 75.260 ms（画面验收档）。
+- 当前高画质：13.8 FPS，P95 73.491 ms（画面验收档）。
 - 当前性能档：38.4 FPS，P95 27.191 ms（该集显的建议游玩档）。
 - 0.6.0 章节参考：行灯之城 14.3–14.4 FPS，雨眼 31.2–32.0 FPS；本次林地重构后未重跑。
 - 城市进入雨眼后完整关卡常驻数为 2。

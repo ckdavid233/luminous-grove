@@ -6,7 +6,7 @@
 /home/cenkai/game_dev_plan/art_source/player/create_player.py
 ```
 
-它只用于保留最初的 glTF、骨骼和 Idle／Walk／Interact 导入实验。0.6.1-alpha 运行时已经
+它只用于保留最初的 glTF、骨骼和 Idle／Walk／Interact 导入实验。0.6.2-alpha 运行时已经
 改用：
 
 ```text

@@ -32,7 +32,11 @@ void fragment() {
 	float upward = clamp(NORMAL.y * 0.5 + 0.5, 0.0, 1.0);
 	vec3 shaded = mix(shadow_color, mid_color, upward);
 	shaded = mix(shaded, sun_color, height_tint * (0.18 + variation * 0.2));
-	ALBEDO = shaded * mix(0.82, 1.13, variation);
+	float vein = 1.0 - smoothstep(0.0, 0.07, abs(UV.x - 0.5));
+	float edge = smoothstep(0.02, 0.16, min(UV.x, 1.0 - UV.x));
+	shaded = mix(shaded * 0.72, shaded, edge);
+	shaded = mix(shaded, sun_color * 0.82, vein * 0.16);
+	ALBEDO = shaded * mix(0.84, 1.12, variation);
 	ROUGHNESS = 0.84;
 	SPECULAR = 0.28;
 	BACKLIGHT = mid_color * 0.34;

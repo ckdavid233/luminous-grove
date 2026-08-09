@@ -84,6 +84,7 @@ def add_leaf_cluster(location: Vector, scale: Vector, rotation: Vector, material
 def add_leaf_cards(centers: list[Vector], material, rng: random.Random):
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int]] = []
+    uv_values: list[tuple[float, float]] = []
     for center in centers:
         for _index in range(52):
             card_center = center + Vector(
@@ -105,29 +106,51 @@ def add_leaf_cards(centers: list[Vector], material, rng: random.Random):
                 right = Vector((1.0, 0.0, 0.0))
             right.normalize()
             up = right.cross(normal).normalized()
-            width = rng.uniform(0.045, 0.085)
-            length = rng.uniform(0.11, 0.21)
-            ridge_depth = rng.uniform(0.012, 0.028)
+            width = rng.uniform(0.052, 0.092)
+            length = rng.uniform(0.13, 0.23)
+            ridge_depth = rng.uniform(0.012, 0.026)
             base = len(vertices)
+            # A six-sided, slightly folded lanceolate leaf reads as a leaf at
+            # close range instead of the old diamond-shaped card. The center
+            # ridge gives the shader a stable normal break for soft highlights.
             vertices.extend(
                 [
                     tuple(card_center - up * length),
-                    tuple(card_center - right * width + normal * ridge_depth * 0.28),
+                    tuple(card_center - up * length * 0.32 - right * width),
+                    tuple(card_center + up * length * 0.42 - right * width * 0.68),
                     tuple(card_center + up * length),
-                    tuple(card_center + right * width + normal * ridge_depth * 0.28),
+                    tuple(card_center + up * length * 0.42 + right * width * 0.68),
+                    tuple(card_center - up * length * 0.32 + right * width),
                     tuple(card_center + normal * ridge_depth),
                 ]
             )
             faces.extend(
                 [
-                    (base, base + 1, base + 4),
-                    (base + 1, base + 2, base + 4),
-                    (base + 2, base + 3, base + 4),
-                    (base + 3, base, base + 4),
+                    (base, base + 1, base + 6),
+                    (base + 1, base + 2, base + 6),
+                    (base + 2, base + 3, base + 6),
+                    (base + 3, base + 4, base + 6),
+                    (base + 4, base + 5, base + 6),
+                    (base + 5, base, base + 6),
+                ]
+            )
+            uv_values.extend(
+                [
+                    (0.5, 0.0),
+                    (0.08, 0.28),
+                    (0.22, 0.68),
+                    (0.5, 1.0),
+                    (0.78, 0.68),
+                    (0.92, 0.28),
+                    (0.5, 0.52),
                 ]
             )
     mesh = bpy.data.meshes.new("IndividualLeaves")
     mesh.from_pydata(vertices, [], faces)
+    mesh.uv_layers.new(name="UVMap")
+    for polygon in mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            mesh.uv_layers[0].data[loop_index].uv = uv_values[mesh.loops[loop_index].vertex_index]
     mesh.materials.append(material)
     for polygon in mesh.polygons:
         polygon.use_smooth = True

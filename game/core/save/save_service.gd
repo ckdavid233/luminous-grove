@@ -4,7 +4,7 @@ const SAVE_PATH := "user://save_slot_1.json"
 const BACKUP_PATH := "user://save_slot_1.backup.json"
 const TEMP_PATH := "user://save_slot_1.tmp"
 const SCHEMA_VERSION := 2
-const BUILD_VERSION := "0.6.1-alpha"
+const BUILD_VERSION := "0.6.2-alpha"
 
 var last_load_used_backup := false
 

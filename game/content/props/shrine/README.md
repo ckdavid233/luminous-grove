@@ -12,7 +12,7 @@
 content/props/shrine/stylized_shrine.glb
 ```
 
-当前 0.6.1-alpha 状态：
+当前 0.6.2-alpha 状态：
 
 - 约 3 米高的低边数几何。
 - 两种石材材质与一组发光水晶材质。

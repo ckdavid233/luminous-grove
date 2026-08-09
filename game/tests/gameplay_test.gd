@@ -261,7 +261,7 @@ func _initialize() -> void:
 	assert(save_error == OK, "Save must complete")
 	var state: Dictionary = save_service.load_game()
 	assert(state.get("schema_version") == 2, "Save schema must be versioned")
-	assert(state.get("build_version") == "0.6.1-alpha")
+	assert(state.get("build_version") == "0.6.2-alpha")
 	assert(state.get("player_rotation", []).size() == 3)
 	assert(state.get("world_state", {}).get("grove_wind_bell", {}).get("rung") == true)
 	assert(state.get("world_state", {}).get("forest_shrine", {}).get("activated") == true)
