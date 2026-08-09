@@ -28,6 +28,19 @@ var _metal_material: StandardMaterial3D
 var _window_material: StandardMaterial3D
 
 
+func _exit_tree() -> void:
+	_stone_material = null
+	_wall_material = null
+	_metal_material = null
+	_window_material = null
+	_traces.clear()
+	_relays.clear()
+	_testimony_choices.clear()
+	_rain_eye_gate = null
+	_train = null
+	_rng = null
+
+
 func _ready() -> void:
 	_visual_layer = ECHO_VISUAL_LAYER if is_echo else PRESENT_VISUAL_LAYER
 	_rng.seed = 0xEC401 if is_echo else 0xC17A

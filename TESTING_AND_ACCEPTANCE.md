@@ -12,7 +12,7 @@ bash /home/cenkai/game_dev_plan/tools/run_regression.sh
 通过标志：
 
 ```text
-REGRESSION_OK tests=21
+REGRESSION_OK tests=23
 ```
 
 Godot 编辑器级解析检查：
@@ -22,7 +22,7 @@ Godot 编辑器级解析检查：
   --headless --path /home/cenkai/game_dev_plan/game --editor --quit
 ```
 
-## 21 项自动化覆盖
+## 23 项自动化覆盖
 
 | 测试 | 主要验收 |
 |---|---|
@@ -30,7 +30,7 @@ Godot 编辑器级解析检查：
 | `environment_geometry_test.gd` | 65×65 地形、54 棵树、15 个岸石碰撞、16,000 草簇与椭圆湖面 |
 | `realistic_character_import_test.gd` | 14 网格、53 骨、39,840 三角面、14 材质、7 套动画、19 条骨骼轨道 |
 | `player_import_test.gd` | 角色场景和 7 套动画资源可导入 |
-| `player_animation_test.gd` | Idle/Walk/Run/Jump/Fall/Land/Interact 状态与写实材质规则 |
+| `player_animation_test.gd` | Idle/Walk/Run/Jump/Fall/Land/Interact 状态、写实材质和动画相位脚步事件 |
 | `movement_regression_test.gd` | 平滑加速、步行／冲刺速度、跳跃／坠落／落地状态和回到 Idle |
 | `save_service_test.gd` | schema v2、原子替换、备份恢复、v1 迁移 |
 | `smoke_test.gd` | 主场景、角色、神龛、风铃和异步 Echo 加载 |
@@ -38,6 +38,8 @@ Godot 编辑器级解析检查：
 | `jolt_physics_test.gd` | 独立线程、连续碰撞、刚体冲量、档案配重机关 |
 | `cinematic_director_test.gd` | 过场开始、字幕、跳过和结束恢复 |
 | `interactive_water_test.gd` | 空中移动无脚步波纹、入水／出水状态、扩散环与水滴效果 |
+| `material_library_test.gd` | MaterialProfile 清单、6 张 PBR 贴图完整性、扫描 CC0 运行资源和表面摩擦关系 |
+| `surface_interaction_test.gd` | SurfaceProbe、PhysicsMaterial、脚印池、双脚 IK、32 槽水纹事件接口 |
 | `presentation_test.gd` | PBR 套装、粒子图集和程序音频 |
 | `quality_settings_test.gd` | 三档画质、默认高画质和暂停菜单 |
 | `input_regression_test.gd` | 真实 Escape、暂停中真实鼠标点击、画质按钮和真实 E 交互 |
@@ -46,7 +48,7 @@ Godot 编辑器级解析检查：
 | `lantern_city_level_test.gd` | 双时相桥、列车、16 刚体、3 残响、4 回路、2 证词 |
 | `rain_eye_level_test.gd` | 7 段道路、14 刚体、3 印记、3 试炼、3 结局 |
 | `narrative_finale_test.gd` | 三结局、潮汐门槛、campaign v6 与旧档迁移 |
-| `gameplay_test.gd` | 从风铃到潮汐结局、章节流送、保存和完成态恢复 |
+| `gameplay_test.gd` | 从真实附近风铃交互到潮汐结局、章节流送、保存和完成态恢复 |
 
 ## 关键通过结果
 
@@ -61,15 +63,19 @@ Godot 编辑器级解析检查：
 
 ## 性能测试规则
 
-纯 `--headless` 会把 Godot 4.7 降为 64×64 且 Draw Call 为 0，此结果必须作废。
+纯 `--headless` 会把 Godot 4.7 降为 64×64 且 Draw Call 为 0，此结果只能作为 CPU 冒烟，
+不得用于 GPU 验收。
 正式性能数据必须同时满足：
 
 1. 日志明确显示 `Vulkan ... Forward+` 和目标 GPU；
-2. `resolution=[1280,720]`；
+2. `actual_resolution=[1280,720]`（同时保留 `requested_resolution`）；
 3. Draw calls 和 primitives 大于 0；
 4. Vulkan surface 无创建失败；
 5. 明确指定并在结果中记录高画质或性能档；
 6. 保存原始 JSON。
+
+结果中的 `measurement_mode` 必须为 `real_vulkan` 才能进入性能报告；
+`headless_cpu_smoke` 只证明测试脚本和资源加载可完成。
 
 入口：
 
@@ -86,7 +92,7 @@ Windows ZIP 发布前必须满足：
 - `file` 识别为 PE32+ x86-64 GUI executable。
 - EXE 与 PCK 都存在，PCK 不是旧开发包。
 - PCK 在 Linux 同版本 Godot 中通过 `--release-smoke`，确认版本、campaign v6、默认高画质
-  和 Echo Ruins 异步加载；21 项完整回归在未过滤的工程目录单独执行。
+  和 Echo Ruins 异步加载；23 项完整回归在未过滤的工程目录单独执行。
 - ZIP 可无错误列出与解压。
 - 生成 SHA-256 清单和构建清单。
 - 不包含 `tests/`、`.godot/`、Blender 源文件和开发工具。

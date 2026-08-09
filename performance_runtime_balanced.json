@@ -1,0 +1,23 @@
+{
+	"measurement_mode": "headless_cpu_smoke",
+	"actual_resolution": [
+		64,
+		64
+	],
+	"average_fps": 144.9,
+	"average_frame_ms": 6.9,
+	"display_server": "headless",
+	"draw_calls": 0,
+	"gpu_metrics_available": false,
+	"p95_frame_ms": 7.499,
+	"p99_frame_ms": 7.659,
+	"primitives": 0,
+	"quality_profile": "balanced",
+	"renderer": "forward_plus",
+	"requested_resolution": [
+		1280,
+		720
+	],
+	"sample_frames": 600,
+	"video_memory_bytes": 0
+}

@@ -40,7 +40,10 @@ func _initialize() -> void:
 	var terrain_mesh := ground.get_node("TerrainMesh") as MeshInstance3D
 	var terrain_collision := ground.get_node("TerrainCollision") as CollisionShape3D
 	assert(terrain_mesh.mesh is ArrayMesh)
-	assert(terrain_mesh.mesh.get_faces().size() / 3 == 8192)
+	assert(
+		terrain_mesh.mesh.get_faces().size() / 3 == 32768,
+		"Terrain render mesh must use the high-density 129x129 grid",
+	)
 	assert(terrain_collision.shape is HeightMapShape3D)
 	var height_map := terrain_collision.shape as HeightMapShape3D
 	assert(height_map.map_width == 65 and height_map.map_depth == 65)
@@ -144,8 +147,9 @@ func _initialize() -> void:
 	tree_hit = null
 
 	print(
-		"ENVIRONMENT_GEOMETRY_TEST_OK terrain_triangles=8192 trees=54 "
-		+ "tree_variants=3 shore_colliders=15 grass_clumps=16000 water=dense_ellipse"
+		"ENVIRONMENT_GEOMETRY_TEST_OK terrain_triangles=32768 trees=54 "
+		+ "render_grid=129 collision_grid=65 tree_variants=3 shore_colliders=15 "
+		+ "grass_clumps=16000 water=dense_ellipse"
 	)
 	var streamer = main.get("_world_streamer")
 	for _frame in 600:
@@ -155,8 +159,10 @@ func _initialize() -> void:
 			break
 		await process_frame
 	streamer.clear_inactive_levels()
+	if streamer.has_method("shutdown"):
+		streamer.shutdown()
 	main.queue_free()
-	for _frame in 3:
+	for _frame in 30:
 		await process_frame
 		await physics_frame
 	call_deferred("quit")

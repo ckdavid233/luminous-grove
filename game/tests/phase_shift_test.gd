@@ -51,12 +51,11 @@ func _initialize() -> void:
 	assert(main.find_children("EchoRuins", "", true, false).size() == 1)
 	print("PHASE_SHIFT_TEST_OK shifts=100 resident=", streamer.get_resident_paths())
 	assert(streamer.clear_inactive_levels() == 1)
-	await process_frame
-	await physics_frame
+	if streamer.has_method("shutdown"):
+		streamer.shutdown()
 	main.queue_free()
 	await process_frame
 	await physics_frame
-	await process_frame
 	call_deferred("quit")
 
 

@@ -5,15 +5,26 @@
 引擎：Godot 4.7.1 Stable  
 渲染路径：Vulkan Forward+
 
+本轮复验记录：2026-08-10。代码已新增 MaterialProfile、动画脚步、刚体水体反馈和植被局部
+弯曲，但当前容器只有 TTY；Vulkan 可枚举到 `AMD Unknown (RADV RENOIR)`，无法创建 Wayland/X11
+surface。尝试启动临时 Xorg 时返回 `parse_vt_settings: Cannot open /dev/tty0 (Permission denied)`，
+因此本轮没有伪造新的 GPU 帧时或截图。
+
 ## 1. 结论
 
-这台设备可以完成 Godot 开发、Blender 资产处理和完整战役运行。0.6.2 精细化林地在
-1280×720 真实 Vulkan 表面下，高画质档为 13.8 FPS，性能档为 38.8 FPS。高画质用于
+这台设备可以完成 Godot 开发、Blender 资产处理和完整战役运行。最近一次有效的
+1280×720 真实 Vulkan 基线中，高画质档为 13.8 FPS，性能档为 38.8 FPS。高画质用于
 画面验收；Renoir 集显实际游玩应选择性能档，当前没有 60 FPS 结论。
 
-三档画质已经接入运行时。本次加入叶片几何、角色二级动作和交互水纹后，分别完成高画质与性能档 600 帧
-同规格基准；平衡档只验证开关逻辑。章节表保留 0.6.0 的参考数据，并明确不冒充 0.6.1
-重测结果。
+本次林地湖区材质、视觉、光照与交互改造已经完成代码和资源接入，但当前执行容器没有可用的
+Wayland/X11 显示表面，无法重新取得 GPU 帧时。因此下表的真实 Vulkan 数字保持为改造前的
+可复验基线，不能宣称已经达到计划中的高质量 P95 ≤ 41.7 ms；必须在有显示设备的目标机上重跑。
+
+三档画质已经接入运行时。章节表保留历史参考数据，并明确不冒充本次材质改造后的重测结果。
+
+本轮实际接入的高质量项还包括：扫描 PBR 的 AO/Cavity/Height 映射、湖面/神龛反射探针、32 槽
+水纹事件、脚印池、双脚 IK、浅水刚体浮力/阻力和角色/刚体近场植被弯曲。它们的 GPU 成本必须
+在有显示 surface 的设备上重新测量。
 
 ## 2. 实测设备
 
@@ -45,9 +56,9 @@ Renoir 使用共享系统内存。`Performance.RENDER_VIDEO_MEM_USED` 是 Godot 
 
 ## 4. 有效测量方法
 
-纯 `--headless` 环境会退化为 64×64、零 Draw call，不能代表实际 GPU 表现，因此该
-结果被判为无效且未写入基准。本次使用 Weston headless 的真实 Wayland/Vulkan 表面，
-让 Forward+、材质、门户和屏幕空间效果真正参与渲染。
+纯 `--headless` 环境会退化为 64×64、零 Draw call，不能代表实际 GPU 表现，因此结果只
+记录为 CPU 冒烟，不得用于 GPU 验收。有效基线使用 Weston headless 的真实 Wayland/Vulkan
+表面，让 Forward+、材质、门户和屏幕空间效果真正参与渲染；本轮容器没有该显示表面。
 
 林地基准：
 
@@ -70,17 +81,18 @@ game/tests/performance_test.gd
 game/tests/performance_chapters_test.gd
 ```
 
-机器可读原始结果：
+机器可读原始结果（`measurement_mode` 标识有效 Vulkan 或 headless 冒烟）：
 
 ```text
 /home/cenkai/game_dev_plan/performance_runtime.json
+/home/cenkai/game_dev_plan/performance_runtime_balanced.json
 /home/cenkai/game_dev_plan/performance_runtime_performance.json
 /home/cenkai/game_dev_plan/performance_chapters.json
 ```
 
 ## 5. 结果
 
-### 0.6.2 精细化林地
+### 最近一次有效真实 Vulkan 基线（材质改造前）
 
 | 指标 | 高画质 | 性能 |
 |---|---:|---:|
@@ -92,6 +104,17 @@ game/tests/performance_chapters_test.gd
 | Draw calls | 397 | 247 |
 | Primitives | 5,715,718 | 495,760 |
 | 渲染资源监视值 | 1,254,167,456 bytes | 773,468,464 bytes |
+
+### 本轮改造后的 headless CPU 冒烟（无效 GPU 指标）
+
+| 档位 | 实际分辨率 | 平均帧时间 | P95 | Draw calls | GPU 指标 |
+|---|---:|---:|---:|---:|---|
+| 高 | 64×64 | 6.900 ms | 7.526 ms | 0 | 不可用 |
+| 均衡 | 64×64 | 6.900 ms | 7.499 ms | 0 | 不可用 |
+| 性能 | 64×64 | 6.900 ms | 7.637 ms | 0 | 不可用 |
+
+这三行只用于确认测试脚本、画质切换和资源加载没有卡死；由于渲染退化，不能与上面的
+1280×720 Vulkan 帧时直接比较。
 
 ### 0.6.0 行灯之城与雨眼参考（0.6.1 未重跑）
 
@@ -116,8 +139,8 @@ resolution = 1280×720
 - 行灯之城是最重场景；独立建筑构件、灯光、湿地反射、体积雾和门户共同提高了
   Draw calls，不能只用三角面数解释性能。
 - 雨眼的 Primitives 较多但对象和材质批次数较低，因此帧率明显高于城市。
-- 0.6.2 精细化林地增加叶片几何、角色二级动作和交互波峰后，
-  高画质 primitives 明显增加；它是画面验收档，不适合 Renoir 实际游玩。
+- 现有真实 Vulkan 基线中的高画质 primitives 已经较高；本轮又加入扫描 PBR、反射探针、
+  32 槽水纹和脚印池，必须重新捕获后才能判断增量成本。
 - 性能档关闭屏幕空间／全局光／体积雾和高成本角色材质，减少草量与阴影，达到
   38.8 FPS，且 P99 维持在 27.165 ms。
 - 城市进入雨眼后完整关卡实例回到 2，说明异步流送与 LRU 驱逐没有随章节累计实例。
@@ -130,7 +153,7 @@ resolution = 1280×720
 1. 城市场景静态合批或 MultiMesh，降低 598 次 Draw call。
 2. 门户按距离进一步降低更新频率，并为性能档降低内部渲染比例。
 3. 为城市灯光、角色 SSS 和复杂材质建立距离 LOD。
-4. 为平衡档完成同规格基准，并为性能档继续建立 30 FPS 帧时间预算。
+4. 在有显示表面的设备上补齐平衡档同规格基准，并为性能档继续建立 30 FPS 帧时间预算。
 5. 在真实 Windows AMD、NVIDIA、Intel 三类机器上记录帧时间、驱动版本和崩溃日志。
 6. 以 30 FPS 为这台集显的性能档现实目标；高端独显再验证 60 FPS。
 

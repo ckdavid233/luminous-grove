@@ -55,8 +55,10 @@ func _initialize() -> void:
 			break
 		await process_frame
 	streamer.clear_inactive_levels()
+	if streamer.has_method("shutdown"):
+		streamer.shutdown()
 	main.queue_free()
-	for _frame in 3:
+	for _frame in 30:
 		await process_frame
 		await physics_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://settings.cfg"))

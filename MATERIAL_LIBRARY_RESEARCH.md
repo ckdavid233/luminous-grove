@@ -5,10 +5,13 @@
 
 ## 结论
 
-当前项目不应继续使用生成式单张 Albedo 作为最终材质。下一轮应换成带真实 AO、Roughness、
-Normal、Displacement/Height 的照片扫描 PBR，并在 Godot 中做三层地表混合：干土、湿泥、
-落叶苔藓。8K 只保留为源文件或英雄近景，运行时默认 4K；用户接受低帧数后再开启深度视差、
-高质量阴影、SSR 和高分辨率反射。
+当前项目已经停止把 Albedo 亮度当作 Normal/Roughness 来源，运行时接入照片扫描 PBR，并在
+Godot 中完成干土、湿泥、落叶苔藓三层地表混合。当前仓库已接入 4K runtime 贴图，8K 英雄
+近景原包保持外置；下一步只在真实 Vulkan 捕获确认显存预算后启用 8K 特写。
+
+接入证据：`game/game/world/material_profile.gd`、`game/game/world/surface_profile.gd`、
+`game/content/materials/material_library.json`、`MATERIAL_LIBRARY_SOURCES.md`、
+`MATERIAL_LIBRARY_SHA256.txt`、`game/tools/build_user_pbr.gd` 和材质完整性回归测试。
 
 ## 候选库
 
@@ -66,19 +69,15 @@ Unreal，并允许将资产嵌入商业作品；但旧的 UE-only/Quixel Bridge 
 - Height/Parallax 只能产生视觉深度，不能代替碰撞；真实地形仍必须由 HeightMapShape3D 或
   几何碰撞体提供。
 
-## 建议接入顺序
+## 后续接入顺序
 
-1. 用 Poly Haven Forest Ground 01、Mud Forest、Forest Leaves 02 和 Pine Bark 建立第一套
-   真实材质包；保留来源 URL、版本、下载尺寸和 SHA256。
-2. Blender 中按真实尺寸展开 UV：地表约 2–3 m/材质单元，树皮按树干周长展开；生成 4K 运行时
-   图与 8K 源图。
-3. 改写地表 Shader：`BaseColor + Normal(GL) + ORM(AO/Rough/Metal) + Height + Cavity`，
-   用世界坐标宏观噪声和水边距离混合三种材质；湿区降低 Roughness、提高反射和微小清漆层，
-   不再用固定绿色乘法染色。
-4. 树皮使用真实 Displacement/Normal，树叶使用带 Alpha 的扫描叶片或 Blender 几何叶片，
-   避免把一张平面色图当作整棵树冠。
-5. 高画质允许深度视差、8K 英雄材质、SSR、SSIL、SDFGI 和体积雾；性能档只切换到 2K/4K、
-   简化视差和较短阴影，不改变物理碰撞。
+1. 保持已登记的 Poly Haven 4K runtime，并保持 Normal(GL)、AO、Roughness、Cavity、Height
+   的命名和导入约定；湖石已补齐 Mossy Rock 真实扫描来源。
+2. Blender 中按真实尺寸检查地表约 2–3 m/材质单元、树皮按树干周长展开，替换前后做 4×4
+   无缝与镜头闪烁检查。
+3. 英雄镜头单独启用 8K 和深度视差；性能档继续使用 4K runtime、简化视差和较短阴影，不改变
+   HeightMapShape3D 碰撞。
+4. 在真实 Vulkan 表面重跑材质、湖面、湿润和反射探针的 P95/P99，更新性能报告和哈希清单。
 
 ## 物理真实性方案
 
@@ -88,5 +87,5 @@ Godot 项目已经在 `project.godot` 中启用 Jolt Physics；材质包不会�
 惯性和连续碰撞；若需要全身受力，再单独增加布料/摆件/布娃娃，而不是把主角直接改成不可控
 的全刚体。
 
-Godot 的 Height/Parallax 只改变光照和视差，不会修改物理形状；因此视觉 HeightMap 与
-`HeightMapShape3D` 必须来自同一份高度源，并在回归测试中检查渲染地形和碰撞地形一致。
+Godot 的 Height/Parallax 只改变光照和视差，不会修改物理形状；当前实现明确将视觉 Height
+与独立 `HeightMapShape3D` 碰撞分开，并由环境几何和材质回归测试检查渲染/碰撞网格规格。

@@ -5,10 +5,12 @@ signal interaction_started(target: Node)
 signal interaction_target_changed(target: Node)
 signal jumped
 signal landed(impact_speed: float)
+signal footstep_surface(world_position: Vector3, speed: float, surface_type: StringName)
 
 const CHARACTER_VISUAL_QUALITY := preload(
 	"res://game/player/character_visual_quality.gd"
 )
+const SURFACE_PROBE := preload("res://game/world/surface_probe.gd")
 
 @export var move_speed := 5.0
 @export var sprint_speed := 8.0
@@ -54,6 +56,19 @@ var _coyote_time_left := 0.0
 var _jump_buffer_left := 0.0
 var _landing_time_left := 0.0
 var _last_vertical_velocity := 0.0
+var _surface_library
+var _surface_probe: SurfaceProbe
+var _surface_sample: Dictionary = {}
+var _footstep_distance_accumulator := 0.0
+var _last_footstep_position := Vector3.INF
+var _last_animation_name: StringName = &""
+var _last_animation_position := -1.0
+var _animation_footstep_active := false
+var _skeleton: Skeleton3D
+var _left_foot_target: Node3D
+var _right_foot_target: Node3D
+var _left_foot_ik: SkeletonIK3D
+var _right_foot_ik: SkeletonIK3D
 
 
 func _ready() -> void:
@@ -63,6 +78,11 @@ func _ready() -> void:
 	_camera_base_height = camera_pivot.position.y
 	_render_quality_stats = CHARACTER_VISUAL_QUALITY.apply_to(model)
 	_setup_animation_tree()
+	_setup_foot_ik()
+	_surface_probe = SURFACE_PROBE.new()
+	_surface_probe.name = "SurfaceProbe"
+	add_child(_surface_probe)
+	_surface_probe.configure(_surface_library)
 	set_checkpoint(global_transform)
 	_coyote_time_left = coyote_time
 	if not OS.get_cmdline_args().has("--script"):
@@ -116,6 +136,9 @@ func _physics_process(delta: float) -> void:
 		_landing_time_left = 0.36 if impact_speed >= landing_animation_min_speed else 0.0
 		landed.emit(impact_speed)
 	_recover_from_fall()
+	_update_foot_ik(delta)
+	_update_animation_footsteps()
+	_emit_surface_footstep()
 	_update_interaction_target()
 	_update_animation()
 
@@ -139,12 +162,20 @@ func _update_movement(delta: float) -> void:
 	_is_sprinting = wants_sprint
 	_update_stamina(delta)
 	var target_speed := sprint_speed if _is_sprinting else move_speed
+	_surface_sample = _sample_surface()
+	target_speed *= float(_surface_sample.get("speed_multiplier", 1.0))
 	var target_velocity := world_direction * target_speed * minf(input_vector.length(), 1.0)
 	var horizontal_velocity := Vector3(velocity.x, 0.0, velocity.z)
 	var response := acceleration if not input_vector.is_zero_approx() else deceleration
 	if not is_on_floor():
 		response *= air_control
 	horizontal_velocity = horizontal_velocity.move_toward(target_velocity, response * delta)
+	var surface_type: StringName = _surface_sample.get("type", &"dry_soil")
+	var surface_normal: Vector3 = _surface_sample.get("normal", Vector3.UP)
+	var surface_friction := float(_surface_sample.get("friction", 0.78))
+	if is_on_floor() and surface_type in [&"wet_mud", &"stone"] and surface_normal.y < 0.84:
+		var downslope := Vector3.DOWN.slide(surface_normal)
+		horizontal_velocity += downslope * (1.0 - surface_friction) * 2.4 * delta
 	velocity.x = horizontal_velocity.x
 	velocity.z = horizontal_velocity.z
 	if not is_on_floor():
@@ -170,6 +201,47 @@ func _update_movement(delta: float) -> void:
 	var target_lean := clampf(-input_vector.x * 0.055, -0.055, 0.055)
 	model.rotation.z = lerpf(model.rotation.z, target_lean, minf(1.0, delta * 7.5))
 	_update_camera_motion(delta, Vector2(velocity.x, velocity.z).length())
+
+
+func set_surface_library(library) -> void:
+	_surface_library = library
+	if _surface_probe != null:
+		_surface_probe.configure(library)
+
+
+func _sample_surface() -> Dictionary:
+	if _surface_probe != null:
+		return _surface_probe.raycast_sample(self)
+	if _surface_library == null or not _surface_library.has_method("sample"):
+		return {
+			"type": &"dry_soil",
+			"speed_multiplier": 1.0,
+			"wetness": 0.0,
+		}
+	var normal := get_floor_normal() if is_on_floor() else Vector3.UP
+	return _surface_library.sample(global_position, normal)
+
+
+func _emit_surface_footstep() -> void:
+	if _animation_footstep_active:
+		return
+	if not is_on_floor():
+		_last_footstep_position = global_position
+		_footstep_distance_accumulator = 0.0
+		return
+	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+	if horizontal_speed < 0.55:
+		return
+	if _last_footstep_position == Vector3.INF:
+		_last_footstep_position = global_position
+		return
+	_footstep_distance_accumulator += global_position.distance_to(_last_footstep_position)
+	if _footstep_distance_accumulator < (0.62 if _is_sprinting else 0.46):
+		return
+	var surface_type: StringName = _surface_sample.get("type", &"dry_soil")
+	footstep_surface.emit(global_position, horizontal_speed, surface_type)
+	_footstep_distance_accumulator = 0.0
+	_last_footstep_position = global_position
 
 
 func _update_gamepad_look(delta: float) -> void:
@@ -255,8 +327,69 @@ func _setup_animation_tree() -> void:
 	_animation_playback.start(&"Idle")
 
 
+func _setup_foot_ik() -> void:
+	var skeletons := model.find_children("*", "Skeleton3D", true, false)
+	if skeletons.is_empty():
+		return
+	_skeleton = skeletons[0] as Skeleton3D
+	if _skeleton.find_bone("foot_l") < 0 or _skeleton.find_bone("foot_r") < 0:
+		return
+	_left_foot_target = Node3D.new()
+	_left_foot_target.name = "FootTargetL"
+	_left_foot_target.position = Vector3(-0.17, 0.0, 0.12)
+	add_child(_left_foot_target)
+	_right_foot_target = Node3D.new()
+	_right_foot_target.name = "FootTargetR"
+	_right_foot_target.position = Vector3(0.17, 0.0, 0.12)
+	add_child(_right_foot_target)
+	_left_foot_ik = _create_foot_ik("thigh_l", "foot_l", _left_foot_target)
+	_right_foot_ik = _create_foot_ik("thigh_r", "foot_r", _right_foot_target)
+
+
+func _create_foot_ik(root_bone: StringName, tip_bone: StringName, target: Node3D) -> SkeletonIK3D:
+	var ik := SkeletonIK3D.new()
+	ik.name = "IK_" + str(tip_bone)
+	ik.root_bone = root_bone
+	ik.tip_bone = tip_bone
+	ik.override_tip_basis = true
+	ik.influence = 0.68
+	_skeleton.add_child(ik)
+	ik.target_node = ik.get_path_to(target)
+	ik.start()
+	return ik
+
+
+func _update_foot_ik(_delta: float) -> void:
+	if _skeleton == null or _left_foot_target == null or _right_foot_target == null:
+		return
+	var samples := [
+		[_left_foot_target, Vector3(-0.17, 0.0, 0.12)],
+		[_right_foot_target, Vector3(0.17, 0.0, 0.12)],
+	]
+	for sample in samples:
+		var target := sample[0] as Node3D
+		var local_offset: Vector3 = sample[1]
+		var origin := global_position + global_basis * local_offset + Vector3.UP * 0.74
+		var query := PhysicsRayQueryParameters3D.create(origin, origin + Vector3.DOWN * 1.42)
+		query.exclude = [get_rid()]
+		query.collision_mask = 1
+		var hit := get_world_3d().direct_space_state.intersect_ray(query)
+		if hit.is_empty():
+			target.global_position = global_position + global_basis * local_offset
+			continue
+		target.global_position = (hit.position as Vector3) + (hit.normal as Vector3) * 0.025
+
+
+func _set_foot_ik_influence(value: float) -> void:
+	if _left_foot_ik != null:
+		_left_foot_ik.influence = value
+	if _right_foot_ik != null:
+		_right_foot_ik.influence = value
+
+
 func _update_animation() -> void:
 	if _interaction_time_left > 0.0:
+		_animation_footstep_active = false
 		return
 	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
 	var next_state: StringName = &"Idle"
@@ -274,6 +407,53 @@ func _update_animation() -> void:
 		_:
 			_animation_player.speed_scale = 1.0
 	_travel_animation(next_state)
+
+
+func _update_animation_footsteps() -> void:
+	_animation_footstep_active = false
+	if (
+		_animation_player == null
+		or not is_on_floor()
+		or _animation_state not in [&"Walk", &"Run"]
+		or not _animation_player.has_animation(_animation_state)
+	):
+		_last_animation_name = &""
+		_last_animation_position = -1.0
+		return
+	var animation_name := _animation_player.current_animation
+	if animation_name not in [&"Walk", &"Run"]:
+		return
+	var animation_length := _animation_player.current_animation_length
+	if animation_length <= 0.01:
+		return
+	_animation_footstep_active = true
+	var normalized_position := fposmod(
+		_animation_player.current_animation_position,
+		animation_length,
+	) / animation_length
+	if _last_animation_name != animation_name or _last_animation_position < 0.0:
+		_last_animation_name = animation_name
+		_last_animation_position = normalized_position
+		return
+	var wrapped := normalized_position + 0.02 < _last_animation_position
+	var phases := [0.16, 0.66] if _animation_state == &"Walk" else [0.12, 0.58]
+	for phase in phases:
+		var crossed: bool = (
+			(_last_animation_position <= phase and normalized_position >= phase)
+			if not wrapped
+			else (_last_animation_position <= phase or normalized_position >= phase)
+		)
+		if crossed:
+			_emit_animation_footstep()
+	_last_animation_position = normalized_position
+
+
+func _emit_animation_footstep() -> void:
+	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
+	if horizontal_speed < 0.55:
+		return
+	var surface_type: StringName = _surface_sample.get("type", &"dry_soil")
+	footstep_surface.emit(global_position, horizontal_speed, surface_type)
 
 
 func _travel_animation(next_state: StringName) -> void:
@@ -296,6 +476,7 @@ func request_interaction() -> bool:
 
 func set_visual_quality_profile(profile: StringName) -> void:
 	CHARACTER_VISUAL_QUALITY.apply_profile(model, profile)
+	_set_foot_ik_influence(0.0 if profile == &"performance" else 0.68)
 
 
 func _begin_interaction() -> void:

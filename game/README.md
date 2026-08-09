@@ -88,7 +88,7 @@ Godot 编辑器可直接打开：
 
 ## 自动验证
 
-完整 21 项回归：
+完整 23 项回归：
 
 ```bash
 /home/cenkai/game_dev_plan/tools/run_regression.sh

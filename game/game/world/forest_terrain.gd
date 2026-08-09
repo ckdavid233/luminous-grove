@@ -1,17 +1,22 @@
 class_name ForestTerrain
 extends StaticBody3D
 
-const GRID_SIZE := 65
+const RENDER_GRID_SIZE := 129
+const COLLISION_GRID_SIZE := 65
 const HALF_EXTENT := 32.0
-const GRID_STEP := (HALF_EXTENT * 2.0) / float(GRID_SIZE - 1)
+const RENDER_GRID_STEP := (HALF_EXTENT * 2.0) / float(RENDER_GRID_SIZE - 1)
+const COLLISION_GRID_STEP := (HALF_EXTENT * 2.0) / float(COLLISION_GRID_SIZE - 1)
 const LAKE_CENTER := Vector2(-8.0, -8.0)
 const LAKE_RADII := Vector2(7.5, 5.0)
 
 
-func configure(material: Material) -> void:
+func configure(material: Material, physics_material: PhysicsMaterial = null) -> void:
 	name = "Ground"
 	collision_layer = 1
 	collision_mask = 0
+	set_meta("surface_type", &"dry_soil")
+	if physics_material != null:
+		physics_material_override = physics_material
 	_build_mesh(material)
 	_build_collision()
 
@@ -41,38 +46,38 @@ func _build_mesh(material: Material) -> void:
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	var indices := PackedInt32Array()
-	vertices.resize(GRID_SIZE * GRID_SIZE)
-	normals.resize(GRID_SIZE * GRID_SIZE)
-	uvs.resize(GRID_SIZE * GRID_SIZE)
-	for z_index in GRID_SIZE:
-		var world_z := -HALF_EXTENT + float(z_index) * GRID_STEP
-		for x_index in GRID_SIZE:
-			var world_x := -HALF_EXTENT + float(x_index) * GRID_STEP
-			var index := z_index * GRID_SIZE + x_index
+	vertices.resize(RENDER_GRID_SIZE * RENDER_GRID_SIZE)
+	normals.resize(RENDER_GRID_SIZE * RENDER_GRID_SIZE)
+	uvs.resize(RENDER_GRID_SIZE * RENDER_GRID_SIZE)
+	for z_index in RENDER_GRID_SIZE:
+		var world_z := -HALF_EXTENT + float(z_index) * RENDER_GRID_STEP
+		for x_index in RENDER_GRID_SIZE:
+			var world_x := -HALF_EXTENT + float(x_index) * RENDER_GRID_STEP
+			var index := z_index * RENDER_GRID_SIZE + x_index
 			var height := height_at(world_x, world_z)
 			vertices[index] = Vector3(world_x, height, world_z)
-			var height_left := height_at(world_x - GRID_STEP, world_z)
-			var height_right := height_at(world_x + GRID_STEP, world_z)
-			var height_back := height_at(world_x, world_z - GRID_STEP)
-			var height_forward := height_at(world_x, world_z + GRID_STEP)
+			var height_left := height_at(world_x - RENDER_GRID_STEP, world_z)
+			var height_right := height_at(world_x + RENDER_GRID_STEP, world_z)
+			var height_back := height_at(world_x, world_z - RENDER_GRID_STEP)
+			var height_forward := height_at(world_x, world_z + RENDER_GRID_STEP)
 			normals[index] = Vector3(
 				height_left - height_right,
-				GRID_STEP * 2.0,
+				RENDER_GRID_STEP * 2.0,
 				height_back - height_forward,
 			).normalized()
 			uvs[index] = Vector2(world_x, world_z) * 0.125
-	for z_index in GRID_SIZE - 1:
-		for x_index in GRID_SIZE - 1:
-			var index := z_index * GRID_SIZE + x_index
+	for z_index in RENDER_GRID_SIZE - 1:
+		for x_index in RENDER_GRID_SIZE - 1:
+			var index := z_index * RENDER_GRID_SIZE + x_index
 			indices.append_array(
 				PackedInt32Array(
 					[
 						index,
 						index + 1,
-						index + GRID_SIZE,
+						index + RENDER_GRID_SIZE,
 						index + 1,
-						index + GRID_SIZE + 1,
-						index + GRID_SIZE,
+						index + RENDER_GRID_SIZE + 1,
+						index + RENDER_GRID_SIZE,
 					]
 				)
 			)
@@ -94,15 +99,15 @@ func _build_mesh(material: Material) -> void:
 
 func _build_collision() -> void:
 	var map_data := PackedFloat32Array()
-	map_data.resize(GRID_SIZE * GRID_SIZE)
-	for z_index in GRID_SIZE:
-		var world_z := -HALF_EXTENT + float(z_index) * GRID_STEP
-		for x_index in GRID_SIZE:
-			var world_x := -HALF_EXTENT + float(x_index) * GRID_STEP
-			map_data[z_index * GRID_SIZE + x_index] = height_at(world_x, world_z)
+	map_data.resize(COLLISION_GRID_SIZE * COLLISION_GRID_SIZE)
+	for z_index in COLLISION_GRID_SIZE:
+		var world_z := -HALF_EXTENT + float(z_index) * COLLISION_GRID_STEP
+		for x_index in COLLISION_GRID_SIZE:
+			var world_x := -HALF_EXTENT + float(x_index) * COLLISION_GRID_STEP
+			map_data[z_index * COLLISION_GRID_SIZE + x_index] = height_at(world_x, world_z)
 	var height_map := HeightMapShape3D.new()
-	height_map.map_width = GRID_SIZE
-	height_map.map_depth = GRID_SIZE
+	height_map.map_width = COLLISION_GRID_SIZE
+	height_map.map_depth = COLLISION_GRID_SIZE
 	height_map.map_data = map_data
 	var collision := CollisionShape3D.new()
 	collision.name = "TerrainCollision"

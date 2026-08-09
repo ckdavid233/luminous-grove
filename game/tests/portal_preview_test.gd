@@ -91,8 +91,12 @@ func _initialize() -> void:
 	await physics_frame
 	await process_frame
 	streamer.clear_inactive_levels()
+	if streamer.has_method("shutdown"):
+		streamer.shutdown()
 	main.queue_free()
-	await process_frame
+	for _frame in 30:
+		await process_frame
+		await physics_frame
 	call_deferred("quit")
 
 

@@ -22,6 +22,15 @@ var _counterweight_stone: RigidBody3D
 var _city_gate: Node
 
 
+func _exit_tree() -> void:
+	_stone_material = null
+	_floor_material = null
+	_archive_anchors.clear()
+	_counterweight_plate = null
+	_counterweight_stone = null
+	_city_gate = null
+
+
 func _ready() -> void:
 	_stone_material = _create_pbr_material("shrine_stone", Color("879b9b"), 0.52)
 	_floor_material = _create_pbr_material("lake_stone", Color("637d7d"), 0.3)

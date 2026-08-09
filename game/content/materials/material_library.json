@@ -1,0 +1,53 @@
+{
+  "schema": 2,
+  "runtime_resolution": "4096 runtime",
+  "hero_source_resolution": "8192",
+  "normal_convention": "opengl",
+  "storage": {
+    "runtime_assets": "repository",
+    "raw_sources": "external",
+    "raw_source_manifest": "MATERIAL_LIBRARY_SOURCES.md"
+  },
+  "materials": [
+    {
+      "id": "forest_ground",
+      "surface_type": "dry_soil",
+      "status": "installed_4k_cc0",
+      "runtime": "content/materials/scanned/forest_ground/",
+      "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
+      "source": "Poly Haven Forest Ground 01"
+    },
+    {
+      "id": "forest_mud",
+      "surface_type": "wet_mud",
+      "status": "installed_4k_cc0",
+      "runtime": "content/materials/scanned/mud_forest/",
+      "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
+      "source": "Poly Haven Mud Forest"
+    },
+    {
+      "id": "forest_leaves",
+      "surface_type": "moss",
+      "status": "installed_4k_cc0",
+      "runtime": "content/materials/scanned/forest_leaves/",
+      "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
+      "source": "Poly Haven Forest Leaves 02"
+    },
+    {
+      "id": "pine_bark",
+      "surface_type": "wood",
+      "status": "installed_4k_cc0",
+      "runtime": "content/materials/scanned/pine_bark/",
+      "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
+      "source": "Poly Haven Pine Bark"
+    },
+    {
+      "id": "lake_stone",
+      "surface_type": "stone",
+      "status": "installed_4k_cc0",
+      "runtime": "content/materials/scanned/lake_stone/",
+      "maps": ["albedo", "normal", "roughness", "ao", "cavity", "height"],
+      "source": "Poly Haven Mossy Rock"
+    }
+  ]
+}

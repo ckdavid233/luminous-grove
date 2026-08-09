@@ -32,10 +32,15 @@ func _initialize() -> void:
 	for value in frame_times_ms:
 		total_ms += value
 	var average_ms := total_ms / frame_times_ms.size()
+	var gpu_metrics_available := Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME) > 0
 	var result := {
 		"quality_profile": str(quality_profile),
-		"resolution": [root.size.x, root.size.y],
+		"measurement_mode": "real_vulkan" if gpu_metrics_available else "headless_cpu_smoke",
+		"requested_resolution": [1280, 720],
+		"actual_resolution": [root.size.x, root.size.y],
 		"renderer": RenderingServer.get_current_rendering_method(),
+		"display_server": DisplayServer.get_name(),
+		"gpu_metrics_available": gpu_metrics_available,
 		"sample_frames": SAMPLE_FRAMES,
 		"average_frame_ms": snappedf(average_ms, 0.001),
 		"average_fps": snappedf(1000.0 / average_ms, 0.1),

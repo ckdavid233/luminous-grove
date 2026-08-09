@@ -19,6 +19,11 @@ func _initialize() -> void:
 			var texture := load(path) as Texture2D
 			assert(texture != null, path + " must load")
 			assert(texture.get_size() == Vector2(2048, 2048), path + " must be 2048 square")
+		for texture_name in ["ao", "cavity", "height"]:
+			var detail_path := "res://content/materials/%s/%s.png" % [folder, texture_name]
+			var detail_texture := load(detail_path) as Texture2D
+			assert(detail_texture != null, detail_path + " must load")
+			assert(detail_texture.get_size() == Vector2(512, 512), detail_path + " must be 512 square")
 
 	for atlas_path in [
 		"res://content/vfx/forest_plants_atlas.png",
@@ -56,8 +61,10 @@ func _initialize() -> void:
 			break
 		await process_frame
 	streamer.clear_inactive_levels()
+	if streamer.has_method("shutdown"):
+		streamer.shutdown()
 	main.queue_free()
-	for _frame in 3:
+	for _frame in 30:
 		await process_frame
 		await physics_frame
 	call_deferred("quit")

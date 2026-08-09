@@ -3,8 +3,10 @@ extends MeshInstance3D
 
 signal ripple_created(world_position: Vector3, source: StringName)
 signal splash_created(world_position: Vector3, strength: float, source: StringName)
+signal surface_event(world_position: Vector3, velocity: Vector3, radius: float, source: StringName)
 
-const MAX_RIPPLES := 16
+const MAX_RIPPLES := 32
+const SPLASH_POOL_SIZE := 8
 const HALF_SIZE := Vector2(7.35, 4.85)
 
 @export var rain_ripple_interval := Vector2(0.5, 1.15)
@@ -13,11 +15,17 @@ const HALF_SIZE := Vector2(7.35, 4.85)
 @export var maximum_wading_depth := 1.1
 @export var visual_effects_enabled := true
 @export var visual_effects_auto_cleanup := true
+@export_range(0.0, 1.0, 0.01) var rain_intensity := 0.68
+@export_range(0.0, 2.0, 0.01) var shallow_buoyancy_strength := 1.06
+@export_range(0.0, 8.0, 0.1) var shallow_water_drag := 2.8
+@export var rigid_body_probe_radius := 0.55
 
 var _actor: CharacterBody3D
 var _material: ShaderMaterial
 var _origins := PackedVector2Array()
 var _start_times := PackedFloat32Array()
+var _strengths := PackedFloat32Array()
+var _radii := PackedFloat32Array()
 var _next_ripple_slot := 0
 var _rain_time_left := 0.25
 var _last_actor_position := Vector3.INF
@@ -26,6 +34,13 @@ var _rng := RandomNumberGenerator.new()
 var _elapsed_time := 0.0
 var _was_touching_surface := false
 var _splash_count := 0
+var _splash_pool: Array[Node3D] = []
+var _active_splash_roots: Array[Node3D] = []
+var _splash_tweens: Array[Tween] = []
+var _registered_bodies: Array[RigidBody3D] = []
+var _body_water_state: Dictionary = {}
+var _shutdown_requested := false
+var _tearing_down := false
 
 
 func _ready() -> void:
@@ -34,10 +49,47 @@ func _ready() -> void:
 	material_override = _material
 	_origins.resize(MAX_RIPPLES)
 	_start_times.resize(MAX_RIPPLES)
+	_strengths.resize(MAX_RIPPLES)
+	_radii.resize(MAX_RIPPLES)
 	for index in MAX_RIPPLES:
 		_origins[index] = Vector2.ZERO
 		_start_times[index] = -1000.0
+		_strengths[index] = 0.0
+		_radii[index] = 1.0
 	_upload_ripples()
+
+
+func _exit_tree() -> void:
+	_tearing_down = true
+	shutdown()
+
+
+func shutdown() -> void:
+	if _shutdown_requested:
+		return
+	_shutdown_requested = true
+	set_process(false)
+	# During a parent `_exit_tree` callback Godot is already walking the child
+	# list, so removing a splash root here is unsafe. Explicit runtime shutdown
+	# can detach its resources; parent teardown will reclaim the nodes itself.
+	if is_inside_tree() and not _tearing_down:
+		for effect_root in _splash_pool + _active_splash_roots:
+			if is_instance_valid(effect_root):
+				_clear_splash_root(effect_root)
+				effect_root.queue_free()
+	_splash_pool.clear()
+	_active_splash_roots.clear()
+	for tween in _splash_tweens:
+		if tween != null and tween.is_valid():
+			tween.kill()
+	_splash_tweens.clear()
+	_registered_bodies.clear()
+	_body_water_state.clear()
+	_actor = null
+	_rng = null
+	_material = null
+	material_override = null
+	mesh = null
 
 
 func _process(delta: float) -> void:
@@ -50,9 +102,11 @@ func _process(delta: float) -> void:
 			0.0,
 			_rng.randf_range(-HALF_SIZE.y, HALF_SIZE.y)
 		)
-		add_ripple(to_global(local_point), &"droplet")
-		_rain_time_left = _rng.randf_range(rain_ripple_interval.x, rain_ripple_interval.y)
+		emit_surface_event(to_global(local_point), Vector3.DOWN, 0.24, &"droplet")
+		var rain_scale := lerpf(1.55, 0.58, rain_intensity)
+		_rain_time_left = _rng.randf_range(rain_ripple_interval.x, rain_ripple_interval.y) * rain_scale
 	_update_actor_ripples()
+	_update_rigid_body_feedback(delta)
 
 
 func set_actor(actor: CharacterBody3D) -> void:
@@ -62,7 +116,70 @@ func set_actor(actor: CharacterBody3D) -> void:
 	_was_touching_surface = _is_actor_touching_surface(actor.global_position)
 
 
-func add_ripple(position: Vector3, source: StringName = &"scripted") -> void:
+func register_rigid_body(body: RigidBody3D) -> void:
+	if body == null or _registered_bodies.has(body):
+		return
+	_registered_bodies.append(body)
+	_body_water_state[body.get_instance_id()] = false
+
+
+func unregister_rigid_body(body: RigidBody3D) -> void:
+	if body == null:
+		return
+	_registered_bodies.erase(body)
+	_body_water_state.erase(body.get_instance_id())
+
+
+func set_rain_intensity(value: float) -> void:
+	rain_intensity = clampf(value, 0.0, 1.0)
+
+
+func set_visual_quality_profile(profile: StringName) -> void:
+	if _material == null:
+		return
+	match profile:
+		&"performance":
+			_material.set_shader_parameter("micro_normal_strength", 0.14)
+			_material.set_shader_parameter("foam_intensity", 0.78)
+			visual_effects_enabled = false
+		&"balanced":
+			_material.set_shader_parameter("micro_normal_strength", 0.22)
+			_material.set_shader_parameter("foam_intensity", 0.98)
+			visual_effects_enabled = true
+		_:
+			_material.set_shader_parameter("micro_normal_strength", 0.32)
+			_material.set_shader_parameter("foam_intensity", 1.22)
+			visual_effects_enabled = true
+
+
+func emit_surface_event(
+	position: Vector3,
+	velocity: Vector3,
+	radius: float,
+	source: StringName = &"scripted",
+) -> void:
+	var event_local := to_local(position)
+	var event_normalized := Vector2(
+		event_local.x / HALF_SIZE.x,
+		event_local.z / HALF_SIZE.y,
+	)
+	if event_normalized.length_squared() > 1.18:
+		return
+	var strength := clampf(0.42 + velocity.length() * 0.09 + radius * 0.36, 0.18, 1.45)
+	add_ripple(position, source, strength, radius)
+	surface_event.emit(position, velocity, radius, source)
+	if source in [&"water_entry", &"water_exit", &"landing"]:
+		_create_surface_splash(position, strength, source)
+	elif source == &"rigid_body":
+		_create_surface_splash(position, strength * 0.72, source)
+
+
+func add_ripple(
+	position: Vector3,
+	source: StringName = &"scripted",
+	strength: float = 0.72,
+	radius: float = 1.0,
+) -> void:
 	if _material == null:
 		return
 	var local_position := to_local(position)
@@ -70,6 +187,8 @@ func add_ripple(position: Vector3, source: StringName = &"scripted") -> void:
 		return
 	_origins[_next_ripple_slot] = Vector2(position.x, position.z)
 	_start_times[_next_ripple_slot] = _elapsed_time
+	_strengths[_next_ripple_slot] = clampf(strength, 0.0, 1.5)
+	_radii[_next_ripple_slot] = clampf(radius, 0.2, 1.8)
 	_next_ripple_slot = (_next_ripple_slot + 1) % MAX_RIPPLES
 	_upload_ripples()
 	ripple_created.emit(position, source)
@@ -80,7 +199,7 @@ func active_ripple_count(current_time: float = -1.0) -> int:
 		current_time = _elapsed_time
 	var count := 0
 	for start_time in _start_times:
-		if current_time >= start_time and current_time - start_time <= 3.8:
+		if current_time + 0.0001 >= start_time and current_time - start_time <= 4.8:
 			count += 1
 	return count
 
@@ -100,8 +219,9 @@ func _update_actor_ripples() -> void:
 		var source := &"water_entry" if touching_surface else &"water_exit"
 		var vertical_speed := absf(_actor.velocity.y)
 		var strength := clampf(0.55 + vertical_speed * 0.12, 0.55, 1.35)
-		_create_surface_splash(
+		emit_surface_event(
 			Vector3(actor_position.x, global_position.y, actor_position.z),
+			Vector3(0.0, _actor.velocity.y, 0.0),
 			strength,
 			source,
 		)
@@ -118,9 +238,71 @@ func _update_actor_ripples() -> void:
 		).length()
 	if _actor_distance_accumulator >= footstep_distance:
 		var surface_position := Vector3(actor_position.x, global_position.y, actor_position.z)
-		add_ripple(surface_position, &"footstep")
+		emit_surface_event(surface_position, _actor.velocity, 0.42, &"footstep")
 		_actor_distance_accumulator = 0.0
 	_last_actor_position = actor_position
+
+
+func _update_rigid_body_feedback(delta: float) -> void:
+	for candidate in get_tree().get_nodes_in_group("water_feedback_body"):
+		if candidate is RigidBody3D:
+			register_rigid_body(candidate as RigidBody3D)
+	for index in range(_registered_bodies.size() - 1, -1, -1):
+		var body := _registered_bodies[index]
+		if not is_instance_valid(body):
+			_registered_bodies.remove_at(index)
+			continue
+		var local_position := to_local(body.global_position)
+		var inside := _is_inside_horizontal(local_position)
+		var submerged := clampf(
+			(global_position.y + rigid_body_probe_radius - body.global_position.y)
+			/ (rigid_body_probe_radius * 2.0),
+			0.0,
+			1.0,
+		)
+		var touching := inside and submerged > 0.02
+		var body_id := body.get_instance_id()
+		var previously_touching: bool = _body_water_state.get(body_id, false)
+		if touching:
+			body.apply_central_force(
+				Vector3.UP
+					* body.mass
+					* ProjectSettings.get_setting("physics/3d/default_gravity")
+					* shallow_buoyancy_strength
+					* submerged
+			)
+			var horizontal_velocity := Vector3(body.linear_velocity.x, 0.0, body.linear_velocity.z)
+			var damped_horizontal := horizontal_velocity.move_toward(
+				Vector3.ZERO,
+				shallow_water_drag * submerged * delta,
+			)
+			body.linear_velocity.x = damped_horizontal.x
+			body.linear_velocity.z = damped_horizontal.z
+		if touching != previously_touching:
+			var source: StringName = &"rigid_body"
+			emit_surface_event(
+				_surface_event_position(local_position),
+				body.linear_velocity,
+				rigid_body_probe_radius,
+				source,
+			)
+		_body_water_state[body_id] = touching
+
+
+func _surface_event_position(local_position: Vector3) -> Vector3:
+	var normalized := Vector2(
+		local_position.x / HALF_SIZE.x,
+		local_position.z / HALF_SIZE.y,
+	)
+	if normalized.length_squared() > 1.0:
+		normalized = normalized.normalized() * 0.96
+	return to_global(
+		Vector3(
+			normalized.x * HALF_SIZE.x,
+			0.0,
+			normalized.y * HALF_SIZE.y,
+		)
+	)
 
 
 func _is_inside_horizontal(local_position: Vector3) -> bool:
@@ -147,15 +329,12 @@ func _create_surface_splash(
 	strength: float,
 	source: StringName,
 ) -> void:
-	add_ripple(position, source)
 	_splash_count += 1
 	splash_created.emit(position, strength, source)
 	if not visual_effects_enabled:
 		return
 
-	var effect_root := Node3D.new()
-	effect_root.name = "WaterSplash"
-	get_parent().add_child(effect_root)
+	var effect_root := _obtain_splash_root()
 	effect_root.global_position = position + Vector3.UP * 0.1
 
 	var rings: Array[MeshInstance3D] = []
@@ -176,11 +355,9 @@ func _create_surface_splash(
 			0.94,
 			0.74 - ring_index * 0.14,
 		)
-		ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		ring_material.emission_enabled = true
-		ring_material.emission = Color(0.28, 0.82, 0.8)
-		ring_material.emission_energy_multiplier = 0.92 - ring_index * 0.16
-		ring_material.roughness = 0.18
+		ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+		ring_material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+		ring_material.roughness = 0.12 + ring_index * 0.06
 		ring_mesh.material = ring_material
 		ring.mesh = ring_mesh
 		ring.scale = Vector3.ONE * (0.22 + ring_index * 0.04)
@@ -192,7 +369,7 @@ func _create_surface_splash(
 	var particles := GPUParticles3D.new()
 	particles.name = "SplashDroplets"
 	particles.one_shot = true
-	particles.amount = maxi(28, int(46.0 * strength))
+	particles.amount = maxi(20, int(42.0 * strength))
 	particles.lifetime = 0.86
 	particles.explosiveness = 0.95
 	particles.randomness = 0.42
@@ -215,17 +392,20 @@ func _create_surface_splash(
 	var droplet_material := StandardMaterial3D.new()
 	droplet_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	droplet_material.albedo_color = Color(0.72, 0.95, 0.96, 0.88)
-	droplet_material.emission_enabled = true
-	droplet_material.emission = Color(0.35, 0.82, 0.84)
-	droplet_material.emission_energy_multiplier = 0.72
-	droplet_material.roughness = 0.1
+	droplet_material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+	droplet_material.roughness = 0.06
 	droplet_mesh.material = droplet_material
 	particles.draw_pass_1 = droplet_mesh
 	effect_root.add_child(particles)
 	particles.emitting = true
 
 	if visual_effects_auto_cleanup:
+		_splash_tweens = _splash_tweens.filter(
+			func(active_tween: Tween) -> bool:
+				return active_tween != null and active_tween.is_valid() and active_tween.is_running()
+		)
 		var tween := effect_root.create_tween()
+		_splash_tweens.append(tween)
 		tween.set_parallel(true)
 		tween.set_trans(Tween.TRANS_QUAD)
 		tween.set_ease(Tween.EASE_OUT)
@@ -233,9 +413,54 @@ func _create_surface_splash(
 			var ring_scale := 1.18 + strength * 0.42 + ring_index * 0.14
 			tween.tween_property(rings[ring_index], "scale", Vector3.ONE * ring_scale, 0.72 + ring_index * 0.08)
 			tween.tween_property(ring_materials[ring_index], "albedo_color:a", 0.0, 0.72 + ring_index * 0.08)
-		tween.chain().tween_callback(effect_root.queue_free)
+		tween.chain().tween_callback(func() -> void: _release_splash_root(effect_root))
+
+
+func _obtain_splash_root() -> Node3D:
+	var effect_root: Node3D
+	if not _splash_pool.is_empty():
+		effect_root = _splash_pool.pop_back()
+		_clear_splash_root(effect_root)
+	else:
+		effect_root = Node3D.new()
+		effect_root.name = "WaterSplash"
+		get_parent().add_child(effect_root)
+	effect_root.visible = true
+	_active_splash_roots.append(effect_root)
+	return effect_root
+
+
+func _release_splash_root(effect_root: Node3D) -> void:
+	if effect_root == null or not is_instance_valid(effect_root):
+		return
+	_active_splash_roots.erase(effect_root)
+	effect_root.visible = false
+	if _splash_pool.size() >= SPLASH_POOL_SIZE:
+		_clear_splash_root(effect_root)
+		effect_root.queue_free()
+		return
+	_clear_splash_root(effect_root)
+	_splash_pool.append(effect_root)
+
+
+func _clear_splash_root(effect_root: Node3D) -> void:
+	if effect_root == null or not is_instance_valid(effect_root):
+		return
+	for child in effect_root.get_children():
+		if child is MeshInstance3D:
+			var mesh_instance := child as MeshInstance3D
+			mesh_instance.material_override = null
+			mesh_instance.mesh = null
+		elif child is GPUParticles3D:
+			var particles := child as GPUParticles3D
+			particles.emitting = false
+			particles.process_material = null
+			particles.draw_pass_1 = null
+		child.free()
 
 
 func _upload_ripples() -> void:
 	_material.set_shader_parameter("ripple_origins", _origins)
 	_material.set_shader_parameter("ripple_start_times", _start_times)
+	_material.set_shader_parameter("ripple_strengths", _strengths)
+	_material.set_shader_parameter("ripple_radii", _radii)

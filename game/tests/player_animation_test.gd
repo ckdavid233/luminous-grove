@@ -37,8 +37,23 @@ func _initialize() -> void:
 			animation_player.has_animation(dedicated_animation),
 			"Movement must not reuse placeholder animation: " + str(dedicated_animation),
 		)
-
+	var animation_footsteps: Array[StringName] = []
+	player.footstep_surface.connect(
+		func(_position: Vector3, _speed: float, surface_type: StringName) -> void:
+			animation_footsteps.append(surface_type)
+	)
 	player.set_physics_process(false)
+	player.velocity = Vector3(2.2, 0.0, 0.0)
+	player.set("_surface_sample", {"type": &"dry_soil"})
+	player.set("_animation_state", &"Walk")
+	animation_player.play(&"Walk")
+	var walk_length := animation_player.get_animation(&"Walk").length
+	player.set("_last_animation_name", animation_player.current_animation)
+	player.set("_last_animation_position", 0.14)
+	animation_player.seek(walk_length * 0.19, true)
+	player.call("_update_animation_footsteps")
+	assert(animation_footsteps == [&"dry_soil"], "Walk phase must emit an animation footstep event")
+
 	player.velocity = Vector3(0.0, 3.0, 0.0)
 	player.call("_travel_animation", &"Jump")
 	await _wait_for_animation_state(player, playback, &"Jump")

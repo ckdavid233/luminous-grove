@@ -22,6 +22,16 @@ var _fragment_material: StandardMaterial3D
 var _accent_material: StandardMaterial3D
 
 
+func _exit_tree() -> void:
+	_path_material = null
+	_fragment_material = null
+	_accent_material = null
+	_seals.clear()
+	_trials.clear()
+	_final_choices.clear()
+	_rng = null
+
+
 func _ready() -> void:
 	_visual_layer = ECHO_VISUAL_LAYER if is_echo else PRESENT_VISUAL_LAYER
 	_rng.seed = 0xE7E0 if is_echo else 0xF1A1

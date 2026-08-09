@@ -5,6 +5,8 @@ uniform vec3 shadow_color : source_color = vec3(0.055, 0.19, 0.095);
 uniform vec3 mid_color : source_color = vec3(0.16, 0.39, 0.19);
 uniform vec3 sun_color : source_color = vec3(0.39, 0.59, 0.25);
 uniform float wind_strength = 0.075;
+uniform float wetness : hint_range(0.0, 1.0) = 0.54;
+uniform float rain_intensity : hint_range(0.0, 1.0) = 0.62;
 varying vec3 world_position;
 varying float height_tint;
 
@@ -36,8 +38,9 @@ void fragment() {
 	float edge = smoothstep(0.02, 0.16, min(UV.x, 1.0 - UV.x));
 	shaded = mix(shaded * 0.72, shaded, edge);
 	shaded = mix(shaded, sun_color * 0.82, vein * 0.16);
+	shaded = mix(shaded, shaded * vec3(0.72, 0.82, 0.78), wetness * 0.12);
 	ALBEDO = shaded * mix(0.84, 1.12, variation);
-	ROUGHNESS = 0.84;
-	SPECULAR = 0.28;
-	BACKLIGHT = mid_color * 0.34;
+	ROUGHNESS = mix(0.84, 0.48, wetness * 0.66);
+	SPECULAR = mix(0.28, 0.6, wetness);
+	BACKLIGHT = mid_color * (0.34 + rain_intensity * 0.12);
 }

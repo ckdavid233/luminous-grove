@@ -69,6 +69,9 @@ func _create_stone_material() -> StandardMaterial3D:
 	material.normal_scale = 0.72
 	material.roughness = 1.0
 	material.roughness_texture = load(root + "roughness.png") as Texture2D
+	material.ao_enabled = true
+	material.ao_texture = load(root + "ao.png") as Texture2D
+	material.ao_light_affect = 0.72
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	material.uv1_triplanar = true
 	material.uv1_world_triplanar = true

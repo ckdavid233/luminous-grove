@@ -1,7 +1,7 @@
 # 《微光林地：雨的名字》Windows 构建与发行
 
-版本：0.6.1-alpha  
-构建日期：2026-08-01  
+版本：0.6.2-alpha
+构建日期：2026-08-10
 目标：64 位 Windows 便携 Release
 
 ## 1. 可交付物
@@ -9,21 +9,21 @@
 目录版：
 
 ```text
-/home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.1/
+/home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.2/
 ```
 
 压缩包：
 
 ```text
-/home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.1.zip
+/home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.2.zip
 ```
 
 最终 ZIP：
 
 ```text
-size: 175,646,372 bytes
-SHA256: 23b7d7a0a57c39f36b63a8fcad1f36aab05b686c7463ba6b8760ddfc262e3c28
-integrity: unzip -t passed, 5 entries, no errors
+size: 564,757,150 bytes
+SHA256: 273eb4e551445d234e35cf9d93a3e161455c86ec8e19d0959591c57db23c5ea4
+integrity: unzip -t passed, 4 entries, no errors
 ```
 
 目录中的核心文件：
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 5 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 137,925,952 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,415,008 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 
@@ -58,12 +58,12 @@ Godot 官方当前要求与平台说明可查阅
 - Linux 上用相同版本 Godot 直接加载导出的 PCK，得到：
 
 ```text
-RELEASE_SMOKE_OK build=0.6.1-alpha campaign=6 quality=high echo_async=ready
+RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 ```
 
 - 自检覆盖主场景启动、campaign v6、默认高画质和 Echo Ruins 异步加载。
-- 工程侧 21 项回归还覆盖真实输入、移动状态、水体边界、环境几何与碰撞。
-- ZIP 已通过 `unzip -t` 完整性检查，5 个条目无错误；SHA256 已写入同名 `.sha256` 文件。
+- 工程侧 23 项回归还覆盖真实输入、移动状态、水体边界、环境几何与碰撞。
+- ZIP 已通过 `unzip -t` 完整性检查，4 个条目无错误；SHA256 已写入同名 `.sha256` 文件。
 
 PCK 自检证明导出的游戏数据与脚本可由 4.7.1 运行时读取；它不等于执行 Windows EXE。
 当前设备没有 Windows 或 Wine，因此不能声称已经完成真实 Windows 启动、驱动、全屏、
@@ -145,7 +145,7 @@ python3 /home/cenkai/game_dev_plan/tools/fetch_godot_template_member.py \
   --headless \
   --path /home/cenkai/game_dev_plan/game \
   --export-release "Windows x86_64 Release" \
-  /home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.1/LuminousGrove.exe
+  /home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.2/LuminousGrove.exe
 ```
 
 PCK 等价自检：
@@ -153,7 +153,7 @@ PCK 等价自检：
 ```bash
 /home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64 \
   --headless \
-  --main-pack /home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.1/LuminousGrove.pck \
+  --main-pack /home/cenkai/game_dev_plan/releases/LuminousGrove-Windows-x86_64-v0.6.2/LuminousGrove.pck \
   -- --release-smoke
 ```
 
@@ -166,6 +166,6 @@ PCK 等价自检：
 - 对外提供 ZIP 时同时提供 SHA256，用户应校验完整包而不是只校验 EXE。
 - 未签名 alpha 只适合受控测试；公开商用前应购买代码签名证书或使用可信发行平台。
 - 存档 schema 为 2、campaign 为 6；改动稳定 ID 时必须提供迁移测试。
-- `0.6.1-alpha` 的版本号、文件说明和产品名已经写入 Windows 导出预设。
+- `0.6.2-alpha` 的版本号、文件说明和产品名已经写入 Windows 导出预设。
 - 新素材只有在来源、条款和运行时导入全部通过后才能进入下一包。
 - 发布包不应包含 `tests/`、构建脚本、Blend 源文件、提示词原图或用户私有素材记录。

@@ -1,13 +1,20 @@
 {
+	"measurement_mode": "real_vulkan",
+	"actual_resolution": [
+		1280,
+		720
+	],
 	"average_fps": 13.8,
 	"average_frame_ms": 72.384,
+	"display_server": "wayland",
 	"draw_calls": 397,
+	"gpu_metrics_available": true,
 	"p95_frame_ms": 73.491,
 	"p99_frame_ms": 75.468,
 	"primitives": 5715718,
 	"quality_profile": "high",
 	"renderer": "forward_plus",
-	"resolution": [
+	"requested_resolution": [
 		1280,
 		720
 	],

@@ -16,6 +16,28 @@ var _frame_index := 0
 var preview_update_count := 0
 
 
+func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
+	if _preview_viewport != null and is_instance_valid(_preview_viewport):
+		_preview_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		_preview_viewport.world_3d = null
+	var surface := get_node_or_null("RiftSurface") as MeshInstance3D
+	if surface != null:
+		surface.material_override = null
+		surface.mesh = null
+	if _surface_material != null:
+		_surface_material.set_shader_parameter("alternate_texture", null)
+		_surface_material.shader = null
+	_surface_material = null
+	_preview_camera = null
+	_source_camera = null
+	_preview_viewport = null
+	_ring = null
+
+
 func _ready() -> void:
 	name = "RainRiftPortal"
 	_create_preview_viewport()

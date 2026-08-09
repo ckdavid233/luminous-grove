@@ -77,7 +77,7 @@ func _initialize() -> void:
 	assert(splash != null, "Water crossing must instantiate visible splash geometry")
 	assert(splash.find_child("SplashDroplets", true, false) is GPUParticles3D)
 	assert(splash.find_child("*", true, false) is MeshInstance3D)
-	splash.free()
+	water.call("_release_splash_root", splash)
 	water.visual_effects_auto_cleanup = true
 	water.visual_effects_enabled = false
 	await process_frame
@@ -98,8 +98,10 @@ func _initialize() -> void:
 			break
 		await process_frame
 	streamer.clear_inactive_levels()
+	if streamer.has_method("shutdown"):
+		streamer.shutdown()
 	main.queue_free()
-	for _frame in 3:
+	for _frame in 30:
 		await process_frame
 		await physics_frame
 	call_deferred("quit")

@@ -1,7 +1,7 @@
 # 《微光林地：雨的名字》文档总索引
 
 版本：0.6.2-alpha
-校准日期：2026-08-01  
+校准日期：2026-08-09
 权威实现目录：`/home/cenkai/game_dev_plan/game`
 
 ## 状态标记
@@ -30,6 +30,8 @@
 |---|---|---|
 | [NARRATIVE_DESIGN.md](NARRATIVE_DESIGN.md) | 四幕主线、角色、节点和结局条件 | 权威、已实装 |
 | [ART_DIRECTION.md](ART_DIRECTION.md) | 视觉语言、材质、灯光和特效预算 | 权威、已实装 |
+| [MATERIAL_LIBRARY_SOURCES.md](MATERIAL_LIBRARY_SOURCES.md) | 扫描材质来源、许可、运行规格和替换规则 | 权威、持续登记 |
+| [MATERIAL_LIBRARY_SHA256.txt](MATERIAL_LIBRARY_SHA256.txt) | 仓库内运行贴图逐文件校验和 | 权威、已生成 |
 | [CHARACTER_PIPELINE.md](CHARACTER_PIPELINE.md) | Blender 到 Godot 的写实角色管线 | 权威、已验证 |
 | [USER_ASSET_PACKAGE_BRIEF.md](USER_ASSET_PACKAGE_BRIEF.md) | 用户后续生成素材的命名与规格 | 计划、待素材包 |
 | [ACT_I_ORIGINAL_DESIGN.md](ACT_I_ORIGINAL_DESIGN.md) | 第一版概念稿 | 历史、只读参考 |
@@ -53,7 +55,7 @@
 实时过场、写实人物和可靠存档。
 
 当前 Windows x86_64 便携 ZIP 已生成并通过压缩完整性、PE32+ 静态识别、导出 PCK 自检
-和 21 项工程回归；由于构建机只有 Linux，Windows EXE 的真实系统启动仍是发布前验收项。
+和 23 项工程回归；由于构建机只有 Linux，Windows EXE 的真实系统启动仍是发布前验收项。
 
 仍未完成的正式商业化工作包括：专业配音与混音、动作与表情精修、完整无障碍选项、
 多语言资源化、Windows 代码签名、安装器、广泛硬件兼容测试和外部玩家节奏测试。这些项目

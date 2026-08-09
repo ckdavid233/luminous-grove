@@ -27,6 +27,7 @@ func _initialize() -> void:
 	var wind_bell := root.find_child("WindBell", true, false)
 	var narrative := root.find_child("NarrativeDirector", true, false)
 	var memory_droplets: Array = main.get("_memory_droplets")
+	await physics_frame
 	assert(player != null, "Player must exist")
 	assert(shrine != null, "Shrine must exist")
 	assert(wind_bell != null, "WindBell must exist")
@@ -35,8 +36,12 @@ func _initialize() -> void:
 	assert(not shrine.is_activated, "Shrine starts dormant in a clean test")
 	assert(not shrine.can_interact(player), "Shrine remains locked before bell rings")
 
-	player.set("_interaction_target", wind_bell)
-	player.call("_begin_interaction")
+	player.set_physics_process(false)
+	player.global_position = wind_bell.global_position + Vector3(0.0, 1.0, -2.0)
+	player.call("_update_interaction_target")
+	assert(player.get("_interaction_target") == wind_bell, "Nearby fallback must find the wind bell")
+	assert(player.get_node("HUD/PromptLabel").visible, "Interaction prompt must be visible")
+	assert(player.request_interaction(), "Real interaction request must reach the wind bell")
 	for _frame in 3:
 		await process_frame
 	assert(wind_bell.is_rung, "First interaction must ring the wind bell")
@@ -317,6 +322,9 @@ func _initialize() -> void:
 			.size()
 		== 4
 	)
+	var first_streamer = main.get("_world_streamer")
+	if first_streamer != null and first_streamer.has_method("shutdown"):
+		first_streamer.shutdown()
 	main.queue_free()
 	await process_frame
 	await physics_frame
@@ -343,8 +351,10 @@ func _initialize() -> void:
 		+ "city_traces=3 relays=4 rain_eye_seals=3 trials=3 "
 		+ "ending=tidal_order restore=rain_eye"
 	)
-	restored_main.queue_free()
-	for _frame in 4:
+	if restored_streamer.has_method("shutdown"):
+		restored_streamer.shutdown()
+		restored_main.queue_free()
+	for _frame in 30:
 		await process_frame
 		await physics_frame
 	call_deferred("quit")

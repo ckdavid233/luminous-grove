@@ -5,6 +5,9 @@ const SHRINE_SCENE := preload("res://game/interaction/shrine.tscn")
 const WIND_BELL_SCENE := preload("res://game/interaction/wind_bell.tscn")
 const INTERACTIVE_LAKE := preload("res://game/world/interactive_lake.gd")
 const FOREST_TERRAIN := preload("res://game/world/forest_terrain.gd")
+const SURFACE_LIBRARY := preload("res://game/world/surface_library.gd")
+const WETNESS_CONTROLLER := preload("res://game/world/wetness_controller.gd")
+const FOOTPRINT_POOL := preload("res://game/world/footprint_pool.gd")
 const FOREST_TREE_SCENES := [
 	preload("res://content/environments/forest/forest_tree_1.glb"),
 	preload("res://content/environments/forest/forest_tree_2.glb"),
@@ -50,13 +53,19 @@ var _player
 var _shrine
 var _wind_bell
 var _water
+var _surface_library
+var _wetness_controller
+var _ground
 var _narrative
 var _memory_droplets: Array[Node] = []
 var _ending_choices: Array[Node] = []
 var _archive_present_mechanisms: Array[Node] = []
 var _world_environment: WorldEnvironment
 var _sun: DirectionalLight3D
+var _lake_fill: OmniLight3D
 var _grass_instance: MultiMeshInstance3D
+var _grass_material: ShaderMaterial
+var _footprint_pool
 var _forest_tree_instances: Array[MultiMeshInstance3D] = []
 var _world_streamer
 var _phase_shift
@@ -100,10 +109,13 @@ func _ready() -> void:
 	_load_quality_settings()
 	_create_narrative()
 	_create_environment()
+	_create_surface_system()
 	_create_ground()
 	_create_forest_path()
 	_create_water()
+	_create_reflection_probes()
 	_create_lake_shore()
+	_create_footprints()
 	_create_forest()
 	_create_grass()
 	_create_particles()
@@ -114,6 +126,7 @@ func _ready() -> void:
 	_create_archive_present_mechanisms()
 	_create_player()
 	_create_game_ui()
+	_register_wetness_materials()
 	_setup_cinematic()
 	_setup_phase_shift()
 	_apply_quality_profile()
@@ -125,6 +138,67 @@ func _ready() -> void:
 		call_deferred("_run_release_smoke")
 	elif not restored and not OS.get_cmdline_args().has("--script"):
 		call_deferred("_play_intro_cinematic")
+
+
+func _exit_tree() -> void:
+	# Stop any UI/cinematic tweens before child resources are released.  This
+	# also covers a toast or transition started immediately before a test exits.
+	for tween in get_tree().get_processed_tweens():
+		if tween != null and tween.is_valid():
+			tween.kill()
+	# Detach physics materials before the Jolt server releases static/rigid
+	# collision bodies. CharacterBody3D intentionally has no override property,
+	# so it is excluded from this explicit release pass.
+	for node in find_children("*", "CollisionObject3D", true, false):
+		if node is StaticBody3D or node is RigidBody3D:
+			var collision_object := node as CollisionObject3D
+			if collision_object.physics_material_override != null:
+				collision_object.physics_material_override = null
+	if _wetness_controller != null and is_instance_valid(_wetness_controller):
+		_wetness_controller.set_process(false)
+	if _world_streamer != null and is_instance_valid(_world_streamer):
+		if _world_streamer.has_method("shutdown"):
+			_world_streamer.shutdown()
+		else:
+			_world_streamer.set_process(false)
+	_memory_droplets.clear()
+	_ending_choices.clear()
+	_archive_present_mechanisms.clear()
+	_forest_tree_instances.clear()
+	_grass_material = null
+	_surface_library = null
+	_wetness_controller = null
+	if _footprint_pool != null and is_instance_valid(_footprint_pool):
+		if _footprint_pool.has_method("shutdown"):
+			_footprint_pool.shutdown()
+	_footprint_pool = null
+	if _water != null and is_instance_valid(_water):
+		if _water.has_method("shutdown"):
+			_water.shutdown()
+	_water = null
+	if _phase_portal != null and is_instance_valid(_phase_portal):
+		if _phase_portal.has_method("shutdown"):
+			_phase_portal.shutdown()
+	_phase_portal = null
+	_player = null
+	_rng = null
+
+
+func _process(_delta: float) -> void:
+	if _player == null or _grass_material == null:
+		return
+	_grass_material.set_shader_parameter("actor_position", _player.global_position)
+	_grass_material.set_shader_parameter("actor_influence", 1.0)
+	var interactions := PackedVector4Array()
+	interactions.append(Vector4(_player.global_position.x, _player.global_position.z, 0.0, 1.25))
+	for body in get_tree().get_nodes_in_group("vegetation_push_body"):
+		if body is RigidBody3D and is_instance_valid(body):
+			var body_position: Vector3 = body.global_position
+			interactions.append(Vector4(body_position.x, body_position.z, 0.0, 1.05))
+			if interactions.size() >= 8:
+				break
+	_grass_material.set_shader_parameter("interaction_spheres", interactions)
+	_grass_material.set_shader_parameter("interaction_count", interactions.size())
 
 
 func _has_runtime_argument(argument: String) -> bool:
@@ -160,13 +234,23 @@ func _run_release_smoke() -> void:
 			"RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high "
 			+ "echo_async=ready"
 		)
-		get_tree().quit(0)
+		var scene_tree := get_tree()
+		if _world_streamer != null and _world_streamer.has_method("shutdown"):
+			_world_streamer.shutdown()
+		queue_free()
+		await scene_tree.process_frame
+		await scene_tree.physics_frame
+		scene_tree.quit(0)
 	else:
 		push_error(
 			"RELEASE_SMOKE_FAILED echo=%s player=%s narrative=%s quality=%s"
 			% [echo_ready, _player != null, _narrative != null, _quality_profile]
 		)
-		get_tree().quit(1)
+		var scene_tree := get_tree()
+		queue_free()
+		await scene_tree.process_frame
+		await scene_tree.physics_frame
+		scene_tree.quit(1)
 
 
 func _input(event: InputEvent) -> void:
@@ -242,6 +326,7 @@ func _create_environment() -> void:
 	sun.light_energy = 1.32
 	sun.shadow_enabled = true
 	sun.shadow_opacity = 0.76
+	sun.light_angular_distance = 0.34
 	sun.directional_shadow_max_distance = 45.0
 	add_child(sun)
 	_sun = sun
@@ -255,10 +340,47 @@ func _create_environment() -> void:
 	_apply_quality_profile()
 
 
+func _create_surface_system() -> void:
+	_surface_library = SURFACE_LIBRARY.new()
+	_surface_library.name = "SurfaceLibrary"
+	add_child(_surface_library)
+	_wetness_controller = WETNESS_CONTROLLER.new()
+	_wetness_controller.name = "WetnessController"
+	_wetness_controller.set_rain_intensity(0.68)
+	add_child(_wetness_controller)
+
+
+func _create_reflection_probes() -> void:
+	var lake_probe := ReflectionProbe.new()
+	lake_probe.name = "LakeReflectionProbe"
+	lake_probe.position = Vector3(-8.0, 0.55, -8.0)
+	lake_probe.size = Vector3(18.0, 5.5, 14.0)
+	lake_probe.origin_offset = Vector3(0.0, 0.7, 0.0)
+	lake_probe.box_projection = true
+	lake_probe.enable_shadows = true
+	lake_probe.intensity = 0.82
+	lake_probe.max_distance = 30.0
+	lake_probe.update_mode = ReflectionProbe.UPDATE_ONCE
+	add_child(lake_probe)
+
+	var shrine_probe := ReflectionProbe.new()
+	shrine_probe.name = "ShrineReflectionProbe"
+	shrine_probe.position = Vector3(0.0, 1.4, -6.0)
+	shrine_probe.size = Vector3(7.0, 4.0, 7.0)
+	shrine_probe.box_projection = true
+	shrine_probe.intensity = 0.58
+	shrine_probe.max_distance = 16.0
+	shrine_probe.update_mode = ReflectionProbe.UPDATE_ONCE
+	add_child(shrine_probe)
+
+
 func _create_ground() -> void:
-	var ground := FOREST_TERRAIN.new()
-	add_child(ground)
-	ground.configure(_ground_material())
+	_ground = FOREST_TERRAIN.new()
+	add_child(_ground)
+	_ground.configure(
+		_ground_material(),
+		_surface_library.get_physics_material(&"dry_soil"),
+	)
 
 
 func _create_ground_box(
@@ -320,10 +442,20 @@ func _create_water() -> void:
 	var plane := _create_elliptical_lake_mesh()
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/realistic_lake.gdshader")
+	material.set_shader_parameter("wetness", 0.54)
+	material.set_shader_parameter("rain_intensity", 0.68)
 	plane.surface_set_material(0, material)
 	_water.mesh = plane
 	_water.position = Vector3(-8.0, 0.04, -8.0)
 	add_child(_water)
+	_lake_fill = OmniLight3D.new()
+	_lake_fill.name = "LakeSurfaceFill"
+	_lake_fill.position = Vector3(-8.0, 1.25, -8.0)
+	_lake_fill.light_color = Color("72c9c0")
+	_lake_fill.light_energy = 0.22
+	_lake_fill.omni_range = 11.0
+	_lake_fill.shadow_enabled = false
+	add_child(_lake_fill)
 	_create_water_droplets()
 
 
@@ -432,6 +564,8 @@ func _create_lake_shore() -> void:
 	shore_colliders.name = "ShoreColliders"
 	shore_colliders.collision_layer = 1
 	shore_colliders.collision_mask = 0
+	shore_colliders.physics_material_override = _surface_library.get_physics_material(&"stone")
+	shore_colliders.set_meta("surface_type", &"stone")
 	shore.add_child(shore_colliders)
 
 	var stone_materials: Array[StandardMaterial3D] = [
@@ -523,6 +657,12 @@ func _create_lake_shore() -> void:
 		)
 
 
+func _create_footprints() -> void:
+	_footprint_pool = FOOTPRINT_POOL.new()
+	_footprint_pool.name = "Footprints"
+	add_child(_footprint_pool)
+
+
 func _lake_edge_position(index: int, count: int) -> Vector3:
 	var angle := TAU * float(index) / float(count)
 	return Vector3(cos(angle) * 7.62, 0.0, sin(angle) * 5.12)
@@ -544,6 +684,8 @@ func _create_forest() -> void:
 	tree_colliders.name = "TreeColliders"
 	tree_colliders.collision_layer = 1
 	tree_colliders.collision_mask = 0
+	tree_colliders.physics_material_override = _surface_library.get_physics_material(&"wood")
+	tree_colliders.set_meta("surface_type", &"wood")
 	forest.add_child(tree_colliders)
 	var occupied_positions: Array[Vector3] = []
 	const TREES_PER_VARIANT := 18
@@ -639,7 +781,10 @@ func _create_grass() -> void:
 	var grass_mesh := _create_grass_clump_mesh()
 	var grass_material := ShaderMaterial.new()
 	grass_material.shader = load("res://shaders/forest_grass.gdshader")
+	grass_material.set_shader_parameter("actor_position", Vector3.ZERO)
+	grass_material.set_shader_parameter("actor_influence", 1.0)
 	grass_mesh.surface_set_material(0, grass_material)
+	_grass_material = grass_material
 
 	var grass_instance := MultiMeshInstance3D.new()
 	grass_instance.name = "Grass"
@@ -970,8 +1115,77 @@ func _create_player() -> void:
 	_player = PLAYER_SCENE.instantiate()
 	_player.position = Vector3(0.0, 1.0, 6.0)
 	add_child(_player)
+	_player.set_surface_library(_surface_library)
 	_set_visual_layer(_player, PHASE_SHIFT_CONTROLLER.SHARED_VISUAL_LAYER)
 	_water.set_actor(_player)
+	_player.landed.connect(_on_player_landed)
+	_player.footstep_surface.connect(_on_player_footstep)
+
+
+func _register_wetness_materials() -> void:
+	if _wetness_controller == null:
+		return
+	for node_name in [
+		"Ground",
+		"ForestPath",
+		"Water",
+		"LakeShore",
+		"Forest",
+		"Grass",
+		"Shrine",
+		"WindBell",
+	]:
+		var node := get_node_or_null(node_name)
+		if node != null:
+			_wetness_controller.register_node(node)
+	if not _wetness_controller.wetness_changed.is_connected(_on_wetness_changed):
+		_wetness_controller.wetness_changed.connect(_on_wetness_changed)
+
+
+func _on_wetness_changed(value: float, rain_intensity: float) -> void:
+	if _world_environment != null and _world_environment.environment != null:
+		var environment := _world_environment.environment
+		environment.fog_density = lerpf(0.0035, 0.0062, rain_intensity)
+		environment.volumetric_fog_density = lerpf(0.0058, 0.0105, rain_intensity)
+		environment.volumetric_fog_albedo = Color(0.58, 0.72, 0.7).lerp(
+			Color(0.67, 0.78, 0.76),
+			value * 0.45,
+		)
+	var droplets := get_node_or_null("WaterDroplets") as GPUParticles3D
+	if droplets != null:
+		droplets.amount = maxi(18, int(56.0 * (0.35 + rain_intensity * 0.85)))
+	if _water != null and _water.has_method("set_rain_intensity"):
+		_water.set_rain_intensity(rain_intensity)
+	if _lake_fill != null:
+		_lake_fill.light_energy = lerpf(0.16, 0.34, value)
+
+
+func _on_player_landed(impact_speed: float) -> void:
+	if _water == null or _player == null:
+		return
+	if _water.has_method("emit_surface_event"):
+		_water.emit_surface_event(
+			Vector3(_player.global_position.x, _water.global_position.y, _player.global_position.z),
+			Vector3(0.0, -impact_speed, 0.0),
+			clampf(0.42 + impact_speed * 0.08, 0.42, 1.3),
+			&"landing",
+		)
+
+
+func _on_player_footstep(position: Vector3, speed: float, surface_type: StringName) -> void:
+	if _water == null or not _water.has_method("emit_surface_event"):
+		if _footprint_pool != null:
+			_footprint_pool.stamp(position, Vector3.UP, surface_type, 0.8)
+		return
+	if _footprint_pool != null and surface_type != &"water":
+		_footprint_pool.stamp(position, Vector3.UP, surface_type, 0.88)
+	if surface_type == &"water" or surface_type == &"wet_mud":
+		_water.emit_surface_event(
+			Vector3(position.x, _water.global_position.y, position.z),
+			Vector3(0.0, speed, 0.0),
+			clampf(0.16 + speed * 0.035, 0.16, 0.72),
+			&"footstep",
+		)
 
 
 func _setup_phase_shift() -> void:
@@ -989,9 +1203,13 @@ func _setup_phase_shift() -> void:
 		"Ground",
 		"ForestPath",
 		"Water",
+		"LakeSurfaceFill",
+		"LakeReflectionProbe",
+		"ShrineReflectionProbe",
 		"ShallowWaterFloor",
 		"WaterDroplets",
 		"LakeShore",
+		"Footprints",
 		"Forest",
 		"Grass",
 		"AmbientVFX",
@@ -1261,6 +1479,8 @@ func _apply_quality_profile() -> void:
 		water_droplets.visible = _quality_profile != &"performance"
 	if _player != null:
 		_player.set_visual_quality_profile(_quality_profile)
+	if _water != null and _water.has_method("set_visual_quality_profile"):
+		_water.set_visual_quality_profile(_quality_profile)
 
 
 func _apply_grass_quality() -> void:
@@ -1285,6 +1505,13 @@ func _apply_forest_quality() -> void:
 			if _quality_profile == &"performance"
 			else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		)
+		var visibility_end := 72.0
+		if _quality_profile == &"balanced":
+			visibility_end = 60.0
+		elif _quality_profile == &"performance":
+			visibility_end = 46.0
+		tree_instances.visibility_range_end = visibility_end
+		tree_instances.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 
 
 func _load_quality_settings() -> void:
@@ -2515,9 +2742,55 @@ func _standard_material(color: Color, roughness: float) -> StandardMaterial3D:
 func _ground_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/forest_terrain.gdshader")
-	material.set_shader_parameter("albedo_texture", GROUND_ALBEDO_V2)
-	material.set_shader_parameter("normal_texture", GROUND_NORMAL)
-	material.set_shader_parameter("roughness_texture", GROUND_ROUGHNESS)
+	var ground_root := "res://content/materials/scanned/forest_ground/"
+	var mud_root := "res://content/materials/scanned/mud_forest/"
+	var leaves_root := "res://content/materials/scanned/forest_leaves/"
+	var ground_albedo := _load_material_texture(ground_root, "albedo")
+	var ground_normal := _load_material_texture(ground_root, "normal")
+	var ground_roughness := _load_material_texture(ground_root, "roughness")
+	var ground_ao := _load_material_texture(ground_root, "ao")
+	var ground_cavity := _load_material_texture(ground_root, "cavity")
+	var ground_height := _load_material_texture(ground_root, "height")
+	var mud_albedo := _load_material_texture(mud_root, "albedo")
+	var leaves_albedo := _load_material_texture(leaves_root, "albedo")
+	if ground_albedo == null:
+		ground_albedo = GROUND_ALBEDO_V2
+	if ground_normal == null:
+		ground_normal = GROUND_NORMAL
+	if ground_roughness == null:
+		ground_roughness = GROUND_ROUGHNESS
+	if ground_ao == null:
+		ground_ao = load("res://content/environments/ground/ao.png")
+	if ground_cavity == null:
+		ground_cavity = load("res://content/environments/ground/cavity.png")
+	if ground_height == null:
+		ground_height = load("res://content/environments/ground/height.png")
+	material.set_shader_parameter("albedo_texture", ground_albedo)
+	material.set_shader_parameter("normal_texture", ground_normal)
+	material.set_shader_parameter("roughness_texture", ground_roughness)
+	material.set_shader_parameter(
+		"dry_albedo_texture",
+		ground_albedo,
+	)
+	material.set_shader_parameter(
+		"wet_albedo_texture",
+		mud_albedo
+			if mud_albedo != null
+			else load("res://content/environments/ground/forest_ground_albedo.png"),
+	)
+	material.set_shader_parameter(
+		"leaf_albedo_texture",
+		leaves_albedo
+			if leaves_albedo != null
+			else load("res://content/materials/foliage/albedo.png"),
+	)
+	material.set_shader_parameter("detail_normal_texture", ground_normal)
+	material.set_shader_parameter("ao_texture", ground_ao)
+	material.set_shader_parameter("cavity_texture", ground_cavity)
+	material.set_shader_parameter("height_texture", ground_height)
+	material.set_shader_parameter("detail_maps_enabled", true)
+	material.set_shader_parameter("wetness", 0.54)
+	material.set_shader_parameter("rain_intensity", 0.68)
 	return material
 
 
@@ -2528,19 +2801,49 @@ func _pbr_material(
 	uv_scale: Vector3,
 ) -> StandardMaterial3D:
 	var root := "res://content/materials/" + folder + "/"
+	if folder == "bark" and _load_material_texture(
+		"res://content/materials/scanned/pine_bark/",
+		"albedo",
+	) != null:
+		root = "res://content/materials/scanned/pine_bark/"
+	if folder == "lake_stone" and _load_material_texture(
+		"res://content/materials/scanned/lake_stone/",
+		"albedo",
+	) != null:
+		root = "res://content/materials/scanned/lake_stone/"
 	var material := StandardMaterial3D.new()
-	material.albedo_texture = load(root + "albedo.png") as Texture2D
+	material.albedo_texture = _load_material_texture(root, "albedo")
 	material.albedo_color = tint
 	material.normal_enabled = true
-	material.normal_texture = load(root + "normal.png") as Texture2D
+	material.normal_texture = _load_material_texture(root, "normal")
 	material.normal_scale = 0.78
 	material.roughness = 1.0
-	material.roughness_texture = load(root + "roughness.png") as Texture2D
+	material.roughness_texture = _load_material_texture(root, "roughness")
+	var ao_texture := _load_material_texture(root, "ao")
+	if ao_texture != null:
+		material.ao_enabled = true
+		material.ao_texture = ao_texture
+		material.ao_light_affect = 0.72
+	var height_texture := _load_material_texture(root, "height")
+	if height_texture != null and not triplanar:
+		material.heightmap_enabled = true
+		material.heightmap_texture = height_texture
+		material.heightmap_scale = 0.035
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	material.uv1_scale = uv_scale
 	material.uv1_triplanar = triplanar
 	material.uv1_world_triplanar = triplanar
 	return material
+
+
+func _load_material_texture(root: String, stem: String) -> Texture2D:
+	for extension in ["png", "jpg", "jpeg", "exr"]:
+		var path: String = root + stem + "." + extension
+		if FileAccess.file_exists(ProjectSettings.globalize_path(path)):
+			var texture := load(path) as Texture2D
+			if texture != null:
+				return texture
+	return null
 
 
 func _set_visual_layer(root: Node, visual_layer: int) -> void:
@@ -2561,6 +2864,8 @@ render_mode cull_disabled, depth_prepass_alpha;
 uniform sampler2D albedo_texture : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_texture : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D roughness_texture : hint_roughness_r, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float wetness : hint_range(0.0, 1.0) = 0.54;
+uniform float rain_intensity : hint_range(0.0, 1.0) = 0.62;
 varying vec3 world_position;
 
 void vertex() {
@@ -2572,25 +2877,36 @@ void fragment() {
 	vec4 soil = texture(albedo_texture, world_uv);
 	float edge = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));
 	float feather = smoothstep(0.0, 0.115, edge);
-	ALBEDO = soil.rgb * vec3(0.86, 0.82, 0.74);
+	vec3 wet_soil = soil.rgb * vec3(0.48, 0.55, 0.52);
+	ALBEDO = mix(soil.rgb * vec3(0.86, 0.82, 0.74), wet_soil, wetness * 0.62);
 	NORMAL_MAP = texture(normal_texture, world_uv).rgb;
 	NORMAL_MAP_DEPTH = 0.58;
-	ROUGHNESS = texture(roughness_texture, world_uv).r;
+	ROUGHNESS = mix(texture(roughness_texture, world_uv).r, 0.26, wetness * 0.7);
+	SPECULAR = mix(0.32, 0.72, wetness);
+	EMISSION = vec3(0.02, 0.05, 0.045) * rain_intensity * wetness * 0.025;
 	ALPHA = feather;
 }
 """
 	var material := ShaderMaterial.new()
 	material.shader = shader
+	var mud_root := "res://content/materials/scanned/mud_forest/"
+	var fallback_root := "res://content/materials/forest_path/"
 	material.set_shader_parameter(
 		"albedo_texture",
-		load("res://content/materials/forest_path/albedo.png")
+		_load_material_texture(mud_root, "albedo")
+			if _load_material_texture(mud_root, "albedo") != null
+			else _load_material_texture(fallback_root, "albedo"),
 	)
 	material.set_shader_parameter(
 		"normal_texture",
-		load("res://content/materials/forest_path/normal.png")
+		_load_material_texture(mud_root, "normal")
+			if _load_material_texture(mud_root, "normal") != null
+			else _load_material_texture(fallback_root, "normal"),
 	)
 	material.set_shader_parameter(
 		"roughness_texture",
-		load("res://content/materials/forest_path/roughness.png")
+		_load_material_texture(mud_root, "roughness")
+			if _load_material_texture(mud_root, "roughness") != null
+			else _load_material_texture(fallback_root, "roughness"),
 	)
 	return material

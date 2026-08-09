@@ -162,7 +162,7 @@ WorldStreamer 使用 threaded request、逐帧轮询、`CACHE_MODE_IGNORE` 和 L
 - SSR、SSAO、SSIL、SDFGI；
 - 体积雾、普通雾、Glow；
 - 45 m 方向光阴影；
-- 2K PBR 环境纹理与各向异性过滤；
+- 4K runtime PBR 环境纹理与各向异性过滤（8K 英雄源文件外置）；
 - 水面顶点波、法线、反射感、焦散和交互涟漪；
 - 角色皮肤 SSS、眼睛 Clearcoat、头发 Anisotropy；
 - 雨、悬浮水滴、花瓣、萤火和雨眼风暴粒子。
@@ -241,7 +241,7 @@ SaveService 是唯一 autoload。schema v2 payload：
 
 ## 13. 已验证的不变量
 
-- 21 项回归全部通过；
+- 23 项回归全部通过；
 - 100 次时相切换后无重复场景；
 - 章节交接后完整关卡常驻数为 2；
 - Jolt 配重由真实刚体进入 Area 触发；

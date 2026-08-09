@@ -17,6 +17,8 @@ TESTS=(
   jolt_physics_test.gd
   cinematic_director_test.gd
   interactive_water_test.gd
+  material_library_test.gd
+  surface_interaction_test.gd
   presentation_test.gd
   quality_settings_test.gd
   input_regression_test.gd

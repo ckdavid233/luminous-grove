@@ -18,10 +18,56 @@ var _instances: Dictionary = {}
 var _last_used: Dictionary = {}
 var _current_path := ""
 var _clock := 0
+var _tearing_down := false
 
 
 func _ready() -> void:
 	_host = get_parent()
+
+
+func _exit_tree() -> void:
+	# Threaded level instances can outlive the current phase when a test or
+	# application exits. Explicitly release both active and inactive instances
+	# so the streamer never leaves orphaned nodes/resource references behind.
+	_tearing_down = true
+	shutdown()
+
+
+func shutdown() -> void:
+	set_process(false)
+	_current_path = ""
+	var can_free_instances := is_inside_tree() and not _tearing_down
+	for path in _instances.keys():
+		var instance: Node = _instances[path]
+		if is_instance_valid(instance):
+			_release_instance_resources(instance)
+			# During `_exit_tree` the host is already iterating its children; an
+			# immediate free would re-enter remove_child and can crash Godot. An
+			# explicit runtime shutdown is safe to free immediately, while parent
+			# teardown lets the host reclaim the child normally.
+			if can_free_instances:
+				instance.free()
+	_instances.clear()
+	_last_used.clear()
+	_requests.clear()
+
+
+func _release_instance_resources(instance: Node) -> void:
+	# A streamed level creates several runtime-only Mesh/Material resources.
+	# Detach those references before queue_free so CACHE_MODE_IGNORE loads do not
+	# leave a zero-reference RefCounted alive until process shutdown.
+	for geometry in instance.find_children("*", "GeometryInstance3D", true, false):
+		var visual := geometry as GeometryInstance3D
+		visual.material_override = null
+		if visual is MeshInstance3D:
+			(visual as MeshInstance3D).mesh = null
+		elif visual is MultiMeshInstance3D:
+			(visual as MultiMeshInstance3D).multimesh = null
+	for node in instance.find_children("*", "CollisionObject3D", true, false):
+		if node is StaticBody3D or node is RigidBody3D:
+			var collision_object := node as CollisionObject3D
+			if collision_object.physics_material_override != null:
+				collision_object.physics_material_override = null
 
 
 func configure(host: Node, resident_limit: int = 2) -> void:
