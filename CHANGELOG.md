@@ -26,6 +26,8 @@
 - 新增统一 `Main._release_runtime_references()` 与 `runtime_teardown_test.gd`，在退出前解绑网格、
   MultiMesh、粒子、音频和环境引用；回归套件扩展为 24 项，仍保留 ObjectDB/Texture RID 警告作为
   未完成的零泄漏验收项。
+- 角色退出时补齐控制器、SurfaceProbe、AnimationTree、SkeletonIK 和脚部目标引用释放；24 项回归
+  仍通过，但部分场景仍有少量 ObjectDB 警告，继续列为内存检查任务。
 - 性能与截图入口新增 `PERFORMANCE_RESOLUTION=3840x2160` 和 `CAPTURE_NATIVE=1`；在真实
   Renoir Vulkan Forward+ 的 3840×2160 X11 mode 完成高画质采样（平均 513.418 ms、P95 974.597 ms）
   与湖面原生窗口截图，结果证明 4K 路径有效但目标性能未达成。

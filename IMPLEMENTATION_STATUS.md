@@ -106,8 +106,9 @@
 - 程序化关卡的单对象数量偏多，城市需要 MultiMesh/合批和灯光 LOD。
 - 部分大型场景回归仍有少量 Godot ObjectDB RefCounted/Texture RID leak warning（功能与流送结果
   通过）；WorldStreamer/InteractiveLake/4K 捕获视口和 Main 运行时引用解绑已增加退出清理，且
-  `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子和 WorldEnvironment 已脱钩；仍需用 Godot
-  内存检查继续定位剩余资源，当前不能宣称零泄漏。
+  `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子和 WorldEnvironment 已脱钩；Player 的
+  控制器、SurfaceProbe、AnimationTree、SkeletonIK 和脚部目标引用也已在 `_exit_tree()` 释放，但
+  仍需用 Godot 内存检查继续定位剩余资源，当前不能宣称零泄漏。
 - 画质档没有动态分辨率和逐项高级设置。
 - 没有输入重映射、字幕缩放或色盲设置。
 - 真实 Vulkan X11 捕获已完成；`VISUAL_VALIDATION_REPORT.md` 保存地面、泥滩、树皮、湖面、水花、

@@ -593,6 +593,20 @@ func _find_best_nearby_interactable() -> Node:
 
 
 func _exit_tree() -> void:
+	_control_enabled = false
+	_interaction_target = null
+	_surface_library = null
+	_surface_probe = null
+	_surface_sample.clear()
+	_animation_footstep_active = false
+	_animation_playback = null
+	_animation_tree = null
+	_animation_player = null
+	_skeleton = null
+	_left_foot_ik = null
+	_right_foot_ik = null
+	_left_foot_target = null
+	_right_foot_target = null
 	if _interaction_query != null:
 		_interaction_query.exclude.clear()
 		_interaction_query = null
