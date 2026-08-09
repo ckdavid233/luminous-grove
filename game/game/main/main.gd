@@ -101,6 +101,7 @@ var _rain_eye_present_activated := false
 var _rain_eye_pair_ready := false
 var _rain_eye_entry_cinematic_pending := false
 var _pending_ending_id: StringName = &""
+var _shutdown_requested := false
 
 
 func _ready() -> void:
@@ -141,6 +142,13 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
+	if _shutdown_requested:
+		return
+	_shutdown_requested = true
 	# Stop any UI/cinematic tweens before child resources are released.  This
 	# also covers a toast or transition started immediately before a test exits.
 	for tween in get_tree().get_processed_tweens():
@@ -180,6 +188,16 @@ func _exit_tree() -> void:
 		if _phase_portal.has_method("shutdown"):
 			_phase_portal.shutdown()
 	_phase_portal = null
+	_world_streamer = null
+	_phase_shift = null
+	_surface_library = null
+	_world_environment = null
+	_sun = null
+	_lake_fill = null
+	_grass_instance = null
+	_shrine = null
+	_wind_bell = null
+	_narrative = null
 	_player = null
 	_rng = null
 

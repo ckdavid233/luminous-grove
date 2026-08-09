@@ -27,6 +27,7 @@ func shutdown() -> void:
 	if _shutdown_requested:
 		return
 	_shutdown_requested = true
+	set_process(false)
 	if _preview_viewport != null and is_instance_valid(_preview_viewport):
 		_preview_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		_preview_viewport.world_3d = null

@@ -325,8 +325,10 @@ func _initialize() -> void:
 	var first_streamer = main.get("_world_streamer")
 	if first_streamer != null and first_streamer.has_method("shutdown"):
 		first_streamer.shutdown()
+	if main.has_method("shutdown"):
+		main.shutdown()
 	main.queue_free()
-	for _frame in 30:
+	for _frame in 120:
 		await process_frame
 		await physics_frame
 	var restored_main := main_scene.instantiate()
@@ -354,7 +356,9 @@ func _initialize() -> void:
 	)
 	if restored_streamer.has_method("shutdown"):
 		restored_streamer.shutdown()
-		restored_main.queue_free()
+	if restored_main.has_method("shutdown"):
+		restored_main.shutdown()
+	restored_main.queue_free()
 	for _frame in 120:
 		await process_frame
 		await physics_frame

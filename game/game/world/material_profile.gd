@@ -21,6 +21,7 @@ extends Resource
 @export var speed_multiplier := 1.0
 @export var footstep_tag: StringName = &"soil"
 @export var ripple_tag: StringName = &"none"
+var _physics_material: PhysicsMaterial
 
 
 func has_required_maps(include_hero_maps := false) -> bool:
@@ -36,9 +37,14 @@ func has_required_maps(include_hero_maps := false) -> bool:
 
 
 func create_physics_material() -> PhysicsMaterial:
-	var material := PhysicsMaterial.new()
-	material.friction = friction
-	material.bounce = bounce
-	material.rough = roughness
-	material.absorbent = surface_type in [&"wet_mud", &"moss"]
-	return material
+	if _physics_material == null or not is_instance_valid(_physics_material):
+		_physics_material = PhysicsMaterial.new()
+		_physics_material.friction = friction
+		_physics_material.bounce = bounce
+		_physics_material.rough = roughness
+		_physics_material.absorbent = surface_type in [&"wet_mud", &"moss"]
+	return _physics_material
+
+
+func release_runtime_resources() -> void:
+	_physics_material = null

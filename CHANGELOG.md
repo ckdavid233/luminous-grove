@@ -20,6 +20,9 @@
   增加坡面法线脚部 IK 回归，并复用 SurfaceProbe/脚部/交互/恢复落点查询参数以降低临时 RID。
 - 水花根节点改由 `InteractiveLake` 所有，门户、脚印 Tween 和环境射线增加退出清理；已记录仍会
   偶发出现的 Godot ObjectDB/Texture RID 警告，当前不宣称零泄漏。
+- 本轮补充幂等 `Main.shutdown()`、SurfaceProfile 物理材质缓存释放、门户停止处理和回归场景的
+  显式 teardown 等待；23 项回归仍全部通过，但退出时仍观察到少量通用 ObjectDB/Texture RID
+  警告，继续列为下一阶段内存检查任务。
 - Windows/PCK release smoke 改为允许冷启动材质与 threaded PCK 最多 3600 帧，并在成功标志后直接
   退出探针；本轮导出包已通过 Linux 同版本自检和 ZIP 完整性检查。
 - 回归套件从 21 项扩展为 23 项，新增材质完整性和表面交互测试；真实 Vulkan 性能基线保留，
@@ -41,8 +44,8 @@
 - 保留真实 Vulkan 1280×720 主场景、树木近景、湖面／飞溅和角色动作前后对比，并新增通过
   `SubViewport` 生成且尺寸断言为 3840×2160 的地面、湿泥、树木、湖面、水花和角色截图；
   原生 4K 桌面帧时仍待有 3840×2160 显示 surface 的设备复测，避免把离屏图像冒充性能验收。
-- 23 项回归保持通过；Renoir 实测高画质 13.8 FPS（P95 73.491 ms），性能档 38.8 FPS
-  （P95 26.820 ms）。
+- 23 项回归保持通过；Renoir 本轮真实 X11/Vulkan 实测高画质 8.4 FPS（P95 120.904 ms），性能档
+  17.6 FPS（P95 59.794 ms）；这组数据只代表当前 VNC/X11 表面，原生 4K 与 Windows 仍待复测。
 - 工程版本推进为 `0.6.2-alpha`；用户素材包仍可按 `USER_ASSET_PACKAGE_BRIEF.md` 接入，
   不将概念图冒充最终 3D 资产。
 

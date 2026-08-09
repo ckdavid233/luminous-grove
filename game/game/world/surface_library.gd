@@ -24,6 +24,9 @@ func _exit_tree() -> void:
 	# Profiles own imported texture references and generated physics materials.
 	# Drop the references before Jolt tears down the parent scene so a streamed
 	# test scene cannot retain a Resource through the surface registry.
+	for profile in _profiles.values():
+		if profile != null and profile.has_method("release_runtime_resources"):
+			profile.release_runtime_resources()
 	_profiles.clear()
 
 

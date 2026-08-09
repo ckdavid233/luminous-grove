@@ -127,10 +127,10 @@
 - Godot 4.7.1 官方 Windows x86_64 release 模板已 CRC 校验；
 - Windows Desktop preset 已加入；
 - EXE + PCK 结构已导出；
-- v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；564,947,496 字节 ZIP 已通过
+- v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；564,948,065 字节 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- ZIP SHA-256 为 `0810dc8b6a4d1b21098c631e2b603c77e8c76671ca2d3fac4ad7735904f993d9`；PCK SHA-256 为
-  `b43b05c14d49f1a1012719c458acb071eadc9dada1accc4aec653ff7a2235cca`；
+- ZIP SHA-256 为 `d6aaa48fc05eedb1024e67b3e203fa3502d4a64203c4226d77d378a38a0de7a4`；PCK SHA-256 为
+  `b71393edfd0849cd60ffc0f9ffbc307acb67d5c0cc5da52cd0444ba01884788d`；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

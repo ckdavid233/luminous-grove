@@ -79,6 +79,11 @@ env DISPLAY=:1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake godot --path game 
 | 脚印反馈 | `previews/finalprofile_footprints_after_4k.png` | `32c8498765c9acece80764e266354b8a92a5faff9aa3c2e2017dbcd2ebf8b707` |
 | 角色动作 | `previews/finalprofile_character_clean_4k.png` | `251512d2b00fc3586d61c02d1692d4a505a2534a93d1e3d80f49850c0692dcf2` |
 
+本轮显式 shutdown 与资源缓存释放改动后，湖面单镜头再次在同一真实 Vulkan SubViewport 复验：
+`previews/postshutdown_lake_4k.png`，尺寸 3840×2160，SHA-256 为
+`063cae2ce3ed10f6879f53da13eb255557e029061a87a0d414b8a05abf6ad988`。该复验保持湖面反射和
+水纹路径有效；退出时仍报告 7 个 Texture RID 与 1 个通用 RefCounted，不能视为零泄漏。
+
 ## 视觉结论与剩余项
 
 - 地面、泥滩、树皮、湖面和角色动作均已在真实 Vulkan 表面完成同机位前后对比。

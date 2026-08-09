@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 564,947,496 bytes
-SHA256: 0810dc8b6a4d1b21098c631e2b603c77e8c76671ca2d3fac4ad7735904f993d9
+size: 564,948,065 bytes
+SHA256: d6aaa48fc05eedb1024e67b3e203fa3502d4a64203c4226d77d378a38a0de7a4
 integrity: unzip -t passed, 4 entries, no errors
 ```
 
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 4 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,426,640 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,427,312 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 

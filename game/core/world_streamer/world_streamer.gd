@@ -35,6 +35,7 @@ func _exit_tree() -> void:
 
 func shutdown() -> void:
 	set_process(false)
+	_disconnect_runtime_signals()
 	_current_path = ""
 	var can_free_instances := is_inside_tree() and not _tearing_down
 	for path in _instances.keys():
@@ -50,6 +51,25 @@ func shutdown() -> void:
 	_instances.clear()
 	_last_used.clear()
 	_requests.clear()
+	_host = null
+
+
+func _disconnect_runtime_signals() -> void:
+	# Threaded loading exposes callbacks to both Main and PhaseShiftController.
+	# Disconnect them before clearing instances so their Callable wrappers do not
+	# survive a streamed-level teardown as zero-reference RefCounted objects.
+	for signal_ref in [
+		load_requested,
+		load_progress,
+		level_loaded,
+		level_activated,
+		level_unloaded,
+		load_failed,
+	]:
+		for connection in signal_ref.get_connections():
+			var callback: Callable = connection.get("callable", Callable())
+			if callback.is_valid() and signal_ref.is_connected(callback):
+				signal_ref.disconnect(callback)
 
 
 func _release_instance_resources(instance: Node) -> void:

@@ -84,8 +84,8 @@ JSON 原始结果保留在 `performance_runtime*.json`。
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过，更新材质与水花逻辑后的 SHA-256 为
-  `0810dc8b6a4d1b21098c631e2b603c77e8c76671ca2d3fac4ad7735904f993d9`（564,947,496 bytes）；PCK
-  SHA-256 为 `b43b05c14d49f1a1012719c458acb071eadc9dada1accc4aec653ff7a2235cca`（527,426,640 bytes）。
+  `d6aaa48fc05eedb1024e67b3e203fa3502d4a64203c4226d77d378a38a0de7a4`（564,948,065 bytes）；PCK
+  SHA-256 为 `b71393edfd0849cd60ffc0f9ffbc307acb67d5c0cc5da52cd0444ba01884788d`（527,427,312 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

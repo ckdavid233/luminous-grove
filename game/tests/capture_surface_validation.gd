@@ -259,13 +259,15 @@ func _terrain_normal(world_x: float, world_z: float) -> Vector3:
 
 func _shutdown_and_quit() -> void:
 	if _main != null and is_instance_valid(_main):
+		if _main.has_method("shutdown"):
+			_main.shutdown()
 		if _main.has_method("_exit_tree"):
 			_main.queue_free()
 	if _offscreen_viewport != null and is_instance_valid(_offscreen_viewport):
 		_offscreen_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		_offscreen_viewport.world_3d = null
 		_offscreen_viewport.queue_free()
-	for _frame in 12:
+	for _frame in 120:
 		await process_frame
 		await physics_frame
 	quit()

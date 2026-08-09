@@ -53,9 +53,12 @@ func _initialize() -> void:
 	assert(streamer.clear_inactive_levels() == 1)
 	if streamer.has_method("shutdown"):
 		streamer.shutdown()
+	if main.has_method("shutdown"):
+		main.shutdown()
 	main.queue_free()
-	await process_frame
-	await physics_frame
+	for _frame in 120:
+		await process_frame
+		await physics_frame
 	call_deferred("quit")
 
 

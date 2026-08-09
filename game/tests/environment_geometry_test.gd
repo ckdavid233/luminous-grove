@@ -174,8 +174,14 @@ func _initialize() -> void:
 	streamer.clear_inactive_levels()
 	if streamer.has_method("shutdown"):
 		streamer.shutdown()
+	if main.has_method("shutdown"):
+		main.shutdown()
+	probe.queue_free()
+	probe = null
+	streamer = null
 	main.queue_free()
-	for _frame in 30:
+	main = null
+	for _frame in 120:
 		await process_frame
 		await physics_frame
 	call_deferred("quit")
