@@ -51,7 +51,8 @@
 - 林地 Shader 和岸石/树皮 PBR 创建函数现在直接读取上述 profile 的贴图，SurfaceProbe、脚部
   射线、交互查询和恢复落点复用查询参数，水花根节点由湖体统一拥有并在退出时释放 GPU 资源。
 - 全流程：`gameplay_test.gd` 已从风铃、三记忆、神龛、双时相档案、Jolt 配重、城市回路、雨眼
-  试炼走到潮汐结局并验证完成态恢复；新增真实附近交互提示检查，避免只靠测试直接调用机关。
+  试炼走到潮汐结局并验证完成态恢复；新增真实附近交互提示和 15 个目标引导存在性断言，避免
+  只靠测试直接调用机关或让玩家在跨时相关卡中迷路。
 - 退出与流送：旧版地面 PBR 兜底贴图改为按需加载；WorldStreamer 在关卡卸载前调用关卡级
   `shutdown()`，Echo Ruins 会解绑生成 Mesh 的 PBR 贴图与材质；Vulkan 捕获脚本会预热并释放
   临时相机/Viewport 引用，避免验证工具本身扩大退出告警。
@@ -92,10 +93,10 @@ RID 警告仍未达到零泄漏验收。
 - 官方 Godot 4.7.1 release 模板导出；
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
-- ZIP `unzip -t` 通过；本轮安全脚本回调断开修复后已重新导出 PCK，SHA-256 为
-  `5b44648fc17f4a49093d332acd893e00b4a5fc01f452b70946695c9af002f16e`（527,432,784 bytes）。
-  ZIP SHA-256 为 `9347b7d7d35471fa732414a91cbb4b1f0d170fdc85269254a1ada1567173a807`
-  （564,952,710 bytes）。
+- ZIP `unzip -t` 通过；本轮目标引导与流程断言接入后已重新导出 PCK，SHA-256 为
+  `bb734dc96755cfb8faa794ddc85328c0df75bc0ce88b8ebc5b8d2e6c086a764e`（527,453,036 bytes）。
+  ZIP SHA-256 为 `17b3ba3627626b4bd6e41cf87c3876dad3df6dba179a707e5680eed254b2dad2`
+  （564,787,147 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

@@ -35,6 +35,7 @@ func _initialize() -> void:
 	assert(memory_droplets.size() == 3, "Three memories must exist")
 	assert(not shrine.is_activated, "Shrine starts dormant in a clean test")
 	assert(not shrine.can_interact(player), "Shrine remains locked before bell rings")
+	_assert_objective_target(main, "find bell")
 
 	player.set_physics_process(false)
 	player.global_position = wind_bell.global_position + Vector3(0.0, 1.0, -2.0)
@@ -46,6 +47,7 @@ func _initialize() -> void:
 		await process_frame
 	assert(wind_bell.is_rung, "First interaction must ring the wind bell")
 	assert(not shrine.can_interact(player), "Bell alone must not unlock the shrine")
+	_assert_objective_target(main, "gather memories")
 	for index in memory_droplets.size():
 		var droplet: Node = memory_droplets[index]
 		assert(droplet.can_interact(player), "Memories become available after bell")
@@ -54,6 +56,7 @@ func _initialize() -> void:
 		if index < memory_droplets.size() - 1:
 			assert(not shrine.can_interact(player), "Shrine stays locked until all memories")
 	assert(shrine.can_interact(player), "All memories must unlock the shrine")
+	_assert_objective_target(main, "awaken shrine")
 	player.set("_interaction_time_left", 0.0)
 	player.set("_interaction_target", shrine)
 	player.call("_begin_interaction")
@@ -61,12 +64,14 @@ func _initialize() -> void:
 		await process_frame
 	assert(shrine.is_activated, "Interaction must activate shrine")
 	assert(narrative.stage == &"memory_alignment")
+	_assert_objective_target(main, "memory alignment")
 	var ending_choices: Array = main.get("_ending_choices")
 	assert(ending_choices.size() == 2, "Two memory alignments must exist")
 	ending_choices[0].interact(player)
 	await process_frame
 	assert(narrative.stage == &"rift_ready", "The Act I choice must open the longer campaign")
 	assert(not narrative.alignment_id.is_empty(), "The branch must have a stable alignment ID")
+	_assert_objective_target(main, "rain rift")
 	var streamer = main.get("_world_streamer")
 	for _frame in 600:
 		if streamer.is_level_ready("res://content/levels/echo_ruins/echo_ruins.tscn"):
@@ -78,6 +83,7 @@ func _initialize() -> void:
 	await physics_frame
 	await process_frame
 	assert(narrative.stage == &"archive_search", "Entering echo starts Act II")
+	_assert_objective_target(main, "archive anchors")
 	var echo = streamer.get_level("res://content/levels/echo_ruins/echo_ruins.tscn")
 	var archive_anchors: Array = echo.get_archive_anchors()
 	assert(archive_anchors.size() == 3)
@@ -89,6 +95,7 @@ func _initialize() -> void:
 		narrative.stage == &"archive_mechanisms",
 		"Three archive anchors must unlock the physical archive mechanisms"
 	)
+	_assert_objective_target(main, "archive reflection mechanism")
 	assert(phase_shift.request_shift(), "The reflection mechanism is in the present phase")
 	await physics_frame
 	await process_frame
@@ -109,15 +116,18 @@ func _initialize() -> void:
 	await process_frame
 	var counterweight = echo.get_counterweight_plate()
 	assert(counterweight.is_available)
+	_assert_objective_target(main, "archive counterweight")
 	counterweight.solve_for_test()
 	await process_frame
 	assert(phase_shift.request_shift(), "The naming lens returns to the present phase")
 	await physics_frame
 	await process_frame
 	assert(name_lens.can_interact(player))
+	_assert_objective_target(main, "archive name lens")
 	name_lens.interact(player)
 	await process_frame
 	assert(narrative.stage == &"archive_restored")
+	_assert_objective_target(main, "lantern city gate")
 	var city_gate = echo.get_city_gate()
 	assert(city_gate != null and city_gate.can_interact(player))
 	city_gate.interact(player)
@@ -135,6 +145,7 @@ func _initialize() -> void:
 	assert(not streamer.is_level_ready(ECHO_PATH))
 	assert(streamer.get_resident_paths().size() == 2)
 	assert(streamer.max_resident_levels == 2)
+	_assert_objective_target(main, "city traces")
 
 	var city_present = streamer.get_level(CITY_PRESENT_PATH)
 	var city_echo = streamer.get_level(CITY_ECHO_PATH)
@@ -161,6 +172,7 @@ func _initialize() -> void:
 		narrative.stage == &"city_relays",
 		"All three city traces must reveal the cross-phase relay puzzle",
 	)
+	_assert_objective_target(main, "city relays")
 	var present_relays: Array = city_present.get_city_relays()
 	var echo_relays: Array = city_echo.get_city_relays()
 	var relay_by_id := {}
@@ -177,6 +189,7 @@ func _initialize() -> void:
 		relay.interact(player)
 		await process_frame
 	assert(narrative.stage == &"city_council")
+	_assert_objective_target(main, "city testimony")
 	if phase_shift.active_phase == &"echo":
 		assert(phase_shift.request_shift())
 		await physics_frame
@@ -191,6 +204,7 @@ func _initialize() -> void:
 	trust_choice.interact(player)
 	await process_frame
 	assert(narrative.stage == &"rain_eye")
+	_assert_objective_target(main, "rain eye gate")
 	var rain_eye_gate = city_present.get_rain_eye_gate()
 	assert(rain_eye_gate != null and rain_eye_gate.can_interact(player))
 	rain_eye_gate.interact(player)
@@ -205,6 +219,7 @@ func _initialize() -> void:
 	assert(not streamer.is_level_ready(CITY_PRESENT_PATH))
 	assert(not streamer.is_level_ready(CITY_ECHO_PATH))
 	assert(streamer.get_resident_paths().size() == 2)
+	_assert_objective_target(main, "rain eye seals")
 
 	var rain_present = streamer.get_level(RAIN_EYE_PRESENT_PATH)
 	var rain_echo = streamer.get_level(RAIN_EYE_ECHO_PATH)
@@ -227,6 +242,7 @@ func _initialize() -> void:
 		narrative.stage == &"rain_eye_trials",
 		"Three Rain Eye seals must unlock the traversal trials",
 	)
+	_assert_objective_target(main, "rain eye trials")
 	var present_trials: Array = rain_present.get_rain_eye_trials()
 	var echo_trials: Array = rain_echo.get_rain_eye_trials()
 	var trial_by_id := {}
@@ -243,6 +259,7 @@ func _initialize() -> void:
 		trial.interact(player)
 		await process_frame
 	assert(narrative.stage == &"final_decision")
+	_assert_objective_target(main, "final decision")
 	if phase_shift.active_phase == &"echo":
 		assert(phase_shift.request_shift())
 		await physics_frame
@@ -258,6 +275,10 @@ func _initialize() -> void:
 	assert(narrative.stage == &"complete")
 	assert(narrative.ending_id == &"tidal_order")
 	assert(main.get("_ending_overlay").visible)
+	assert(
+		main.call("_resolve_objective_target") == null,
+		"Completed campaign must not retain a stale objective target",
+	)
 	var animation_tree := player.find_child("AnimationTree", true, false) as AnimationTree
 	var playback := animation_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
 	assert(playback.get_current_node() == &"Interact", "Player must enter Interact animation")
@@ -363,3 +384,11 @@ func _initialize() -> void:
 		await process_frame
 		await physics_frame
 	call_deferred("quit")
+
+
+func _assert_objective_target(main: Node, description: String) -> void:
+	var target = main.call("_resolve_objective_target")
+	assert(
+		target != null and is_instance_valid(target),
+		"Objective guide target missing: " + description,
+	)

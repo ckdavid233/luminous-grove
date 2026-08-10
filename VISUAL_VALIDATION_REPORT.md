@@ -102,6 +102,25 @@ SubViewport；每个进程都输出 `SURFACE_VALIDATION_CAPTURE_OK`、`size=(384
 通用 ObjectDB 清理提示，但没有 `SCRIPT ERROR` 或解析错误。验证结束后用户存档已恢复到基准
 SHA-256：`f2b6348d80f1106784a3f4eda3a4686654c921fc7fee87656553f74858aeb997`。
 
+### 2026-08-10 目标引导接入后的 4K 湖面复验
+
+目标引导与流程目标断言接入后，重新用真实 Vulkan Renoir Forward+ 输出湖面和水花；两张图均为
+ `3840×2160`，并输出 `SURFACE_VALIDATION_CAPTURE_OK`。引导在 `--script` 捕获模式下自动隐藏，
+因此不会污染材质前后对比画面：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面 | `previews/objectiveguide4k_lake_4k.png` | `431bd9177eb631bb33bab31a40b37c66df02a61b9024f55bc96db48b618ff081` |
+| 湖面水花 | `previews/objectiveguide4k_lake_splash_4k.png` | `767e8f6a5e2944fa35d53598cb7e8a2b65a8557f4f7cae0a019ed3d07370d360` |
+
+同一份最终源码在最后一次 `CAPTURE_PREFIX=objectiveguide_final4k` 复验中再次输出
+`SURFACE_VALIDATION_CAPTURE_OK`；当前证据哈希为：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面 | `previews/objectiveguide_final4k_lake_4k.png` | `b0758f8f0e01d4f6348928bbbf90cfa3cb33c29d38ef71615ed27e29f2a50b16` |
+| 湖面水花 | `previews/objectiveguide_final4k_lake_splash_4k.png` | `a8827a6ec6330f0512955dc678eba7a59fc6c3d65a29e89fb34aacbe53eb5a5c` |
+
 ### Profile 映射后的湖面复验
 
 在显式 `MaterialProfile` 接入地表 Shader 后，重新用真实 Vulkan `SubViewport` 单独捕获地面、湿泥、

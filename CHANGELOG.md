@@ -53,6 +53,9 @@
 - 2026-08-10 通过临时 Vulkan teardown 矩阵区分了根窗口、验证相机、Main shutdown、queue-free 和
   4K SubViewport 的退出行为；延迟或立即 free 均未稳定消除 7 个 Texture RID，因此没有合入未经
   证实的退出改动。删除探针后 24 项回归仍通过，零泄漏继续等待 Windows/实体 4K 与 Godot 内存检查。
+- 新增屏幕空间目标引导：根据 NarrativeDirector 阶段指向当前交互目标并显示距离；城市、档案馆和
+  雨眼的跨时相目标均由流送实例解析，结局后自动清空。完整流程测试新增 15 个目标存在性断言，
+  4K 湖面/水花复验通过；Windows PCK/ZIP 已重新导出并更新哈希，真实 Windows 启动仍待实机。
 - 均衡/性能画质接入固定 FSR 3D 缩放（0.77/0.59），并把 `render_scale` 写入 Vulkan 性能 JSON；
   Renoir 1280×720 性能档由 17.6 FPS 提升到 29.3 FPS、P95 由 59.794ms 降至 36.994ms，仍待
   原生桌面和独立 GPU 复测。

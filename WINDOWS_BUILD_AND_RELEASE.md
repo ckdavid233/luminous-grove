@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 564,952,710 bytes
-SHA256: 9347b7d7d35471fa732414a91cbb4b1f0d170fdc85269254a1ada1567173a807
+size: 564,787,147 bytes
+SHA256: 17b3ba3627626b4bd6e41cf87c3876dad3df6dba179a707e5680eed254b2dad2
 integrity: unzip -t passed, 4 entries, no errors
 ```
 
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 4 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,432,784 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,453,036 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 
@@ -63,6 +63,7 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 
 - 自检覆盖主场景启动、campaign v6、默认高画质和 Echo Ruins 异步加载。
 - 工程侧 24 项回归还覆盖真实输入、移动状态、水体边界、环境几何与碰撞。
+- 本次 PCK 包含 ObjectiveGuide 目标距离提示；脚本回归会隐藏 HUD 引导并验证每个主线阶段都有可解析目标。
 - ZIP 已通过 `unzip -t` 完整性检查，4 个条目无错误；SHA256 已写入同名 `.sha256` 文件。
 
 PCK 自检证明导出的游戏数据与脚本可由 4.7.1 运行时读取；它不等于执行 Windows EXE。

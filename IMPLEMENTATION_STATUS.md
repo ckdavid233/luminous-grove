@@ -28,7 +28,7 @@
 | 湖面事件与反射 | 已实装 | 32 槽水纹池、8 槽飞溅池、Fresnel/深度吸收/泡沫、湖区反射探针 |
 | 地表探测与脚步 | 已实装 | SurfaceProbe、6 类表面、动画相位脚步+距离 fallback、24 槽脚印池、坡面法线双脚 SkeletonIK3D |
 | 刚体与植被反馈 | 已实装 | Jolt 摩擦/质量、浅水浮力/阻力/事件、角色与刚体近场草叶弯曲 |
-| 全流程可玩性 | 已验证 | 真实附近交互提示 + 四幕全流程、三结局、完成态恢复 |
+| 全流程可玩性 | 已验证 | 真实附近交互提示 + ObjectiveGuide 目标距离提示 + 四幕全流程、三结局、完成态恢复 |
 | 物理 | 已验证 | Jolt 独立线程、14+ 章节刚体、可完成配重 |
 | 过场 | 已实装 | 7 类主线序列 + 3 尾声，字幕与跳过 |
 | 保存 | 已验证 | schema v2、备份恢复、旧档迁移、完成态恢复 |
@@ -117,6 +117,8 @@
   但 `--verbose`、4K SubViewport 或不同退出时序仍可能报告 Texture RID/通用 RefCounted，说明剩余
   告警还需在真实 GPU/Windows 环境用 Godot 内存检查区分渲染器 transient buffer 与项目引用。
 - 画质档已具备固定 FSR 3D 缩放（高 1.00、均衡 0.77、性能 0.59），但仍没有按帧动态分辨率和逐项高级设置。
+- NarrativeDirector 现在由 `ObjectiveGuide` 将当前风铃、记忆、档案、城市和雨眼交互投影到屏幕边缘，
+  并显示距离；`gameplay_test.gd` 在完整潮汐流程中新增 15 个目标存在性断言，结局后确认目标清空。
 - 没有输入重映射、字幕缩放或色盲设置。
 - 真实 Vulkan X11 捕获已完成；`VISUAL_VALIDATION_REPORT.md` 保存地面、泥滩、树皮、湖面、水花、
   脚印和角色动作的前后对比。常规截图为 1280×720，同时已用独立 Vulkan `SubViewport` 输出并
@@ -139,8 +141,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `5b44648fc17f4a49093d332acd893e00b4a5fc01f452b70946695c9af002f16e`（527,432,784 bytes）；
-- ZIP SHA-256 为 `9347b7d7d35471fa732414a91cbb4b1f0d170fdc85269254a1ada1567173a807`（564,952,710 bytes）；
+- 当前 PCK SHA-256 为 `bb734dc96755cfb8faa794ddc85328c0df75bc0ce88b8ebc5b8d2e6c086a764e`（527,453,036 bytes）；
+- ZIP SHA-256 为 `17b3ba3627626b4bd6e41cf87c3876dad3df6dba179a707e5680eed254b2dad2`（564,787,147 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

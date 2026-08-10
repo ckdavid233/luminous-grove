@@ -26,8 +26,8 @@ LuminousGrove.pck
 
 双击 `LuminousGrove.exe`。这是 64 位便携版，没有安装器、自动更新或代码签名。首次运行
 若 Windows SmartScreen 提示未知发布者，应只从自己校验过 SHA256 的包继续。0.6.1 基线包已
-完成官方模板导出、PE32+ 静态识别和 PCK 运行自检；0.6.2 精细化资产的 Windows 包需重新
-导出，且没有 Windows/Wine，真实 Windows 驱动、全屏和手柄热插拔仍需在目标机验证。
+完成官方模板导出、PE32+ 静态识别和 PCK 运行自检；0.6.2 精细化资产与目标引导已重新导出，
+但没有 Windows/Wine，真实 Windows 驱动、全屏和手柄热插拔仍需在目标机验证。
 
 详细说明见 `../WINDOWS_BUILD_AND_RELEASE.md`。
 
@@ -65,6 +65,9 @@ Godot 编辑器可直接打开：
 雨隙能力需要先推进林地与神龛教学。冲刺消耗体力；掉出关卡会回到最近交互、切换或
 章节检查点。
 
+HUD 会在屏幕边缘显示当前目标与距离，跨时相目标会随关卡流送和时相切换更新；这只是导航提示，
+不会替代交互距离、碰撞或剧情门控。
+
 ## 主线
 
 ```text
@@ -88,7 +91,7 @@ Godot 编辑器可直接打开：
 
 ## 自动验证
 
-完整 23 项回归：
+完整 24 项回归：
 
 ```bash
 /home/cenkai/game_dev_plan/tools/run_regression.sh

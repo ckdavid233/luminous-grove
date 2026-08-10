@@ -18,6 +18,7 @@ const PHASE_SHIFT_CONTROLLER := preload("res://game/world/phase_shift_controller
 const RAIN_RIFT_PORTAL := preload("res://game/world/rain_rift_portal.gd")
 const CINEMATIC_DIRECTOR := preload("res://core/cinematic/cinematic_director.gd")
 const NARRATIVE_DIRECTOR := preload("res://game/narrative/narrative_director.gd")
+const OBJECTIVE_GUIDE := preload("res://game/ui/objective_guide.gd")
 const MEMORY_DROPLET_SCENE := preload("res://game/narrative/memory_droplet.tscn")
 const ENDING_CHOICE_SCENE := preload("res://game/narrative/ending_choice.tscn")
 const STORY_RESONATOR := preload("res://game/narrative/story_resonator.gd")
@@ -74,6 +75,7 @@ var _title_label: Label
 var _chapter_label: Label
 var _quest_label: Label
 var _campaign_progress: ProgressBar
+var _objective_guide
 var _toast_label: Label
 var _ending_overlay: ColorRect
 var _ending_label: Label
@@ -96,6 +98,7 @@ var _rain_eye_pair_ready := false
 var _rain_eye_entry_cinematic_pending := false
 var _pending_ending_id: StringName = &""
 var _shutdown_requested := false
+var _objective_guide_refresh_left := 0.0
 
 
 func _ready() -> void:
@@ -212,6 +215,10 @@ func shutdown() -> void:
 	_shrine = null
 	_wind_bell = null
 	_narrative = null
+	if _objective_guide != null and is_instance_valid(_objective_guide):
+		if _objective_guide.has_method("shutdown"):
+			_objective_guide.shutdown()
+	_objective_guide = null
 	_player = null
 	_rng = null
 
@@ -317,6 +324,10 @@ func _release_runtime_cameras() -> void:
 
 
 func _process(_delta: float) -> void:
+	_objective_guide_refresh_left -= _delta
+	if _objective_guide_refresh_left <= 0.0:
+		_objective_guide_refresh_left = 0.25
+		_update_objective_guide()
 	if _player == null or _grass_material == null:
 		return
 	_grass_material.set_shader_parameter("actor_position", _player.global_position)
@@ -1429,6 +1440,12 @@ func _create_game_ui() -> void:
 	_campaign_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(_campaign_progress)
 
+	_objective_guide = OBJECTIVE_GUIDE.new()
+	_objective_guide.name = "ObjectiveGuide"
+	_objective_guide.configure(_player.find_child("Camera", true, false) as Camera3D)
+	_objective_guide.set_enabled(not OS.get_cmdline_args().has("--script"))
+	canvas.add_child(_objective_guide)
+
 	_toast_label = Label.new()
 	_toast_label.position = Vector2(510.0, 90.0)
 	_toast_label.size = Vector2(260.0, 42.0)
@@ -1860,6 +1877,8 @@ func _set_gameplay_hud_visible(value: bool) -> void:
 		_chapter_label.visible = value
 	if _campaign_progress != null:
 		_campaign_progress.visible = value
+	if _objective_guide != null and is_instance_valid(_objective_guide):
+		_objective_guide.set_enabled(value and not OS.get_cmdline_args().has("--script"))
 	if _toast_label != null:
 		_toast_label.visible = value
 	if _player != null:
@@ -2548,6 +2567,168 @@ func _update_quest_ui() -> void:
 		_chapter_label.text = _narrative.get_chapter_title()
 	if _campaign_progress != null:
 		_campaign_progress.value = _narrative.get_campaign_progress()
+	_update_objective_guide()
+
+
+func _update_objective_guide() -> void:
+	if _objective_guide == null or not is_instance_valid(_objective_guide):
+		return
+	_objective_guide.set_target(_resolve_objective_target())
+
+
+func _resolve_objective_target() -> Node3D:
+	if _narrative == null:
+		return null
+	match _narrative.stage:
+		_narrative.INTRO, _narrative.FIND_BELL:
+			return _wind_bell
+		_narrative.GATHER_MEMORIES:
+			return _first_pending_node(_memory_droplets, &"memory_id", _narrative.collected_memories)
+		_narrative.AWAKEN_SHRINE:
+			return _shrine
+		_narrative.MEMORY_ALIGNMENT:
+			return _first_valid_node(_ending_choices)
+		_narrative.RIFT_READY:
+			return _phase_portal
+		_narrative.ARCHIVE_SEARCH:
+			var echo = _streamed_level(ECHO_LEVEL_PATH)
+			if echo != null and echo.has_method("get_archive_anchors"):
+				var anchor := _first_pending_node(echo.get_archive_anchors(), &"anchor_id", _narrative.activated_archive_anchors)
+				if anchor != null:
+					return anchor
+			return _phase_portal
+		_narrative.ARCHIVE_MECHANISMS:
+			var mechanism_id: StringName = _narrative.get_next_archive_mechanism()
+			if mechanism_id == &"archive_counterweight":
+				var echo_mechanism = _streamed_level(ECHO_LEVEL_PATH)
+				if echo_mechanism != null and echo_mechanism.has_method("get_counterweight_plate"):
+					return echo_mechanism.get_counterweight_plate()
+			return _first_node_with_id(_archive_present_mechanisms, &"resonance_id", mechanism_id)
+		_narrative.ARCHIVE_RESTORED, _narrative.CITY_GATE:
+			var echo_gate = _streamed_level(ECHO_LEVEL_PATH)
+			if echo_gate != null and echo_gate.has_method("get_city_gate"):
+				return echo_gate.get_city_gate()
+			return _phase_portal
+		_narrative.LANTERN_CITY:
+			return _first_pending_in_levels(
+				[CITY_PRESENT_PATH, CITY_ECHO_PATH],
+				"get_city_traces",
+				&"trace_id",
+				_narrative.activated_city_traces,
+			)
+		_narrative.CITY_RELAYS:
+			return _first_node_in_levels(
+				[CITY_PRESENT_PATH, CITY_ECHO_PATH],
+				"get_city_relays",
+				&"resonance_id",
+				_narrative.get_next_city_relay(),
+			)
+		_narrative.CITY_COUNCIL:
+			return _first_valid_node_from_levels(
+				[CITY_PRESENT_PATH],
+				"get_testimony_choices",
+			)
+		_narrative.RAIN_EYE:
+			if not _narrative.has_entered_rain_eye:
+				return _first_valid_node_from_levels([CITY_PRESENT_PATH], "get_rain_eye_gate")
+			return _first_pending_in_levels(
+				[RAIN_EYE_PRESENT_PATH, RAIN_EYE_ECHO_PATH],
+				"get_rain_eye_seals",
+				&"trace_id",
+				_narrative.activated_rain_eye_seals,
+			)
+		_narrative.RAIN_EYE_TRIALS:
+			return _first_node_in_levels(
+				[RAIN_EYE_PRESENT_PATH, RAIN_EYE_ECHO_PATH],
+				"get_rain_eye_trials",
+				&"resonance_id",
+				_narrative.get_next_rain_eye_trial(),
+			)
+		_narrative.FINAL_DECISION:
+			return _first_valid_node_from_levels(
+				[RAIN_EYE_PRESENT_PATH],
+				"get_final_choices",
+			)
+	return null
+
+
+func _streamed_level(path: String) -> Node:
+	if _world_streamer == null or not _world_streamer.has_method("get_level"):
+		return null
+	var level = _world_streamer.get_level(path)
+	return level if level != null and is_instance_valid(level) else null
+
+
+func _first_valid_node(nodes: Array) -> Node3D:
+	for candidate in nodes:
+		if candidate is Node3D and is_instance_valid(candidate):
+			return candidate as Node3D
+	return null
+
+
+func _first_pending_node(nodes: Array, id_property: StringName, completed: Array) -> Node3D:
+	for candidate in nodes:
+		if not candidate is Node3D or not is_instance_valid(candidate):
+			continue
+		var candidate_id := StringName(str(candidate.get(id_property)))
+		if not completed.has(candidate_id):
+			return candidate as Node3D
+	return null
+
+
+func _first_node_with_id(nodes: Array, id_property: StringName, target_id: StringName) -> Node3D:
+	for candidate in nodes:
+		if candidate is Node3D and is_instance_valid(candidate):
+			if StringName(str(candidate.get(id_property))) == target_id:
+				return candidate as Node3D
+	return null
+
+
+func _first_pending_in_levels(
+	paths: Array,
+	method_name: String,
+	id_property: StringName,
+	completed: Array,
+) -> Node3D:
+	for path in paths:
+		var level := _streamed_level(path)
+		if level == null or not level.has_method(method_name):
+			continue
+		var candidate := _first_pending_node(level.call(method_name), id_property, completed)
+		if candidate != null:
+			return candidate
+	return null
+
+
+func _first_node_in_levels(
+	paths: Array,
+	method_name: String,
+	id_property: StringName,
+	target_id: StringName,
+) -> Node3D:
+	for path in paths:
+		var level := _streamed_level(path)
+		if level == null or not level.has_method(method_name):
+			continue
+		var candidate := _first_node_with_id(level.call(method_name), id_property, target_id)
+		if candidate != null:
+			return candidate
+	return null
+
+
+func _first_valid_node_from_levels(paths: Array, method_name: String) -> Node3D:
+	for path in paths:
+		var level := _streamed_level(path)
+		if level == null or not level.has_method(method_name):
+			continue
+		var result = level.call(method_name)
+		if result is Array:
+			var candidate := _first_valid_node(result)
+			if candidate != null:
+				return candidate
+		elif result is Node3D and is_instance_valid(result):
+			return result as Node3D
+	return null
 
 
 func _show_toast(message: String) -> void:
