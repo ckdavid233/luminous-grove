@@ -29,6 +29,8 @@
 - Main 的最终 teardown 新增脚本字段 Resource/RefCounted 递归释放边界，覆盖交互物生成的发光材质、
   档案机关核心材质和 AnimationTree playback；`runtime_teardown_test.gd` 新增对应断言并复验通过。
   本轮仍观察到少量通用 ObjectDB/Texture RID，故只记录为项目引用清理加强，不宣称已达到零泄漏。
+- 角色退出时额外停止 AnimationPlayer 并移除实例化 AnimationLibrary，Windows PCK 已重新导出并通过
+  同版本 `RELEASE_SMOKE_OK`；该改动只影响退出阶段，不改变运行时角色动画。
 - 继续收紧退出顺序：Main 会先停止所有脚本子节点的 process/physics/input 回调，SurfaceLibrary 与
   WetnessController 提前清空运行时注册表；Player、SurfaceProbe、PhaseShift 的 Jolt 查询改为显式
   持有并在同一帧释放 direct-space wrapper。24 项功能回归保持通过，但 Jolt 独立线程、4K SubViewport

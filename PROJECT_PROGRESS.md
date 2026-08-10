@@ -153,9 +153,9 @@ Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能�
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮粒子 draw pass 材质解绑接入后已重新导出 PCK，SHA-256 为
-  `205c26f8ed7bc46a1f0926ef8634c128808dd87510b72363e45da5bbe8fe655f`（538,714,448 bytes）。
-  ZIP SHA-256 为 `5c4c4e1d5271044e74b93125cfdfc0463d98f9906d5803c1c7064a3faf2a00f2`
-  （576,041,003 bytes）。
+  `891e1f83c39acbd5ba5e322f938acd2497f582d133d7a18ad11f836c7f10dec7`（538,714,592 bytes）。
+  ZIP SHA-256 为 `36985076051d4c716593632b58f3d9998e1c651b98b205b67b254bab25b4a249`
+  （576,041,177 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

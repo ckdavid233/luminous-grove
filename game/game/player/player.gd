@@ -628,6 +628,14 @@ func shutdown() -> void:
 		_animation_tree.active = false
 		_animation_tree.tree_root = null
 		_animation_tree.anim_player = NodePath("")
+	if _animation_player != null and is_instance_valid(_animation_player):
+		_animation_player.stop()
+		# AnimationLibrary and its Animation resources are built-in
+		# RefCounted properties rather than script fields. Remove the instance
+		# libraries after disabling AnimationTree so they do not survive the
+		# player's final scene-tree teardown.
+		for library_name in _animation_player.get_animation_library_list():
+			_animation_player.remove_animation_library(library_name)
 	_animation_tree = null
 	_animation_player = null
 	_skeleton = null
