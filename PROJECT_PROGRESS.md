@@ -54,9 +54,9 @@
 - 林地 Shader 和岸石/树皮 PBR 创建函数现在直接读取上述 profile 的贴图，SurfaceProbe、脚部
   射线、交互查询和恢复落点复用查询参数，水花根节点由湖体统一拥有并在退出时释放 GPU 资源。
 - 全流程：`gameplay_test.gd` 已从风铃、三记忆、神龛、双时相档案、Jolt 配重、城市回路、雨眼
-  试炼走到潮汐结局并验证完成态恢复；新增真实附近交互提示、15 个目标引导存在性断言，以及
-  每阶段 `get_prompt()` 非空/`can_interact()` 合同校验，避免只靠测试直接调用机关或让玩家在
-  跨时相关卡中迷路。
+  试炼走到潮汐结局并验证完成态恢复；所有叙事交互均走玩家 `request_interaction()`，配重通过
+  实际推动刚体触发踏板；同时保留真实附近交互提示、15 个目标引导存在性断言，以及每阶段
+  `get_prompt()` 非空/`can_interact()` 合同校验，避免只靠测试直接调用机关或让玩家在跨时相关卡中迷路。
 - 退出与流送：旧版地面 PBR 兜底贴图改为按需加载；WorldStreamer 在关卡卸载前调用关卡级
   `shutdown()`，Echo Ruins 会解绑生成 Mesh 的 PBR 贴图与材质；Vulkan 捕获脚本会预热并释放
   临时相机/Viewport 引用；GPUParticles3D 在解除 draw pass 前也会清理 PrimitiveMesh 材质，避免
@@ -71,6 +71,12 @@
 REGRESSION_OK tests=24
 RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 ```
+
+最新全流程复验把所有叙事节点统一改为 `PlayerController.request_interaction()` 路径，档案配重由
+玩家实际推动 Jolt 刚体进入踏板；输出 `GAMEPLAY_TEST_OK stage=complete resident=2
+archive_mechanisms=3 city_traces=3 relays=4 rain_eye_seals=3 trials=3 ending=tidal_order
+restore=rain_eye`，随后 24 项回归仍为 `REGRESSION_OK tests=24`。这证明自动化交互合同和完成态恢复
+未回退，但不替代真实玩家人工走查；完整回归退出仍有 2 个通用 ObjectDB 提示。
 
 本轮新增 `runtime_teardown_test.gd`，验证退出时 76 个 Mesh、12 个 MultiMesh、6 组粒子、3 个
 Camera3D 和 WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但剩余 ObjectDB/Texture

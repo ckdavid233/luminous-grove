@@ -10,6 +10,9 @@
   HDR 光照验收。
 - 全流程回归新增逐阶段目标交互合同检查：每个目标必须提供非空提示并在当前叙事阶段可交互，
   继续覆盖章节流送、保存恢复与潮汐结局路径。
+- 全流程回归进一步把所有叙事节点改为经由 `PlayerController.request_interaction()` 驱动，档案配重
+  改为由玩家实际推动 Jolt 刚体进入踏板；`GAMEPLAY_TEST_OK` 与 `REGRESSION_OK tests=24` 均复验通过，
+  但人工 Windows/实体 GPU 走查和退出时的通用 ObjectDB 警告仍未关闭。
 - 收紧 GPUParticles3D 退出路径：在解除粒子 draw pass 前先断开生成 PrimitiveMesh 的材质引用；
   该改动降低渲染线程残留风险，但完整回归中的 ObjectDB 警告仍保持未关闭。
 - 在 `c521730` 后重新完成 `particlefix4k` 逐镜头捕获，地面、湿泥、树皮、湖面、水花、脚印前后和

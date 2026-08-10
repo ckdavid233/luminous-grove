@@ -51,24 +51,18 @@ func _initialize() -> void:
 	for index in memory_droplets.size():
 		var droplet: Node = memory_droplets[index]
 		assert(droplet.can_interact(player), "Memories become available after bell")
-		droplet.interact(player)
-		await process_frame
+		await _request_target_interaction(player, droplet, "memory_%d" % index)
 		if index < memory_droplets.size() - 1:
 			assert(not shrine.can_interact(player), "Shrine stays locked until all memories")
 	assert(shrine.can_interact(player), "All memories must unlock the shrine")
 	_assert_objective_target(main, "awaken shrine")
-	player.set("_interaction_time_left", 0.0)
-	player.set("_interaction_target", shrine)
-	player.call("_begin_interaction")
-	for _frame in 3:
-		await process_frame
+	await _request_target_interaction(player, shrine, "forest shrine", 3)
 	assert(shrine.is_activated, "Interaction must activate shrine")
 	assert(narrative.stage == &"memory_alignment")
 	_assert_objective_target(main, "memory alignment")
 	var ending_choices: Array = main.get("_ending_choices")
 	assert(ending_choices.size() == 2, "Two memory alignments must exist")
-	ending_choices[0].interact(player)
-	await process_frame
+	await _request_target_interaction(player, ending_choices[0], "memory alignment")
 	assert(narrative.stage == &"rift_ready", "The Act I choice must open the longer campaign")
 	assert(not narrative.alignment_id.is_empty(), "The branch must have a stable alignment ID")
 	_assert_objective_target(main, "rain rift")
@@ -87,10 +81,10 @@ func _initialize() -> void:
 	var echo = streamer.get_level("res://content/levels/echo_ruins/echo_ruins.tscn")
 	var archive_anchors: Array = echo.get_archive_anchors()
 	assert(archive_anchors.size() == 3)
-	for anchor in archive_anchors:
+	for index in archive_anchors.size():
+		var anchor: Node = archive_anchors[index]
 		assert(anchor.can_interact(player))
-		anchor.interact(player)
-		await process_frame
+		await _request_target_interaction(player, anchor, "archive_anchor_%d" % index)
 	assert(
 		narrative.stage == &"archive_mechanisms",
 		"Three archive anchors must unlock the physical archive mechanisms"
@@ -109,28 +103,44 @@ func _initialize() -> void:
 			return node.resonance_id == &"archive_name_lens"
 	)[0]
 	assert(reflection.can_interact(player))
-	reflection.interact(player)
-	await process_frame
+	await _request_target_interaction(player, reflection, "archive reflection")
 	assert(phase_shift.request_shift(), "The counterweight is in the echo phase")
 	await physics_frame
 	await process_frame
 	var counterweight = echo.get_counterweight_plate()
+	var counterweight_stone := echo.get_counterweight_stone() as RigidBody3D
 	assert(counterweight.is_available)
 	_assert_objective_target(main, "archive counterweight")
-	counterweight.solve_for_test()
-	await process_frame
+	assert(counterweight_stone != null, "The archive counterweight stone must be present")
+	# Drive the actual player interaction path instead of the test-only plate
+	# shortcut. The player is held beside the stone while Jolt integrates each
+	# push; the plate must observe the real body-entered contact.
+	for attempt in 3:
+		if counterweight.is_activated:
+			break
+		player.global_position = counterweight_stone.global_position + Vector3(1.35, 0.8, 0.0)
+		await _request_target_interaction(
+			player,
+			counterweight_stone,
+			"archive counterweight push %d" % attempt,
+		)
+		for _frame in 180:
+			if counterweight.is_activated:
+				break
+			await physics_frame
+			await process_frame
+	assert(counterweight.is_activated, "Pushing the archive stone must activate the counterweight plate")
 	assert(phase_shift.request_shift(), "The naming lens returns to the present phase")
 	await physics_frame
 	await process_frame
 	assert(name_lens.can_interact(player))
 	_assert_objective_target(main, "archive name lens")
-	name_lens.interact(player)
-	await process_frame
+	await _request_target_interaction(player, name_lens, "archive name lens")
 	assert(narrative.stage == &"archive_restored")
 	_assert_objective_target(main, "lantern city gate")
 	var city_gate = echo.get_city_gate()
 	assert(city_gate != null and city_gate.can_interact(player))
-	city_gate.interact(player)
+	await _request_target_interaction(player, city_gate, "lantern city gate")
 	for _frame in 900:
 		if main.get("_city_pair_ready"):
 			break
@@ -152,22 +162,17 @@ func _initialize() -> void:
 	var present_traces: Array = city_present.get_city_traces()
 	var echo_traces: Array = city_echo.get_city_traces()
 	assert(present_traces.size() == 2 and echo_traces.size() == 1)
-	present_traces[0].interact(player)
-	await process_frame
+	await _request_target_interaction(player, present_traces[0], "city trace present")
 	assert(phase_shift.request_shift(), "City echo phase must be ready")
 	await physics_frame
 	await process_frame
 	assert(phase_shift.active_phase == &"echo")
-	echo_traces[0].interact(player)
-	await process_frame
+	await _request_target_interaction(player, echo_traces[0], "city trace echo")
 	assert(phase_shift.request_shift())
 	await physics_frame
 	await process_frame
 	assert(phase_shift.active_phase == &"present")
-	player.set("_interaction_time_left", 0.0)
-	player.set("_interaction_target", present_traces[1])
-	player.call("_begin_interaction")
-	await process_frame
+	await _request_target_interaction(player, present_traces[1], "city trace present 2")
 	assert(
 		narrative.stage == &"city_relays",
 		"All three city traces must reveal the cross-phase relay puzzle",
@@ -186,8 +191,7 @@ func _initialize() -> void:
 			await physics_frame
 			await process_frame
 		assert(relay.can_interact(player))
-		relay.interact(player)
-		await process_frame
+		await _request_target_interaction(player, relay, "city relay %s" % relay_id)
 	assert(narrative.stage == &"city_council")
 	_assert_objective_target(main, "city testimony")
 	if phase_shift.active_phase == &"echo":
@@ -201,13 +205,12 @@ func _initialize() -> void:
 			return node.choice_id == &"trust_shuo"
 	)[0]
 	assert(trust_choice.can_interact(player))
-	trust_choice.interact(player)
-	await process_frame
+	await _request_target_interaction(player, trust_choice, "city testimony")
 	assert(narrative.stage == &"rain_eye")
 	_assert_objective_target(main, "rain eye gate")
 	var rain_eye_gate = city_present.get_rain_eye_gate()
 	assert(rain_eye_gate != null and rain_eye_gate.can_interact(player))
-	rain_eye_gate.interact(player)
+	await _request_target_interaction(player, rain_eye_gate, "rain eye gate")
 	for _frame in 900:
 		if main.get("_rain_eye_pair_ready"):
 			break
@@ -226,18 +229,15 @@ func _initialize() -> void:
 	var present_seals: Array = rain_present.get_rain_eye_seals()
 	var echo_seals: Array = rain_echo.get_rain_eye_seals()
 	assert(present_seals.size() == 2 and echo_seals.size() == 1)
-	present_seals[0].interact(player)
-	await process_frame
+	await _request_target_interaction(player, present_seals[0], "rain eye seal present")
 	assert(phase_shift.request_shift())
 	await physics_frame
 	await process_frame
-	echo_seals[0].interact(player)
-	await process_frame
+	await _request_target_interaction(player, echo_seals[0], "rain eye seal echo")
 	assert(phase_shift.request_shift())
 	await physics_frame
 	await process_frame
-	present_seals[1].interact(player)
-	await process_frame
+	await _request_target_interaction(player, present_seals[1], "rain eye seal present 2")
 	assert(
 		narrative.stage == &"rain_eye_trials",
 		"Three Rain Eye seals must unlock the traversal trials",
@@ -256,8 +256,7 @@ func _initialize() -> void:
 			await physics_frame
 			await process_frame
 		assert(trial.can_interact(player))
-		trial.interact(player)
-		await process_frame
+		await _request_target_interaction(player, trial, "rain eye trial %s" % trial_id)
 	assert(narrative.stage == &"final_decision")
 	_assert_objective_target(main, "final decision")
 	if phase_shift.active_phase == &"echo":
@@ -268,10 +267,7 @@ func _initialize() -> void:
 	assert(final_choices.size() == 3)
 	for final_choice in final_choices:
 		assert(final_choice.can_interact(player))
-	player.set("_interaction_time_left", 0.0)
-	player.set("_interaction_target", final_choices[2])
-	player.call("_begin_interaction")
-	await process_frame
+	await _request_target_interaction(player, final_choices[2], "tidal order ending")
 	assert(narrative.stage == &"complete")
 	assert(narrative.ending_id == &"tidal_order")
 	assert(main.get("_ending_overlay").visible)
@@ -393,10 +389,9 @@ func _assert_objective_target(main: Node, description: String) -> void:
 		target != null and is_instance_valid(target),
 		"Objective guide target missing: " + description,
 	)
-	# The full-flow test intentionally drives the narrative directly, but every
-	# target still has to expose the same interaction contract the player sees.
-	# This catches a stage that has a valid node yet leaves the player with no
-	# usable prompt (a common soft-lock when streamed phases change).
+	# Every stage target has to expose the same interaction contract the player
+	# sees. This catches a valid node that leaves no usable prompt, a common
+	# soft-lock when streamed phases change.
 	var player := main.get_node("Player") as Node3D
 	if target.has_method("get_prompt"):
 		var prompt: String = str(target.get_prompt(player)).strip_edges()
@@ -405,3 +400,23 @@ func _assert_objective_target(main: Node, description: String) -> void:
 			target.can_interact(player),
 			"Objective target is gated at stage: " + description,
 		)
+
+
+func _request_target_interaction(
+	player: Node,
+	target: Node,
+	description: String,
+	frames := 1,
+) -> bool:
+	assert(target != null and is_instance_valid(target), "Interaction target missing: " + description)
+	if target.has_method("can_interact"):
+		assert(target.can_interact(player), "Interaction target is gated: " + description)
+	if target.has_method("get_prompt"):
+		var prompt := str(target.get_prompt(player)).strip_edges()
+		assert(not prompt.is_empty(), "Interaction prompt missing: " + description)
+	player.set("_interaction_time_left", 0.0)
+	player.set("_interaction_target", target)
+	assert(player.request_interaction(), "Player request did not reach: " + description)
+	for _frame in frames:
+		await process_frame
+	return true
