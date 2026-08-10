@@ -100,6 +100,10 @@ RID；这为“根窗口/渲染器 transient target”假设提供了更强证�
 - 3840×2160 原生 X11 窗口探针（高画质 1.00）：2.0 FPS，平均 494.680 ms，P95 503.819 ms，P99
   525.618 ms，显存监视值约 4.03 GB；证明 4K Forward+ 路径有效，但高画质不可玩。
 
+追加的 4K 90 帧诊断矩阵见 `performance_runtime_4k_matrix.json`：高画质原生 P95 502.835 ms，
+高画质 FSR 0.59 P95 257.868 ms，均衡 P95 295.162 ms，性能档 P95 143.789 ms；这确认当前
+Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能用单一缩放开关宣称达标。
+
 当前已保存的视觉证据位于 `previews/`（该目录被 Git 忽略，避免提交大量生成截图）；重新
 生成方式和验收标准见 `TESTING_AND_ACCEPTANCE.md` 与 `PERFORMANCE_REPORT.md`。
 

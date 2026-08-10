@@ -6,6 +6,7 @@ const SAMPLE_FRAMES := 600
 const DEFAULT_RESOLUTION := Vector2i(1280, 720)
 
 var _resolution := DEFAULT_RESOLUTION
+var _sample_frame_count := SAMPLE_FRAMES
 
 
 func _initialize() -> void:
@@ -13,6 +14,7 @@ func _initialize() -> void:
 		ProjectSettings.globalize_path("user://save_slot_1.json")
 	)
 	_resolution = _requested_resolution()
+	_sample_frame_count = _requested_sample_frames()
 	root.size = _resolution
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_size(_resolution)
@@ -27,7 +29,7 @@ func _initialize() -> void:
 
 	var frame_times_ms: Array[float] = []
 	var last_tick := Time.get_ticks_usec()
-	for _frame in SAMPLE_FRAMES:
+	for _frame in _sample_frame_count:
 		await process_frame
 		var current_tick := Time.get_ticks_usec()
 		frame_times_ms.append((current_tick - last_tick) / 1000.0)
@@ -48,7 +50,7 @@ func _initialize() -> void:
 		"display_server": DisplayServer.get_name(),
 		"gpu_metrics_available": gpu_metrics_available,
 		"render_scale": snappedf(main.get_render_scale(), 0.001),
-		"sample_frames": SAMPLE_FRAMES,
+		"sample_frames": _sample_frame_count,
 		"average_frame_ms": snappedf(average_ms, 0.001),
 		"average_fps": snappedf(1000.0 / average_ms, 0.1),
 		"p95_frame_ms": snappedf(_percentile(frame_times_ms, 0.95), 0.001),
@@ -91,6 +93,14 @@ func _requested_resolution() -> Vector2i:
 	if value == "3840x2160":
 		return Vector2i(3840, 2160)
 	return DEFAULT_RESOLUTION
+
+
+func _requested_sample_frames() -> int:
+	var value := OS.get_environment("PERFORMANCE_SAMPLE_FRAMES").strip_edges()
+	if value.is_empty():
+		return SAMPLE_FRAMES
+	var parsed := value.to_int()
+	return clampi(parsed, 30, SAMPLE_FRAMES)
 
 
 func _percentile(values: Array[float], fraction: float) -> float:

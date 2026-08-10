@@ -14,6 +14,8 @@
   该改动降低渲染线程残留风险，但完整回归中的 ObjectDB 警告仍保持未关闭。
 - 在 `c521730` 后重新完成 `particlefix4k` 逐镜头捕获，地面、湿泥、树皮、湖面、水花、脚印前后和
   角色动作均输出 3840×2160 RGB；哈希及 Texture/ObjectDB 退出告警已写入视觉验证报告。
+- 性能探针支持 `PERFORMANCE_SAMPLE_FRAMES` 诊断覆盖，并记录 4K 高／均衡／性能与 FSR 0.59
+  矩阵；Renoir 性能档 4K P95 仍为 143.789 ms，未把短样本误报成目标通过。
 - 继续收紧退出顺序：Main 会先停止所有脚本子节点的 process/physics/input 回调，SurfaceLibrary 与
   WetnessController 提前清空运行时注册表；Player、SurfaceProbe、PhaseShift 的 Jolt 查询改为显式
   持有并在同一帧释放 direct-space wrapper。24 项功能回归保持通过，但 Jolt 独立线程、4K SubViewport

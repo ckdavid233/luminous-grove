@@ -147,6 +147,9 @@
   替换。当前 Godot 4.7.1 构建对 `.hdr`/`.exr` 没有资源加载器，运行包已改用同一 CC0
   Mossy Forest 的 4096×2048 tonemapped JPG PanoramaSkyMaterial；原始 HDR/EXR 仍外置，最终
   未裁剪 HDR 光照需在支持导入器的构建中复验，见 `MATERIAL_LIBRARY_SOURCES.md`。
+- `performance_runtime_4k_matrix.json` 记录了同一真实 Vulkan Renoir 设备的 4K 画质/FSR 诊断矩阵；
+  即使性能档 0.59 缩放也只有 7.3 FPS（P95 143.789 ms），因此高质量 P95 目标必须在更强实体
+  GPU/原生桌面上重测，并继续做场景 LOD、合批和光照成本优化。
 
 ## 设备与性能
 
