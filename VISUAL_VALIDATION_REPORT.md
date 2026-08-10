@@ -280,6 +280,15 @@ DISPLAY=:1 CAPTURE_PREFIX=particlefix4k CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONL
 | 脚印反馈 | `previews/particlefix4k_footprints_after_4k.png` | `106cfe5250fb49c7d62f6f2d8aa5bfe3cf8282ac6a80dfcac63c46a8ae753907` |
 | 角色动作 | `previews/particlefix4k_character_clean_4k.png` | `44a63799c3b7920481488dd906d6f7a9f786a8e73d3ba0a48e0ff08666a16d6d` |
 
+### Texture RID 定向 A/B 探针
+
+为区分项目生成资源和渲染器退出目标，使用临时 1280×720 Vulkan 进程分别关闭反射探针、环境、
+所有粒子、水体和门户，再执行同一 `Main.shutdown()`。六种模式的退出日志都保持
+`7 RIDs of type "Texture" were leaked`；关闭环境的干净探针也复现同样数量，说明这 7 个 RID
+不是某一个水纹、门户或粒子资源单独造成。ObjectDB 数量则随退出时序在 0–1 变化。探针脚本已
+删除，结果仅作为定位证据，仍需 Windows/Godot 内存检查确认根窗口与 Vulkan transient render
+target 的归属，不能将它写成项目零泄漏结论。
+
 ## 视觉结论与剩余项
 
 - 地面、泥滩、树皮、湖面和角色动作均已在真实 Vulkan 表面完成同机位前后对比。

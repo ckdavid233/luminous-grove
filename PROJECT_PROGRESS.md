@@ -87,6 +87,10 @@ SurfaceProbe 和 PhaseShift 在同一退出窗口释放注册表、物理查询�
 新的查询对象，但 Jolt 独立线程的通用 RefCounted 警告仍会随测试时序出现，需在升级的 Godot/Jolt
 构建或实体 Windows 实机上继续定位，不能把当前回归通过误认为零泄漏。
 
+追加的临时 1280×720 Vulkan A/B 探针分别关闭反射探针、环境、粒子、水体和门户，仍得到 7 个 Texture
+RID；这为“根窗口/渲染器 transient target”假设提供了更强证据，但不是零泄漏证明，后续仍需 Godot
+内存检查和实体 Windows/4K 设备确认。
+
 目标设备为 Ryzen 5 PRO 4650U / Renoir 集成显卡。本轮已在 `DISPLAY=:1` 的真实 X11/Vulkan
 表面以 1280×720 重测：
 
