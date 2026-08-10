@@ -40,7 +40,7 @@ func _initialize() -> void:
 		assert(narrative.stage == narrative.COMPLETE)
 		assert(narrative.ending_id == ending_id)
 		var state: Dictionary = narrative.capture_state()
-		assert(state.campaign_version == 7)
+		assert(state.campaign_version == 8)
 		assert(state.rain_eye_seal_ids.size() == 3)
 		assert(state.rain_eye_trial_ids.size() == 3)
 		var restored = NARRATIVE_DIRECTOR.new()

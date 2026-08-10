@@ -6,6 +6,7 @@ signal interaction_target_changed(target: Node)
 signal jumped
 signal landed(impact_speed: float)
 signal footstep_surface(world_position: Vector3, speed: float, surface_type: StringName)
+signal void_recovered(previous_position: Vector3, checkpoint_position: Vector3)
 
 const CHARACTER_VISUAL_QUALITY := preload(
 	"res://game/player/character_visual_quality.gd"
@@ -31,6 +32,7 @@ const SURFACE_PROBE := preload("res://game/world/surface_probe.gd")
 @export var visual_breathing_strength := 0.012
 @export var visual_sway_strength := 0.028
 @export var visual_stride_response := 0.06
+@export var void_fall_threshold := -3.5
 
 @onready var model: Node3D = %Model
 @onready var camera_pivot: Node3D = %CameraPivot
@@ -388,10 +390,18 @@ func _setup_animation_tree() -> void:
 	add_child(_animation_tree)
 	_animation_tree.tree_root = state_machine
 	_animation_tree.anim_player = _animation_tree.get_path_to(_animation_player)
-	_animation_tree.active = true
+	# Godot 4.7's imported AnimationTree can report a valid state-machine node
+	# while never advancing the nested GLB AnimationPlayer when the tree is
+	# constructed at runtime.  Keep the graph for tooling/authoring, but drive
+	# the imported clips through AnimationPlayer directly so the pose is always
+	# evaluated in a Windows build.  Direct playback still supports cross-fades
+	# and the same named locomotion states.
+	_animation_tree.active = false
 	_animation_playback = _animation_tree.get("parameters/playback")
 	_animation_state = &"Idle"
-	_animation_playback.start(&"Idle")
+	_animation_player.callback_mode_process = AnimationPlayer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
+	_animation_player.play(&"Idle")
+	_animation_player.advance(0.0)
 	_interaction_shape = SphereShape3D.new()
 	_interaction_shape.radius = interaction_distance
 	_interaction_query = PhysicsShapeQueryParameters3D.new()
@@ -561,10 +571,22 @@ func _emit_animation_footstep() -> void:
 
 
 func _travel_animation(next_state: StringName) -> void:
-	if next_state == _animation_state:
-		return
+	var changed := next_state != _animation_state
 	_animation_state = next_state
-	_animation_playback.travel(next_state)
+	if _animation_tree != null and _animation_tree.active and _animation_playback != null:
+		if changed:
+			_animation_playback.travel(next_state)
+		return
+	# Direct AnimationPlayer playback is the runtime path.  Re-issue play when
+	# an imported clip was stopped by a cinematic or when the state was entered
+	# before the player finished importing its animation library.
+	if _animation_player == null or not is_instance_valid(_animation_player):
+		return
+	var animation_name := next_state
+	if not _animation_player.has_animation(animation_name):
+		animation_name = &"Idle"
+	if changed or _animation_player.current_animation != animation_name or not _animation_player.is_playing():
+		_animation_player.play(animation_name, 0.16 if changed else 0.0)
 
 
 func request_interaction() -> bool:
@@ -760,6 +782,8 @@ func set_control_enabled(value: bool) -> void:
 
 
 func set_checkpoint(checkpoint: Transform3D) -> void:
+	if not checkpoint.origin.is_finite() or checkpoint.origin.y < -2.5:
+		return
 	_checkpoint_transform = checkpoint
 	_has_checkpoint = true
 
@@ -773,9 +797,20 @@ func is_sprinting() -> bool:
 
 
 func _recover_from_fall() -> void:
-	if global_position.y >= -6.5 or not _has_checkpoint:
+	if global_position.is_finite() and global_position.y >= void_fall_threshold:
 		return
-	global_transform = _checkpoint_transform
+	var previous_position := global_position
+	var recovery_transform := _checkpoint_transform
+	if not _has_checkpoint or not recovery_transform.origin.is_finite() or recovery_transform.origin.y < -2.5:
+		recovery_transform = Transform3D(Basis.IDENTITY, Vector3(0.0, 1.0, 6.0))
+	global_transform = recovery_transform
 	velocity = Vector3.ZERO
+	_control_enabled = true
+	_interaction_time_left = 0.0
+	_interaction_requested = false
+	_landing_time_left = 0.0
+	_coyote_time_left = coyote_time
+	_surface_sample.clear()
 	_stamina = maxf(_stamina, maximum_stamina * 0.35)
 	stamina_bar.value = _stamina
+	void_recovered.emit(previous_position, recovery_transform.origin)

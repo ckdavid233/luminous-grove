@@ -28,6 +28,7 @@ TESTS=(
   lantern_city_level_test.gd
   rain_eye_level_test.gd
   narrative_finale_test.gd
+  archive_cipher_test.gd
   gameplay_test.gd
 )
 

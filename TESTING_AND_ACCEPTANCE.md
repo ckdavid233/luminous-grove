@@ -12,7 +12,7 @@ bash /home/cenkai/game_dev_plan/tools/run_regression.sh
 通过标志：
 
 ```text
-REGRESSION_OK tests=24
+REGRESSION_OK tests=25
 ```
 
 真实 Vulkan 视觉复验：
@@ -57,7 +57,7 @@ Godot 编辑器级解析检查：
   --headless --path /home/cenkai/game_dev_plan/game --editor --quit
 ```
 
-## 24 项自动化覆盖
+## 25 项自动化覆盖
 
 | 测试 | 主要验收 |
 |---|---|
@@ -65,7 +65,7 @@ Godot 编辑器级解析检查：
 | `environment_geometry_test.gd` | 65×65 地形、54 棵树、15 个岸石碰撞、16,000 草簇与椭圆湖面 |
 | `realistic_character_import_test.gd` | 14 网格、53 骨、39,840 三角面、14 材质、7 套动画、19 条骨骼轨道 |
 | `player_import_test.gd` | 角色场景和 7 套动画资源可导入 |
-| `player_animation_test.gd` | Idle/Walk/Run/Jump/Fall/Land/Interact 状态、写实材质和动画相位脚步事件 |
+| `player_animation_test.gd` | 直接 AnimationPlayer 播放、真实 upperarm 骨骼位移、Idle/Walk/Run/Jump/Fall/Land/Interact 状态、写实材质和动画相位脚步事件、虚空恢复 |
 | `movement_regression_test.gd` | 平滑加速、步行／冲刺速度、跳跃／坠落／落地状态和回到 Idle |
 | `save_service_test.gd` | schema v2、原子替换、备份恢复、v1 迁移 |
 | `smoke_test.gd` | 主场景、角色、神龛、风铃和异步 Echo 加载 |
@@ -83,7 +83,8 @@ Godot 编辑器级解析检查：
 | `portal_preview_test.gd` | 640×360 反相门户、更新节流 |
 | `lantern_city_level_test.gd` | 双时相桥、列车、16 刚体、3 残响、4 回路、2 证词 |
 | `rain_eye_level_test.gd` | 7 段道路、14 刚体、3 印记、3 试炼、3 结局 |
-| `narrative_finale_test.gd` | 三结局、潮汐门槛、campaign v7、锚点顺序密码与旧档迁移 |
+| `narrative_finale_test.gd` | 三结局、潮汐门槛、campaign v8 存档版本、锚点顺序密码与旧档迁移 |
+| `archive_cipher_test.gd` | 三环 R 转动/E 确认、错误确认重置、语义线索和成功状态 |
 | `gameplay_test.gd` | 从真实附近风铃交互到潮汐结局、章节流送、保存和完成态恢复；逐阶段校验目标提示与可交互合同 |
 
 ## 关键通过结果
@@ -166,8 +167,8 @@ Windows ZIP 发布前必须满足：
 - 使用 Godot 4.7.1 官方 `windows_release_x86_64.exe` 模板。
 - `file` 识别为 PE32+ x86-64 GUI executable。
 - EXE 与 PCK 都存在，PCK 不是旧开发包。
-- PCK 在 Linux 同版本 Godot 中通过 `--release-smoke`，确认版本、campaign v7、默认高画质
-  和 Echo Ruins 异步加载；24 项完整回归在未过滤的工程目录单独执行。
+- PCK 在 Linux 同版本 Godot 中通过 `--release-smoke`，确认版本、campaign v8、默认高画质
+  和 Echo Ruins 异步加载；25 项完整回归在未过滤的工程目录单独执行。
 - ZIP 可无错误列出与解压。
 - 生成 SHA-256 清单和构建清单。
 - 不包含 `tests/`、`.godot/`、Blender 源文件和开发工具。

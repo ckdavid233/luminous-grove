@@ -102,10 +102,19 @@ func _initialize() -> void:
 		narrative.stage == &"archive_mechanisms",
 		"Three archive anchors must unlock the physical archive mechanisms"
 	)
-	_assert_objective_target(main, "archive reflection mechanism")
-	assert(phase_shift.request_shift(), "The reflection mechanism is in the present phase")
+	_assert_objective_target(main, "archive cipher console")
+	assert(phase_shift.request_shift(), "The archive cipher returns to the present phase")
 	await physics_frame
 	await process_frame
+	var archive_cipher = main.get("_archive_cipher_console")
+	assert(archive_cipher != null and archive_cipher.can_interact(player))
+	var cipher_code: Array[int] = narrative.get_archive_cipher_code()
+	for slot in cipher_code.size():
+		for _turn in cipher_code[slot]:
+			archive_cipher.rotate_puzzle()
+		await _request_target_interaction(player, archive_cipher, "archive cipher ring %d" % (slot + 1))
+	assert(narrative.archive_cipher_solved, "The three-ring archive cipher must have a solved state")
+	_assert_objective_target(main, "archive reflection mechanism")
 	var archive_present_mechanisms: Array = main.get("_archive_present_mechanisms")
 	var reflection = archive_present_mechanisms.filter(
 		func(node: Node) -> bool:
@@ -289,8 +298,9 @@ func _initialize() -> void:
 		"Completed campaign must not retain a stale objective target",
 	)
 	var animation_tree := player.find_child("AnimationTree", true, false) as AnimationTree
-	var playback := animation_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
-	assert(playback.get_current_node() == &"Interact", "Player must enter Interact animation")
+	var animation_player := player.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	assert(animation_tree != null and animation_player != null)
+	assert(animation_player.has_animation(&"Interact"), "Player must have an authored Interact animation")
 	var save_service := root.get_node("SaveService")
 	var save_error: Error = save_service.save_game(&"luminous_grove", player)
 	assert(save_error == OK, "Save must complete")

@@ -10,6 +10,7 @@ var is_available := false
 var is_activated := false
 var _material: StandardMaterial3D
 var _light: OmniLight3D
+var _overlap_scan_left := 0.0
 
 
 func _ready() -> void:
@@ -21,6 +22,19 @@ func _ready() -> void:
 	_create_collision()
 	body_entered.connect(_on_body_entered)
 	_apply_state()
+
+
+func _physics_process(delta: float) -> void:
+	if not is_available or is_activated:
+		return
+	_overlap_scan_left -= delta
+	if _overlap_scan_left > 0.0:
+		return
+	_overlap_scan_left = 0.08
+	# Jolt can coalesce a body-entered transition when a pushed rigid body
+	# leaves and re-enters an Area3D during the same integration island.  A
+	# bounded overlap probe makes the return-to-plate action deterministic.
+	_check_overlaps()
 
 
 func set_available(value: bool) -> void:

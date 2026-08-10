@@ -6,7 +6,7 @@ signal splash_created(world_position: Vector3, strength: float, source: StringNa
 signal surface_event(world_position: Vector3, velocity: Vector3, radius: float, source: StringName)
 
 const MAX_RIPPLES := 32
-const SPLASH_POOL_SIZE := 8
+const SPLASH_POOL_SIZE := 16
 const HALF_SIZE := Vector2(7.35, 4.85)
 
 @export var rain_ripple_interval := Vector2(0.5, 1.15)
@@ -148,8 +148,11 @@ func set_visual_quality_profile(profile: StringName) -> void:
 			_material.set_shader_parameter("foam_intensity", 0.98)
 			visual_effects_enabled = true
 		_:
-			_material.set_shader_parameter("micro_normal_strength", 0.32)
-			_material.set_shader_parameter("foam_intensity", 1.22)
+			_material.set_shader_parameter("micro_normal_strength", 0.52)
+			_material.set_shader_parameter("foam_intensity", 1.65)
+			_material.set_shader_parameter("reflection_strength", 1.45)
+			_material.set_shader_parameter("sparkle_intensity", 2.6)
+			_material.set_shader_parameter("caustic_intensity", 0.84)
 			visual_effects_enabled = true
 
 
@@ -342,14 +345,14 @@ func _create_surface_splash(
 
 	var rings: Array[MeshInstance3D] = []
 	var ring_materials: Array[StandardMaterial3D] = []
-	for ring_index in 3:
+	for ring_index in 5:
 		var ring := MeshInstance3D.new()
 		ring.name = "SplashRing_%d" % (ring_index + 1)
 		var ring_mesh := TorusMesh.new()
-		ring_mesh.inner_radius = 0.38 + ring_index * 0.12
-		ring_mesh.outer_radius = 0.425 + ring_index * 0.12
-		ring_mesh.rings = 28
-		ring_mesh.ring_segments = 10
+		ring_mesh.inner_radius = 0.32 + ring_index * 0.16
+		ring_mesh.outer_radius = 0.375 + ring_index * 0.16
+		ring_mesh.rings = 42
+		ring_mesh.ring_segments = 14
 		var ring_material := StandardMaterial3D.new()
 		ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		ring_material.albedo_color = Color(
@@ -367,7 +370,7 @@ func _create_surface_splash(
 		ring_material.emission_energy_multiplier = 0.72
 		ring_mesh.material = ring_material
 		ring.mesh = ring_mesh
-		ring.scale = Vector3.ONE * (0.3 + ring_index * 0.05)
+		ring.scale = Vector3(0.24 + ring_index * 0.035, 0.24 + ring_index * 0.035, 0.42 + ring_index * 0.08)
 		ring.rotation.y = randf_range(-0.18, 0.18)
 		effect_root.add_child(ring)
 		rings.append(ring)
@@ -376,20 +379,20 @@ func _create_surface_splash(
 	var particles := GPUParticles3D.new()
 	particles.name = "SplashDroplets"
 	particles.one_shot = true
-	particles.amount = maxi(20, int(42.0 * strength))
-	particles.lifetime = 0.86
+	particles.amount = maxi(48, int(96.0 * strength))
+	particles.lifetime = 1.08
 	particles.explosiveness = 0.95
 	particles.randomness = 0.42
 	var process_material := ParticleProcessMaterial.new()
 	process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	process_material.emission_sphere_radius = 0.18 * strength
+	process_material.emission_sphere_radius = 0.26 * strength
 	process_material.direction = Vector3.UP
-	process_material.spread = 52.0
+	process_material.spread = 68.0
 	process_material.gravity = Vector3(0.0, -9.8, 0.0)
-	process_material.initial_velocity_min = 1.45 * strength
-	process_material.initial_velocity_max = 3.35 * strength
-	process_material.scale_min = 0.55
-	process_material.scale_max = 1.25
+	process_material.initial_velocity_min = 1.8 * strength
+	process_material.initial_velocity_max = 4.2 * strength
+	process_material.scale_min = 0.5
+	process_material.scale_max = 1.6
 	particles.process_material = process_material
 	var droplet_mesh := SphereMesh.new()
 	droplet_mesh.radius = 0.026
@@ -401,6 +404,9 @@ func _create_surface_splash(
 	droplet_material.albedo_color = Color(0.72, 0.95, 0.96, 0.88)
 	droplet_material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
 	droplet_material.roughness = 0.06
+	droplet_material.emission_enabled = true
+	droplet_material.emission = Color(0.32, 0.92, 0.88)
+	droplet_material.emission_energy_multiplier = 1.25
 	droplet_mesh.material = droplet_material
 	particles.draw_pass_1 = droplet_mesh
 	effect_root.add_child(particles)

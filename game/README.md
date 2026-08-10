@@ -72,7 +72,7 @@ HUD 会在屏幕边缘显示当前目标与距离，跨时相目标会随关卡�
 
 ```text
 微光林地：风铃 → 3 枚湖忆 → 神龛对齐 → 林地选择
-沉雨档案馆：3 锚点 → 倒影 → Jolt 配重 → 铭名透镜
+沉雨档案馆：3 锚点 → 三环符文（R 转动/E 确认）→ 倒影 → Jolt 配重 → 铭名透镜
 行灯之城：3 城市踪迹 → 4 盏交替行灯 → 朔的证词
 雨眼：3 封印 → 3 段交替试炼 → 三种终局
 ```
@@ -91,7 +91,7 @@ HUD 会在屏幕边缘显示当前目标与距离，跨时相目标会随关卡�
 
 ## 自动验证
 
-完整 24 项回归：
+完整 25 项回归：
 
 ```bash
 /home/cenkai/game_dev_plan/tools/run_regression.sh
@@ -115,7 +115,7 @@ HUD 会在屏幕边缘显示当前目标与距离，跨时相目标会随关卡�
 成功标志：
 
 ```text
-RELEASE_SMOKE_OK build=0.6.2-alpha campaign=7 quality=high echo_async=ready
+RELEASE_SMOKE_OK build=0.6.2-alpha campaign=8 quality=high echo_async=ready
 ```
 
 ## 本机林地基准

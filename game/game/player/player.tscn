@@ -94,7 +94,7 @@ offset_right = 500.0
 offset_bottom = 76.0
 theme_override_colors/font_color = Color(0.94, 0.94, 0.85, 0.85)
 theme_override_font_sizes/font_size = 16
-text = "WASD / 左摇杆移动 · 鼠标 / 右摇杆观察 · Shift / LB冲刺 · 空格 / A跳跃 · E / X交互 · Q / Y切换 · Esc / Start暂停"
+text = "WASD / 左摇杆移动 · 鼠标 / 右摇杆观察 · Shift / LB冲刺 · 空格 / A跳跃 · E / X交互 · R / RB转动符文 · Q / Y切换 · Esc / Start暂停"
 
 [node name="StaminaLabel" type="Label" parent="HUD"]
 offset_left = 20.0

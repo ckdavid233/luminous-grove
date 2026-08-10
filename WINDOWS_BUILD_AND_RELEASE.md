@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 576,234,357 bytes
-SHA256: fbe117662dbdccf3e4d3ffd25a6825b75f24deb89488e3e3cd6cb50da287573f
+size: 576,248,808 bytes
+SHA256: 4891a22f474825072cedd0fe7bd81274948dd4cc596466954f7c2974bf245fee
 integrity: unzip -t passed, 4 entries, no errors
 ```
 
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 4 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 538,721,376 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 538,736,844 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 
@@ -58,16 +58,17 @@ Godot 官方当前要求与平台说明可查阅
 - Linux 上用相同版本 Godot 直接加载导出的 PCK，得到：
 
 ```text
-RELEASE_SMOKE_OK build=0.6.2-alpha campaign=7 quality=high echo_async=ready
+RELEASE_SMOKE_OK build=0.6.2-alpha campaign=8 quality=high echo_async=ready
 ```
 
-- 自检覆盖主场景启动、campaign v7、默认高画质和 Echo Ruins 异步加载。
-- 工程侧 24 项回归还覆盖真实输入、移动状态、水体边界、环境几何与碰撞。
+- 自检覆盖主场景启动、campaign v8、默认高画质和 Echo Ruins 异步加载。
+- 工程侧 25 项回归还覆盖真实输入、移动状态、水体边界、环境几何与碰撞。
 - 本次 PCK 包含 ObjectiveGuide 目标距离提示；脚本回归会隐藏 HUD 引导并验证每个主线阶段都有可解析目标。
 - ZIP 已通过 `unzip -t` 完整性检查，4 个条目无错误；SHA256 已写入同名 `.sha256` 文件。
-- 本轮透镜交互、campaign v7、角色与树木改动后重新导出的 PCK 为 538,721,376 bytes，SHA-256 为
-  `edb35607f5a9ee72a910fb00d8646c67b1ef1da2b2711e98bdc6b9a1157d097e`；ZIP SHA-256 为
-  `fbe117662dbdccf3e4d3ffd25a6825b75f24deb89488e3e3cd6cb50da287573f`。
+- 本轮 v8 三环谜题、直接 AnimationPlayer 动作、虚空恢复、水面 Shader 和粒子改动已重新导出。
+  当前核心文件校验值：EXE `430307b1ec7e4039de2ee783f9cd4f7191276e7c33f1c6450946f36763154277`，
+  PCK `6416d46ee5592b91c50cfeb5f28fa9e831bd6c8bdfebc34dfc54f8b986f97357`，ZIP
+  `4891a22f474825072cedd0fe7bd81274948dd4cc596466954f7c2974bf245fee`。
 
 PCK 自检证明导出的游戏数据与脚本可由 4.7.1 运行时读取；它不等于执行 Windows EXE。
 release smoke 会忽略开发者用户存档，从林地基线验证 Echo Ruins 异步加载，并在成功标志后直接
@@ -83,7 +84,7 @@ Vulkan 运行还观察到纹理 RID 泄漏；这些是尚未关闭的技术债�
 1. 从 ZIP 解压并双击启动，无缺失 DLL／PCK 错误。
 2. 新游戏完成风铃、一次交互、跳跃、冲刺与雨隙切换。
 3. `Esc` 暂停、三档画质、窗口／全屏切换正常。
-4. `F5` 保存、退出、重启、`F9` 加载位置和任务一致。
+4. `F5` 保存、退出、重启、`F9` 加载位置和任务一致；在档案控制台用 `R` 转动符文环、`E` 确认。
 5. 键鼠与 Xbox 手柄各完成一轮输入；测试断开／重连。
 6. 从林地进入城市和雨眼，确认异步加载没有永久卡住。
 7. 至少完成一个结局；如验证潮汐结局，先归还湖水并信任朔。
@@ -172,7 +173,7 @@ PCK 等价自检：
 
 - 对外提供 ZIP 时同时提供 SHA256，用户应校验完整包而不是只校验 EXE。
 - 未签名 alpha 只适合受控测试；公开商用前应购买代码签名证书或使用可信发行平台。
-- 存档 schema 为 2、campaign 为 7；改动稳定 ID 时必须提供迁移测试。
+- 存档 schema 为 2、campaign 为 8；改动稳定 ID 时必须提供迁移测试。
 - `0.6.2-alpha` 的版本号、文件说明和产品名已经写入 Windows 导出预设。
 - 新素材只有在来源、条款和运行时导入全部通过后才能进入下一包。
 - 发布包不应包含 `tests/`、构建脚本、Blend 源文件、提示词原图或用户私有素材记录。

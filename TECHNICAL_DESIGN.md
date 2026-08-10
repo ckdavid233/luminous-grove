@@ -14,7 +14,7 @@ NavMesh、战斗或联网系统不再写进“当前架构”；它们如有需�
 ```mermaid
 flowchart TD
     Main["Main Node3D\n场景编排、UI、环境"] --> Player["PlayerController\n移动/相机/交互/体力"]
-    Main --> Narrative["NarrativeDirector\ncampaign v7 状态机"]
+    Main --> Narrative["NarrativeDirector\ncampaign v8 状态机"]
     Main --> Streamer["WorldStreamer\n异步加载 + LRU"]
     Main --> Phase["PhaseShiftController\n双时相激活与隔离"]
     Main --> Portal["RainRiftPortal\n反相 SubViewport"]
@@ -112,7 +112,8 @@ campaign 版本是 6。
 - 鼠标与右摇杆相机、SpringArm 遮挡；
 - 冲刺 FOV 与轻微镜头步幅；
 - 中央射线交互和 3.2 m 距离；
-- Idle / Walk / Run / Jump / Fall / Land / Interact AnimationTree；
+- Idle / Walk / Run / Jump / Fall / Land / Interact 动画状态图；运行时由物理时钟直接驱动 GLB
+  AnimationPlayer，AnimationTree 保留作状态图/工具检查，避免 Godot 4.7 动态构建树不推进骨骼。
 - 最近交互点检查点和 y < -6.5 掉落恢复。
 
 七个状态均使用独立动画；位移仍由 `CharacterBody3D` 驱动，不使用 Root Motion。
@@ -131,7 +132,8 @@ func interact(actor: Node) -> void
 
 - WindBell、Shrine、MemoryDroplet；
 - ArchiveAnchor、CityTrace、EndingChoice；
-- StoryResonator：档案透镜、城市行灯、雨眼试炼的通用节点；
+- StoryResonator：档案透镜、城市行灯、雨眼试炼的通用节点；ArchiveCipherConsole 提供第二幕
+  三环符文的 R 转动/E 确认、语义线索和失败重置；
 - PushableMemoryStone：交互时按玩家到物体方向施加 Jolt 冲量；
 - JoltCounterweightPlate：Area3D 检测指定刚体 group 后完成机关；
 - CityGate：章节交接入口。

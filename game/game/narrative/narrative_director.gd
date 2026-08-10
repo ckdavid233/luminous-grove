@@ -9,6 +9,8 @@ signal alignment_chosen(alignment_id: StringName, text: String)
 signal archive_anchor_added(anchor_id: StringName, text: String, count: int)
 signal archive_anchors_completed
 signal archive_sequence_rejected(anchor_id: StringName, expected_id: StringName, clue: String)
+signal archive_cipher_completed(code: Array[int])
+signal archive_cipher_rejected(attempt: Array[int], clue: String)
 signal archive_mechanism_added(mechanism_id: StringName, text: String, count: int)
 signal archive_restored
 signal city_trace_added(trace_id: StringName, text: String, count: int)
@@ -24,7 +26,7 @@ signal rain_eye_trial_added(trial_id: StringName, text: String, count: int)
 signal final_decision_ready
 signal ending_chosen(ending_id: StringName, text: String)
 
-const CAMPAIGN_VERSION := 7
+const CAMPAIGN_VERSION := 8
 
 const INTRO := &"intro"
 const FIND_BELL := &"find_bell"
@@ -69,6 +71,10 @@ const ARCHIVE_ANCHOR_ORDER_CARRY: Array[StringName] = [
 	&"archive_shape",
 ]
 const ARCHIVE_SEQUENCE_CLUE := "无形不能发声，无声不能命名。"
+const ARCHIVE_CIPHER_CODE_RETURN: Array[int] = [2, 4, 1]
+const ARCHIVE_CIPHER_CODE_CARRY: Array[int] = [3, 1, 4]
+const ARCHIVE_CIPHER_CLUE_RETURN := "听声锚点的回响是△，定形锚点的裂纹是◈，铭名锚点留下≈；按听声→定形→铭名排列。每一环只能顺时针校准。"
+const ARCHIVE_CIPHER_CLUE_CARRY := "携光后顺序被雨隙折返：第一环是✦，第二环仍听见≈，最后让铭名落在◈；每一环只能顺时针校准。"
 const ARCHIVE_MECHANISM_ORDER: Array[StringName] = [
 	&"archive_reflection",
 	&"archive_counterweight",
@@ -126,6 +132,9 @@ var stage: StringName = INTRO
 var collected_memories: Array[StringName] = []
 var activated_archive_anchors: Array[StringName] = []
 var activated_archive_mechanisms: Array[StringName] = []
+var archive_cipher_required := false
+var archive_cipher_solved := false
+var archive_cipher_attempts := 0
 var activated_city_traces: Array[StringName] = []
 var activated_city_relays: Array[StringName] = []
 var city_testimony_id: StringName = &""
@@ -223,6 +232,8 @@ func activate_archive_anchor(anchor_id: StringName) -> bool:
 func activate_archive_mechanism(mechanism_id: StringName) -> bool:
 	if stage != ARCHIVE_MECHANISMS or mechanism_id != get_next_archive_mechanism():
 		return false
+	if archive_cipher_required and not archive_cipher_solved:
+		return false
 	activated_archive_mechanisms.append(mechanism_id)
 	archive_mechanism_added.emit(
 		mechanism_id,
@@ -239,6 +250,49 @@ func activate_archive_mechanism(mechanism_id: StringName) -> bool:
 
 func get_next_archive_mechanism() -> StringName:
 	return _next_ordered_id(get_archive_mechanism_order(), activated_archive_mechanisms)
+
+
+func configure_archive_cipher(required: bool) -> void:
+	archive_cipher_required = required
+	if not required:
+		archive_cipher_solved = false
+
+
+func get_archive_cipher_code() -> Array[int]:
+	return (
+		ARCHIVE_CIPHER_CODE_CARRY.duplicate()
+		if alignment_id == &"carry_the_light"
+		else ARCHIVE_CIPHER_CODE_RETURN.duplicate()
+	)
+
+
+func get_archive_cipher_clue() -> String:
+	return (
+		ARCHIVE_CIPHER_CLUE_CARRY
+		if alignment_id == &"carry_the_light"
+		else ARCHIVE_CIPHER_CLUE_RETURN
+	)
+
+
+func solve_archive_cipher(code: Array[int]) -> bool:
+	if stage != ARCHIVE_MECHANISMS or not archive_cipher_required or archive_cipher_solved:
+		return false
+	archive_cipher_attempts += 1
+	var normalized: Array[int] = []
+	for value in code:
+		normalized.append(int(value))
+	if normalized != get_archive_cipher_code():
+		archive_cipher_rejected.emit(normalized, get_archive_cipher_clue())
+		return false
+	archive_cipher_solved = true
+	archive_cipher_completed.emit(normalized)
+	objective_changed.emit(get_objective())
+	return true
+
+
+func note_archive_cipher_attempt() -> void:
+	if stage == ARCHIVE_MECHANISMS and archive_cipher_required and not archive_cipher_solved:
+		archive_cipher_attempts += 1
 
 
 func get_archive_anchor_order() -> Array[StringName]:
@@ -402,6 +456,8 @@ func get_objective() -> String:
 		ARCHIVE_SEARCH:
 			return "依残句解开沉雨档案锚点（%d / %d）" % [activated_archive_anchors.size(), get_archive_anchor_order().size()]
 		ARCHIVE_MECHANISMS:
+			if archive_cipher_required and not archive_cipher_solved:
+				return "解开沉雨档案三重符文校准（读懂锚点顺序）"
 			var next_archive := get_next_archive_mechanism()
 			match next_archive:
 				&"archive_reflection":
@@ -459,7 +515,7 @@ func get_campaign_progress() -> float:
 		ARCHIVE_SEARCH:
 			fraction = float(activated_archive_anchors.size()) / float(get_archive_anchor_order().size())
 		ARCHIVE_MECHANISMS:
-			fraction = float(activated_archive_mechanisms.size()) / float(get_archive_mechanism_order().size())
+			fraction = float(activated_archive_mechanisms.size() + (1 if archive_cipher_solved else 0)) / float(get_archive_mechanism_order().size() + (1 if archive_cipher_required else 0))
 		LANTERN_CITY:
 			fraction = float(activated_city_traces.size()) / float(CITY_TRACE_TEXT.size())
 		CITY_RELAYS:
@@ -478,6 +534,8 @@ func capture_state() -> Dictionary:
 		"memory_ids": _string_array(collected_memories),
 		"archive_anchor_ids": _string_array(activated_archive_anchors),
 		"archive_mechanism_ids": _string_array(activated_archive_mechanisms),
+		"archive_cipher_solved": archive_cipher_solved,
+		"archive_cipher_attempts": archive_cipher_attempts,
 		"city_trace_ids": _string_array(activated_city_traces),
 		"city_relay_ids": _string_array(activated_city_relays),
 		"city_testimony_id": str(city_testimony_id),
@@ -506,6 +564,8 @@ func restore_state(state_data: Dictionary) -> void:
 	_restore_ids(collected_memories, state_data.get("memory_ids", []), MEMORY_TEXT.keys())
 	_restore_ids(activated_archive_anchors, state_data.get("archive_anchor_ids", []), ARCHIVE_ANCHOR_TEXT.keys())
 	_restore_ids(activated_archive_mechanisms, state_data.get("archive_mechanism_ids", []), ARCHIVE_MECHANISM_ORDER)
+	archive_cipher_solved = bool(state_data.get("archive_cipher_solved", false))
+	archive_cipher_attempts = int(state_data.get("archive_cipher_attempts", 0))
 	_restore_ids(activated_city_traces, state_data.get("city_trace_ids", []), CITY_TRACE_TEXT.keys())
 	_restore_ids(activated_city_relays, state_data.get("city_relay_ids", []), CITY_RELAY_ORDER)
 	city_testimony_id = StringName(str(state_data.get("city_testimony_id", "")))
@@ -536,6 +596,9 @@ func _migrate_expanded_campaign(campaign_version: int) -> void:
 		# mechanism sequence so a carry-the-light save cannot point at a step it
 		# already completed under the old order.
 		activated_archive_mechanisms.clear()
+	if campaign_version < 8 and stage == ARCHIVE_MECHANISMS:
+		archive_cipher_solved = false
+		archive_cipher_attempts = 0
 	var stage_index := _campaign_stage_index(stage)
 	if stage_index >= _campaign_stage_index(ARCHIVE_RESTORED):
 		activated_archive_mechanisms.assign(get_archive_mechanism_order())

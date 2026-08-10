@@ -22,6 +22,7 @@ const OBJECTIVE_GUIDE := preload("res://game/ui/objective_guide.gd")
 const MEMORY_DROPLET_SCENE := preload("res://game/narrative/memory_droplet.tscn")
 const ENDING_CHOICE_SCENE := preload("res://game/narrative/ending_choice.tscn")
 const STORY_RESONATOR := preload("res://game/narrative/story_resonator.gd")
+const ARCHIVE_CIPHER_CONSOLE := preload("res://game/narrative/archive_cipher_console.gd")
 const FOREST_SKY_TEXTURE := preload(
 	"res://content/environments/sky/mossy_forest_tonemapped_4k.jpg"
 )
@@ -62,6 +63,7 @@ var _narrative
 var _memory_droplets: Array[Node] = []
 var _ending_choices: Array[Node] = []
 var _archive_present_mechanisms: Array[Node] = []
+var _archive_cipher_console: Node
 var _world_environment: WorldEnvironment
 var _sun: DirectionalLight3D
 var _lake_fill: OmniLight3D
@@ -222,6 +224,7 @@ func shutdown() -> void:
 	_memory_droplets.clear()
 	_ending_choices.clear()
 	_archive_present_mechanisms.clear()
+	_archive_cipher_console = null
 	_forest_tree_instances.clear()
 	_forest_proxy_instances.clear()
 	_grass_material = null
@@ -509,12 +512,12 @@ func _run_release_smoke() -> void:
 		echo_ready
 		and _player != null
 		and _narrative != null
-		and _narrative.CAMPAIGN_VERSION == 7
+		and _narrative.CAMPAIGN_VERSION == 8
 		and _quality_profile == &"high"
 	)
 	if success:
 		print(
-			"RELEASE_SMOKE_OK build=0.6.2-alpha campaign=7 quality=high "
+			"RELEASE_SMOKE_OK build=0.6.2-alpha campaign=8 quality=high "
 			+ "echo_async=ready"
 		)
 		shutdown()
@@ -724,8 +727,12 @@ func _create_water() -> void:
 	var plane := _create_elliptical_lake_mesh()
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/realistic_lake.gdshader")
-	material.set_shader_parameter("wetness", 0.54)
-	material.set_shader_parameter("rain_intensity", 0.68)
+	material.set_shader_parameter("wetness", 0.72)
+	material.set_shader_parameter("rain_intensity", 0.82)
+	material.set_shader_parameter("reflection_strength", 1.35)
+	material.set_shader_parameter("sparkle_intensity", 2.4)
+	material.set_shader_parameter("foam_intensity", 1.65)
+	material.set_shader_parameter("caustic_intensity", 0.82)
 	plane.surface_set_material(0, material)
 	_water.mesh = plane
 	_water.position = Vector3(-8.0, 0.04, -8.0)
@@ -808,9 +815,9 @@ func _create_shallow_water_floor() -> void:
 func _create_water_droplets() -> void:
 	var droplets := GPUParticles3D.new()
 	droplets.name = "WaterDroplets"
-	droplets.amount = 56
-	droplets.lifetime = 1.7
-	droplets.preprocess = 1.7
+	droplets.amount = 220
+	droplets.lifetime = 2.2
+	droplets.preprocess = 2.2
 	droplets.position = Vector3(-8.0, 4.2, -8.0)
 	var process_material := ParticleProcessMaterial.new()
 	process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
@@ -818,10 +825,10 @@ func _create_water_droplets() -> void:
 	process_material.direction = Vector3.DOWN
 	process_material.spread = 4.0
 	process_material.gravity = Vector3(0.0, -5.5, 0.0)
-	process_material.initial_velocity_min = 0.35
-	process_material.initial_velocity_max = 0.7
-	process_material.scale_min = 0.55
-	process_material.scale_max = 1.15
+	process_material.initial_velocity_min = 0.55
+	process_material.initial_velocity_max = 1.2
+	process_material.scale_min = 0.45
+	process_material.scale_max = 1.5
 	droplets.process_material = process_material
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.012
@@ -829,13 +836,53 @@ func _create_water_droplets() -> void:
 	mesh.radial_segments = 5
 	mesh.rings = 3
 	var droplet_material := StandardMaterial3D.new()
-	droplet_material.albedo_color = Color(0.72, 0.92, 0.96, 0.68)
+	droplet_material.albedo_color = Color(0.55, 0.9, 0.98, 0.82)
 	droplet_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	droplet_material.roughness = 0.08
 	droplet_material.metallic_specular = 0.95
+	droplet_material.emission_enabled = true
+	droplet_material.emission = Color(0.22, 0.72, 0.82)
+	droplet_material.emission_energy_multiplier = 0.65
 	mesh.material = droplet_material
 	droplets.draw_pass_1 = mesh
 	add_child(droplets)
+
+	var sparkles := GPUParticles3D.new()
+	sparkles.name = "WaterSparkles"
+	sparkles.amount = 180
+	sparkles.lifetime = 3.4
+	sparkles.preprocess = 3.4
+	sparkles.position = Vector3(-8.0, 0.22, -8.0)
+	var sparkle_process := ParticleProcessMaterial.new()
+	sparkle_process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	sparkle_process.emission_box_extents = Vector3(7.1, 0.07, 4.6)
+	sparkle_process.direction = Vector3(0.0, 1.0, 0.0)
+	sparkle_process.spread = 180.0
+	sparkle_process.gravity = Vector3(0.0, 0.012, 0.0)
+	sparkle_process.initial_velocity_min = 0.015
+	sparkle_process.initial_velocity_max = 0.06
+	sparkle_process.scale_min = 0.35
+	sparkle_process.scale_max = 1.2
+	sparkle_process.anim_offset_min = 0.0
+	sparkle_process.anim_offset_max = 1.0
+	sparkle_process.anim_speed_min = 0.4
+	sparkle_process.anim_speed_max = 1.5
+	sparkles.process_material = sparkle_process
+	var sparkle_mesh := SphereMesh.new()
+	sparkle_mesh.radius = 0.024
+	sparkle_mesh.height = 0.048
+	sparkle_mesh.radial_segments = 8
+	sparkle_mesh.rings = 4
+	var sparkle_material := StandardMaterial3D.new()
+	sparkle_material.albedo_color = Color(0.62, 1.0, 0.97, 0.82)
+	sparkle_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sparkle_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	sparkle_material.emission_enabled = true
+	sparkle_material.emission = Color(0.2, 0.96, 0.9)
+	sparkle_material.emission_energy_multiplier = 2.6
+	sparkle_mesh.material = sparkle_material
+	sparkles.draw_pass_1 = sparkle_mesh
+	add_child(sparkles)
 
 
 func _create_lake_shore() -> void:
@@ -1597,6 +1644,10 @@ func _create_narrative() -> void:
 	_narrative.final_decision_ready.connect(_on_final_decision_ready)
 	_narrative.ending_chosen.connect(_on_final_ending_chosen)
 	add_child(_narrative)
+	# The playable campaign includes the physical three-ring cipher.  Direct
+	# NarrativeDirector unit tests can still use the lightweight API by leaving
+	# this requirement disabled on their standalone instance.
+	_narrative.configure_archive_cipher(true)
 
 
 func _create_wind_bell() -> void:
@@ -1649,6 +1700,14 @@ func _create_ending_choices() -> void:
 
 
 func _create_archive_present_mechanisms() -> void:
+	_archive_cipher_console = ARCHIVE_CIPHER_CONSOLE.new()
+	_archive_cipher_console.name = "ArchiveCipherConsole"
+	_archive_cipher_console.position = Vector3(-4.2, 0.0, -8.9)
+	_archive_cipher_console.visual_layer = PHASE_SHIFT_CONTROLLER.PRESENT_VISUAL_LAYER
+	_archive_cipher_console.cipher_solved.connect(_on_archive_cipher_solved)
+	_archive_cipher_console.cipher_rejected.connect(_on_archive_cipher_rejected)
+	_archive_cipher_console.cipher_progress_changed.connect(_on_archive_cipher_progress)
+	add_child(_archive_cipher_console)
 	var definitions := [
 		[
 			&"archive_reflection",
@@ -1685,6 +1744,7 @@ func _create_player() -> void:
 	_water.set_actor(_player)
 	_player.landed.connect(_on_player_landed)
 	_player.footstep_surface.connect(_on_player_footstep)
+	_player.void_recovered.connect(_on_player_void_recovered)
 
 
 func _register_wetness_materials() -> void:
@@ -1718,7 +1778,10 @@ func _on_wetness_changed(value: float, rain_intensity: float) -> void:
 		)
 	var droplets := get_node_or_null("WaterDroplets") as GPUParticles3D
 	if droplets != null:
-		droplets.amount = maxi(18, int(56.0 * (0.35 + rain_intensity * 0.85)))
+		droplets.amount = maxi(72, int(220.0 * (0.42 + rain_intensity * 0.92)))
+	var sparkles := get_node_or_null("WaterSparkles") as GPUParticles3D
+	if sparkles != null:
+		sparkles.amount = maxi(90, int(180.0 * (0.48 + value * 0.72)))
 	if _water != null and _water.has_method("set_rain_intensity"):
 		_water.set_rain_intensity(rain_intensity)
 	if _lake_fill != null:
@@ -1735,6 +1798,15 @@ func _on_player_landed(impact_speed: float) -> void:
 			clampf(0.42 + impact_speed * 0.08, 0.42, 1.3),
 			&"landing",
 		)
+
+
+func _on_player_void_recovered(previous_position: Vector3, checkpoint_position: Vector3) -> void:
+	# A streamed phase can unload its floor while the character is still in the
+	# transition volume.  Keep the checkpoint valid and make the recovery
+	# visible instead of leaving the player in an input-less falling state.
+	if _player != null and is_instance_valid(_player) and _player.has_method("set_checkpoint"):
+		_player.set_checkpoint(Transform3D(_player.global_basis, checkpoint_position))
+	_show_toast("你坠入了雨隙，已回到最近的安全位置")
 
 
 func _on_player_footstep(position: Vector3, speed: float, surface_type: StringName) -> void:
@@ -1773,6 +1845,7 @@ func _setup_phase_shift() -> void:
 		"ShrineReflectionProbe",
 		"ShallowWaterFloor",
 		"WaterDroplets",
+		"WaterSparkles",
 		"LakeShore",
 		"Footprints",
 		"Forest",
@@ -1787,6 +1860,8 @@ func _setup_phase_shift() -> void:
 	present_nodes.append_array(_memory_droplets)
 	present_nodes.append_array(_ending_choices)
 	present_nodes.append_array(_archive_present_mechanisms)
+	if _archive_cipher_console != null:
+		present_nodes.append(_archive_cipher_console)
 
 	_phase_shift = PHASE_SHIFT_CONTROLLER.new()
 	_phase_shift.name = "PhaseShiftController"
@@ -2492,7 +2567,7 @@ func _on_archive_anchor_added(
 
 
 func _on_archive_anchors_completed() -> void:
-	_show_toast("锚点已经复原轮廓；真正的档案机关横跨两个时相")
+	_show_toast("锚点已经复原轮廓；湖边三重符文仍在等待校准")
 
 
 func _on_archive_sequence_rejected(
@@ -2501,6 +2576,23 @@ func _on_archive_sequence_rejected(
 	clue: String,
 ) -> void:
 	_show_toast("锚点拒绝共振：" + clue)
+
+
+func _on_archive_cipher_solved(code: Array[int]) -> void:
+	if _narrative.solve_archive_cipher(code):
+		_sync_world_to_narrative()
+		_save_current_game()
+		_show_toast("三环符文完成校准；跨时相机关已经显影")
+
+
+func _on_archive_cipher_rejected(_attempt: Array[int], clue: String) -> void:
+	if _narrative != null and _narrative.has_method("note_archive_cipher_attempt"):
+		_narrative.note_archive_cipher_attempt()
+	_show_toast("符文回弹：" + clue)
+
+
+func _on_archive_cipher_progress(states: Array[int], active_slot: int) -> void:
+	_show_toast("符文 %d / 3 已对齐：%s" % [active_slot, str(states)])
 
 
 func _on_archive_mechanism_activated(mechanism_id: StringName) -> void:
@@ -3139,6 +3231,8 @@ func _resolve_objective_target() -> Node3D:
 					return anchor
 			return _phase_portal
 		_narrative.ARCHIVE_MECHANISMS:
+			if not _narrative.archive_cipher_solved:
+				return _archive_cipher_console
 			var mechanism_id: StringName = _narrative.get_next_archive_mechanism()
 			if mechanism_id == &"archive_counterweight":
 				var echo_mechanism = _streamed_level(ECHO_LEVEL_PATH)
@@ -3574,7 +3668,8 @@ func _sync_echo_narrative() -> void:
 	echo.sync_archive_state(
 		_narrative.stage == _narrative.ARCHIVE_SEARCH,
 		_narrative.activated_archive_anchors,
-		_narrative.stage == _narrative.ARCHIVE_MECHANISMS,
+		_narrative.stage == _narrative.ARCHIVE_MECHANISMS
+		and _narrative.archive_cipher_solved,
 		_narrative.activated_archive_mechanisms,
 		_narrative.get_next_archive_mechanism(),
 		_narrative.stage == _narrative.ARCHIVE_RESTORED,
@@ -3582,12 +3677,21 @@ func _sync_echo_narrative() -> void:
 
 
 func _sync_archive_present_mechanisms() -> void:
+	if _archive_cipher_console != null and is_instance_valid(_archive_cipher_console):
+		_archive_cipher_console.set_solution(_narrative.get_archive_cipher_code())
+		_archive_cipher_console.set_clue(_narrative.get_archive_cipher_clue())
+		_archive_cipher_console.set_solved(_narrative.archive_cipher_solved)
+		_archive_cipher_console.set_available(
+			_narrative.stage == _narrative.ARCHIVE_MECHANISMS
+			and not _narrative.archive_cipher_solved
+		)
 	for mechanism in _archive_present_mechanisms:
 		mechanism.set_activated(
 			_narrative.activated_archive_mechanisms.has(mechanism.resonance_id)
 		)
 		mechanism.set_available(
 			_narrative.stage == _narrative.ARCHIVE_MECHANISMS
+			and _narrative.archive_cipher_solved
 			and mechanism.resonance_id == _narrative.get_next_archive_mechanism()
 		)
 

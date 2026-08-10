@@ -18,14 +18,13 @@ func _initialize() -> void:
 		await process_frame
 	var animation_tree := player.find_child("AnimationTree", true, false) as AnimationTree
 	assert(animation_tree != null, "Runtime AnimationTree must exist")
-	assert(animation_tree.active, "Runtime AnimationTree must be active")
-	var playback := animation_tree.get("parameters/playback") as AnimationNodeStateMachinePlayback
+	assert(not animation_tree.active, "Runtime must use the reliable direct AnimationPlayer path")
 	var state_machine := animation_tree.tree_root as AnimationNodeStateMachine
 	for state in [&"Idle", &"Walk", &"Run", &"Jump", &"Fall", &"Land", &"Interact"]:
 		assert(state_machine.has_node(state), "Missing locomotion state: " + str(state))
-	print("PLAYER_ANIMATION_CURRENT ", playback.get_current_node())
-	assert(playback.get_current_node() == &"Idle", "Player animation starts in Idle")
 	var animation_player := player.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	assert(animation_player.current_animation == &"Idle", "Player animation starts in Idle")
+	assert(animation_player.is_playing(), "Idle clip must be advancing at runtime")
 	for looping_animation in [&"Idle", &"Walk", &"Run", &"Fall"]:
 		assert(
 			animation_player.get_animation(looping_animation).loop_mode
@@ -46,7 +45,17 @@ func _initialize() -> void:
 	player.velocity = Vector3(2.2, 0.0, 0.0)
 	player.set("_surface_sample", {"type": &"dry_soil"})
 	player.set("_animation_state", &"Walk")
+	var skeleton := player.find_child("Skeleton3D", true, false) as Skeleton3D
+	var upperarm_bone := skeleton.find_bone("upperarm_l")
+	var walk_pose_before := skeleton.get_bone_pose_rotation(upperarm_bone)
 	animation_player.play(&"Walk")
+	for _frame in 12:
+		await physics_frame
+	var walk_pose_after := skeleton.get_bone_pose_rotation(upperarm_bone)
+	assert(
+		walk_pose_before.angle_to(walk_pose_after) > 0.05,
+		"Authored Walk animation must change a real skeleton pose",
+	)
 	var walk_length := animation_player.get_animation(&"Walk").length
 	player.set("_last_animation_name", animation_player.current_animation)
 	player.set("_last_animation_position", 0.14)
@@ -56,14 +65,14 @@ func _initialize() -> void:
 
 	player.velocity = Vector3(0.0, 3.0, 0.0)
 	player.call("_travel_animation", &"Jump")
-	await _wait_for_animation_state(player, playback, &"Jump")
+	await _wait_for_animation_state(player, animation_player, &"Jump")
 	player.velocity.y = -2.0
 	player.call("_travel_animation", &"Fall")
-	await _wait_for_animation_state(player, playback, &"Fall")
+	await _wait_for_animation_state(player, animation_player, &"Fall")
 	player.call("_travel_animation", &"Land")
-	await _wait_for_animation_state(player, playback, &"Land")
+	await _wait_for_animation_state(player, animation_player, &"Land")
 	player.call("_travel_animation", &"Run")
-	await _wait_for_animation_state(player, playback, &"Run")
+	await _wait_for_animation_state(player, animation_player, &"Run")
 	player.call("_travel_animation", &"Idle")
 	player.set_physics_process(true)
 	var quality_stats := player.get("_render_quality_stats") as Dictionary
@@ -111,7 +120,7 @@ func _initialize() -> void:
 	var stamina_bar := player.get_node("HUD/StaminaBar") as ProgressBar
 	assert(stamina_bar != null and stamina_bar.value == 100.0)
 	var checkpoint: Transform3D = player.global_transform
-	player.global_position.y = -8.0
+	player.global_position.y = -40.0
 	await physics_frame
 	await process_frame
 	assert(
@@ -120,7 +129,7 @@ func _initialize() -> void:
 	)
 	print(
 		"PLAYER_ANIMATION_TEST_OK current=",
-		playback.get_current_node(),
+		animation_player.current_animation,
 		" quality=",
 		quality_stats,
 	)
@@ -129,7 +138,7 @@ func _initialize() -> void:
 
 func _wait_for_animation_state(
 	player: CharacterBody3D,
-	playback: AnimationNodeStateMachinePlayback,
+	animation_player: AnimationPlayer,
 	expected: StringName,
 ) -> void:
 	assert(
@@ -139,6 +148,6 @@ func _wait_for_animation_state(
 	for _frame in 20:
 		await physics_frame
 		await process_frame
-		if playback.get_current_node() == expected:
+		if animation_player.current_animation == expected and animation_player.is_playing():
 			return
-	assert(false, "AnimationTree did not reach state: " + str(expected))
+	assert(false, "AnimationPlayer did not reach state: " + str(expected))

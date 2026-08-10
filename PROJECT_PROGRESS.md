@@ -8,7 +8,7 @@
 ## 当前可交付状态
 
 这是一个可从开场走到三种结局的第三人称 3D 叙事冒险 alpha。当前代码、测试和设计文档已
-统一到 campaign v7；本快照首次把之前只存在于工作目录的实现与文档纳入 Git 版本历史。
+统一到 campaign v8；本快照首次把之前只存在于工作目录的实现与文档纳入 Git 版本历史。
 
 已完成并验证的本轮问题修复：
 
@@ -60,6 +60,12 @@
 - 本轮玩家反馈修复：跨时相返回此岸时强制重同步透镜可用状态并刷新玩家交互目标；失效目标不会
   再拦截下一次 E。档案锚点改为按 alignment 分支的顺序密码，错误顺序不会消耗锚点且会保留重试；
   配重→透镜路径加入真实回归断言。
+- 本轮运行时修复：AnimationTree 的假状态不再阻塞 GLB 动画，角色改为直接 AnimationPlayer 物理时钟
+  播放，并新增真实骨骼姿态位移断言；坠入虚空会回到经过校验的安全检查点、清空速度并恢复输入。
+- 本轮谜题升级：第二幕新增三环 ArchiveCipherConsole，R 转动、E 确认，线索随 alignment 分支变化；
+  错误确认会重置并显示语义提示，完成校准后才开放倒影、Jolt 配重和铭名透镜，存档版本升至 v8。
+- 本轮湖面升级：水面 Shader 加入更深的吸收色、屏幕折射/反射混合、焦散双层、太阳闪光和更强双层法线；
+  水滴提升至 220、增加 180 个水面闪烁粒子，飞溅扩为 5 层环与 48–124 个水滴。
 - 角色与森林视觉补强：玩家新增呼吸、步态重心、起停惯性和转身侧倾的二级运动，服装/鞋材质恢复
   authored normal map；中远景树木改为分层枝条与 5/4 簇状树冠，切换距离与近景 GLB 分离，减少
   截图中重复“圆球树冠”的假感。
@@ -74,14 +80,14 @@
 ## 自动化与实机证据
 
 ```text
-REGRESSION_OK tests=24
-RELEASE_SMOKE_OK build=0.6.2-alpha campaign=7 quality=high echo_async=ready
+REGRESSION_OK tests=25
+RELEASE_SMOKE_OK build=0.6.2-alpha campaign=8 quality=high echo_async=ready
 ```
 
 最新全流程复验把所有叙事节点统一改为 `PlayerController.request_interaction()` 路径，档案配重由
 玩家实际推动 Jolt 刚体进入踏板；输出 `GAMEPLAY_TEST_OK stage=complete resident=2
 archive_mechanisms=3 city_traces=3 relays=4 rain_eye_seals=3 trials=3 ending=tidal_order
-restore=rain_eye`，随后 24 项回归仍为 `REGRESSION_OK tests=24`。这证明自动化交互合同和完成态恢复
+restore=rain_eye`，随后 25 项回归仍为 `REGRESSION_OK tests=25`。这证明自动化交互合同和完成态恢复
 未回退，但不替代真实玩家人工走查；完整回归退出的通用 ObjectDB 提示会按退出时序在 1–3 个间变化。
 
 本轮新增 `runtime_teardown_test.gd`，验证退出时 76 个 Mesh、12 个 MultiMesh、6 组粒子、3 个
@@ -158,10 +164,11 @@ Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能�
 - 官方 Godot 4.7.1 release 模板导出；
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
-- ZIP `unzip -t` 通过；本轮粒子 draw pass 材质解绑接入后已重新导出 PCK，SHA-256 为
-  `edb35607f5a9ee72a910fb00d8646c67b1ef1da2b2711e98bdc6b9a1157d097e`（538,721,376 bytes）。
-  ZIP SHA-256 为 `fbe117662dbdccf3e4d3ffd25a6825b75f24deb89488e3e3cd6cb50da287573f`
-  （576,234,357 bytes）。
+- ZIP `unzip -t` 通过；本轮三环谜题、直接动画、虚空恢复与湖面 Shader 修复后已重新导出 PCK，
+  SHA-256 为 `6416d46ee5592b91c50cfeb5f28fa9e831bd6c8bdfebc34dfc54f8b986f97357`
+  （538,736,844 bytes）。ZIP SHA-256 为
+  `4891a22f474825072cedd0fe7bd81274948dd4cc596466954f7c2974bf245fee`
+  （576,248,808 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、
@@ -199,8 +206,8 @@ Git。当前 3840×2160 Vulkan 离屏与 X11 原生窗口截图已通过，但�
 
 下一轮要把“工程上可运行”推进到“美术与谜题可定稿”：为主角补充专业的起步、急停、转身、坡面
 重心和面部表演资产，并评估更高精度身体/头发网格；继续用树皮与叶片扫描材质、真实叶片卡、枝条
-风场和近中远 LOD 做树木 A/B 截图，清理草簇重复与中景穿帮；围绕档案馆顺序密码做至少一次外部
-玩家盲测，记录错误尝试、提示可读性、推石头后透镜可达率和迷路点，再调整线索强度；在 Windows
+风场和近中远 LOD 做树木 A/B 截图，清理草簇重复与中景穿帮；围绕三环符文与跨时相机关做至少一次外部
+玩家盲测，记录错误确认、提示可读性、推石头后透镜可达率和迷路点，再调整线索强度；在 Windows
 实机和多 GPU 上复测透镜、Jolt 刚体、水纹、IK、湿泥减速及高质量 P95 ≤41.7ms，继续定位
 ObjectDB/Texture RID 警告，并在完成性能、输入重映射、字幕/无障碍、音频和签名验收前不要宣称最终发行。
 
