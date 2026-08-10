@@ -39,7 +39,7 @@ env DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake g
 
 | 项目 | 改造前 | 改造后 | 验证重点 |
 |---|---|---|---|
-| 林地地面 | `previews/before_ground.png`<br>`SHA-256 4de1b9896b56e17c989858a1c3d9613a8e72c49f0f322393f78a6bb8b5ac0d27` | `previews/after_ground.png`<br>`SHA-256 532de97fa44ed296dd85eda84d8464f6a87fda55863e3363eb8d1d185f713e70` | 扫描 Albedo/Normal/AO/Height、宏观色彩、湿润和近景细节 |
+| 林地地面 | `previews/before_ground.png`<br>`SHA-256 4de1b9896b56e17c989858a1c3d9613a8e72c49f0f322393f78a6bb8b5ac0d27` | `previews/after_ground.png`<br>`SHA-256 fa9280c781d211bbe64a4e333e26a66bff1c0f02041e16db755fddfe2567ea6a` | 扫描 Albedo/Normal/AO/Height、宏观色彩、湿润和近景细节 |
 | 湖岸湿泥 | `previews/before_wet_mud.png`<br>`SHA-256 f93f1501a9eafce2bc0895572288666983e7b8fbe41ea49fd2022e114cfd3385` | `previews/after_wet_mud.png`<br>`SHA-256 c93b0e65a68b04a37af5d081182972e72ebeeb2158dd493b477abcd30ef5a4d5` | 湿泥过渡、湖石扫描材质、浅水边缘与泡沫 |
 | 树皮/树冠 | `previews/before_forest_tree_detail.png`<br>`SHA-256 0c31d1c3a29d230d9980a33fdf8dd9e1cd20cb7c4902c88fc517de5250caca16` | `previews/forest_tree_detail.png`<br>`SHA-256 864d4534bc9868e2b4d8e1bf340a7ddc52823cfceca1290b1ab7e08ecaa4fb34` | Pine Bark PBR、叶片软风动、近景树干法线 |
 | 湖面 | `previews/before_realistic_lake.png`<br>`SHA-256 03bdea4f5874da360861ade2cc2fd88bb1cbae5d80a7b72cbf680630c74945e5` | `previews/realistic_lake.png`<br>`SHA-256 1baad159a102e169d8a35de0dfbf82d448cdaf915af8f2f9517f3748fb09a0ea` | 双层法线、Fresnel、深度吸收、湿润粗糙度、反射探针 |
@@ -62,8 +62,8 @@ env DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake g
 | 地面 | `previews/after_ground_4k.png` | `9e27e61e48cdfabb2012eda9daa754a18357b9f2a591c5ddd4b34b7a06776c10` |
 | 湿泥 | `previews/after_wet_mud_4k.png` | `230b7c6136b120168f3a20e9adff79c6ac6d6c511a251710a3be605ab3a9931b` |
 | 树皮/树冠 | `previews/after_tree_detail_4k.png` | `8cb5833106f3b8929c79891fa9bb5ee6c04ee76683e51a2c0dbc7d6aeeaeaf86` |
-| 湖面 | `previews/after_lake_4k.png` | `06e306fc66d94370c017be69dd7a72b3226c82b8c06c9dea0d81375fe5fc6ccb` |
-| 湖面水花 | `previews/after_lake_splash_4k.png` | `5b3682222badd06354d0e54e7b107e05dbb255288f24f0fcfe1dfcd234e7c430` |
+| 湖面 | `previews/after_lake_4k.png` | `09db4b5643bb2e85d9494e195f1b4ee0ca984cfef1ebde1e300de5eb7c3b25c1` |
+| 湖面水花 | `previews/after_lake_splash_4k.png` | `fb37eb138e575f3ba9030054365e51fa4f2cf7518fed83138a886f22cb668550` |
 | 角色动作 | `previews/after_character_clean_4k.png` | `5ee50a151722298485ed4398df435a5d671d35b129653d350dffc5cd344bd6b6` |
 
 ### Profile 映射后的湖面复验
@@ -87,6 +87,11 @@ env DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake g
 `previews/postshutdown_lake_4k.png`，尺寸 3840×2160，SHA-256 为
 `063cae2ce3ed10f6879f53da13eb255557e029061a87a0d414b8a05abf6ad988`。该复验保持湖面反射和
 水纹路径有效；退出时仍报告 7 个 Texture RID 与 1 个通用 RefCounted，不能视为零泄漏。
+
+控制器 teardown 补丁后重新用 `DISPLAY=:1` 的 Renoir Vulkan Forward+ 捕获地面和湖面；
+1280×720 单镜头日志不再出现 ObjectDB 警告，只保留 7 个 Texture RID。4K 湖面当前截图为
+`after_lake_4k.png`/`after_lake_splash_4k.png`，仍需将 4K SubViewport 的偶发通用 RefCounted
+警告与 Godot 渲染器资源释放进一步区分。
 
 在加入 `Main._release_runtime_references()` 后重新执行同一 4K 湖面离屏捕获：
 `previews/postteardown_lake_4k.png`，尺寸 3840×2160，SHA-256 为

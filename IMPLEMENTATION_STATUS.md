@@ -108,8 +108,9 @@
   通过）；WorldStreamer/InteractiveLake/4K 捕获视口和 Main 运行时引用解绑已增加退出清理，且
   `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子和 WorldEnvironment 已脱钩；Player 的
   控制器、SurfaceProbe、AnimationTree、SkeletonIK 和脚部目标引用也已在 `_exit_tree()` 释放，但
-  WorldStreamer 现在还会收束 pending threaded request、断开流送节点 Callable；退出时仍偶发
-  ObjectDB/Texture RID 警告，需继续用 Godot 内存检查定位剩余资源，当前不能宣称零泄漏。
+  WorldStreamer 现在还会收束 pending threaded request、断开流送节点 Callable，PhaseShift/Cinematic
+  也有显式 shutdown；1280×720 Vulkan 单镜头已不再出现 ObjectDB，但 4K SubViewport 与渲染器仍
+  偶发 Texture RID/通用 RefCounted 警告，需继续用 Godot 内存检查定位剩余资源，当前不能宣称零泄漏。
 - 画质档已具备固定 FSR 3D 缩放（高 1.00、均衡 0.77、性能 0.59），但仍没有按帧动态分辨率和逐项高级设置。
 - 没有输入重映射、字幕缩放或色盲设置。
 - 真实 Vulkan X11 捕获已完成；`VISUAL_VALIDATION_REPORT.md` 保存地面、泥滩、树皮、湖面、水花、
@@ -133,8 +134,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `be17b698286e6ebc880125319e4b2809045961d92e4c6338fd02133cadd3d9c1`（527,431,424 bytes）；
-- ZIP SHA-256 为 `ed4d2f2ddecff35a6c02e800fb557ed3c95a02ee325ed7eb0ea35e1f1c6e0f4b`（564,765,825 bytes）；
+- 当前 PCK SHA-256 为 `8aa83c3fc1c7e2f416299d69dd75ee2e6a11ebb93ace7e58ac639746357245ab`（527,432,224 bytes）；
+- ZIP SHA-256 为 `3864d96afb0e86dec159fdfa20399c26f3d940c05ff02171811b19e7f290e400`（564,766,333 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

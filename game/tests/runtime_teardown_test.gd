@@ -12,6 +12,8 @@ func _initialize() -> void:
 	await physics_frame
 
 	var streamer = main.get("_world_streamer")
+	var phase_shift = main.get("_phase_shift")
+	var cinematic_director = main.get("_cinematic_director")
 	for _frame in 600:
 		if streamer.is_level_ready(
 			"res://content/levels/echo_ruins/echo_ruins.tscn"
@@ -20,6 +22,22 @@ func _initialize() -> void:
 		await process_frame
 
 	main.shutdown()
+	assert(
+		phase_shift.get("_restore_query") == null,
+		"PhaseShiftController must release its reusable physics query",
+	)
+	assert(
+		phase_shift.get("_streamer") == null
+			and phase_shift.get("_player") == null
+			and phase_shift.get("_present_nodes").is_empty(),
+		"PhaseShiftController must release scene references",
+	)
+	assert(
+		cinematic_director.get("_active_tween") == null
+			and cinematic_director.get("_player") == null
+			and cinematic_director.get("_gameplay_camera") == null,
+		"CinematicDirector must release Tween and camera references",
+	)
 	var mesh_count := 0
 	var multimesh_count := 0
 	var particle_count := 0

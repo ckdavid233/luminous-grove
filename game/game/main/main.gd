@@ -204,6 +204,12 @@ func shutdown() -> void:
 		if _phase_portal.has_method("shutdown"):
 			_phase_portal.shutdown()
 	_phase_portal = null
+	if _phase_shift != null and is_instance_valid(_phase_shift):
+		if _phase_shift.has_method("shutdown"):
+			_phase_shift.shutdown()
+	if _cinematic_director != null and is_instance_valid(_cinematic_director):
+		if _cinematic_director.has_method("shutdown"):
+			_cinematic_director.shutdown()
 	_world_streamer = null
 	_phase_shift = null
 	_surface_library = null

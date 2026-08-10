@@ -118,6 +118,20 @@ func _restore_gameplay_state() -> void:
 		_player.call("set_control_enabled", true)
 
 
+func shutdown() -> void:
+	# A CinematicDirector can finish with an invalid Tween handle even when the
+	# sequence is no longer marked as playing.  Explicitly kill and drop it so a
+	# capture/release smoke does not retain a RefCounted Tween through teardown.
+	_sequence_generation += 1
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = null
+	is_playing = false
+	_skip_requested = false
+	_player = null
+	_gameplay_camera = null
+	_camera = null
+
+
 func _exit_tree() -> void:
-	if is_playing:
-		cancel_sequence()
+	shutdown()

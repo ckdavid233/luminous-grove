@@ -159,10 +159,27 @@ func _restore_player_safely(saved_transform: Transform3D, saved_velocity: Vector
 	_player.velocity = saved_velocity
 
 
-func _exit_tree() -> void:
+func shutdown() -> void:
+	# Release the reusable query and all scene references before the parent
+	# starts removing streamed/present nodes.  The controller is a child of Main,
+	# so relying only on `_exit_tree()` leaves these references alive during the
+	# parent's explicit teardown window.
+	_pending_shift = false
+	_alternate_ready = false
+	_streamer = null
+	_player = null
+	_present_nodes.clear()
+	_world_environment = null
+	_sun = null
+	_gameplay_camera = null
+	_present_environment_state.clear()
 	if _restore_query != null:
 		_restore_query.exclude.clear()
-		_restore_query = null
+	_restore_query = null
+
+
+func _exit_tree() -> void:
+	shutdown()
 
 
 func _set_present_active(active: bool) -> void:

@@ -33,6 +33,10 @@
 - 本轮进一步将 Main 与 WorldStreamer 的递归断开限制为脚本对象回调，保留 Control、Viewport、
   Skeleton3D 等 Godot 原生内部连接，避免退出阶段误断连接产生错误；24 项回归仍通过，ObjectDB
   警告继续按未完成技术债记录。
+- Main 现在显式调用 `PhaseShiftController.shutdown()` 与 `CinematicDirector.shutdown()`，清掉可复用
+  的物理查询、场景引用和失效 Tween；`runtime_teardown_test.gd` 新增对应断言。真实 Vulkan
+  1280×720 地面/湖面捕获不再出现 ObjectDB 警告，4K SubViewport 与渲染器仍保留 Texture RID
+  检查项。
 - 均衡/性能画质接入固定 FSR 3D 缩放（0.77/0.59），并把 `render_scale` 写入 Vulkan 性能 JSON；
   Renoir 1280×720 性能档由 17.6 FPS 提升到 29.3 FPS、P95 由 59.794ms 降至 36.994ms，仍待
   原生桌面和独立 GPU 复测。
