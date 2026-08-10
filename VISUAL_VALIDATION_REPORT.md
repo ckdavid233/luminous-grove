@@ -121,6 +121,21 @@ SHA-256：`f2b6348d80f1106784a3f4eda3a4686654c921fc7fee87656553f74858aeb997`。
 | 湖面 | `previews/objectiveguide_final4k_lake_4k.png` | `b0758f8f0e01d4f6348928bbbf90cfa3cb33c29d38ef71615ed27e29f2a50b16` |
 | 湖面水花 | `previews/objectiveguide_final4k_lake_splash_4k.png` | `a8827a6ec6330f0512955dc678eba7a59fc6c3d65a29e89fb34aacbe53eb5a5c` |
 
+### 2026-08-10 条件式 HUD 引导后的最新 4K 湖面复验
+
+在 `b92a6aa` 的当前源码上重新运行 `CAPTURE_PREFIX=postconditional4k`、
+`CAPTURE_RESOLUTION=3840x2160`、`CAPTURE_ONLY=lake`。日志再次确认真实设备为
+`Vulkan 1.3.255 - Forward+ - AMD RADV RENOIR`，并输出 `SURFACE_VALIDATION_CAPTURE_OK`；
+两张 PNG 均通过 `file` 的 3840×2160、8-bit RGB 校验：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面 | `previews/postconditional4k_lake_4k.png` | `811541c08beb57bfd9b2396589bd76267523c3d50ceb11a47815b8ce602ebb41` |
+| 湖面水花 | `previews/postconditional4k_lake_splash_4k.png` | `215410f144e351ef271611162bd84241b7dc337a1632bf5dc1fe71b5813bf2d6` |
+
+该次捕获仍出现 7 个 Texture RID 与 1 个通用 ObjectDB 清理提示，因此新增截图证明
+当前源码的湖面、反射、水花与 4K 材质路径没有回退，但不改变零泄漏未通过的结论。
+
 ### Profile 映射后的湖面复验
 
 在显式 `MaterialProfile` 接入地表 Shader 后，重新用真实 Vulkan `SubViewport` 单独捕获地面、湿泥、
