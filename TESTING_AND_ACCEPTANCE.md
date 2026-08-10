@@ -84,7 +84,7 @@ Godot 编辑器级解析检查：
 | `lantern_city_level_test.gd` | 双时相桥、列车、16 刚体、3 残响、4 回路、2 证词 |
 | `rain_eye_level_test.gd` | 7 段道路、14 刚体、3 印记、3 试炼、3 结局 |
 | `narrative_finale_test.gd` | 三结局、潮汐门槛、campaign v6 与旧档迁移 |
-| `gameplay_test.gd` | 从真实附近风铃交互到潮汐结局、章节流送、保存和完成态恢复 |
+| `gameplay_test.gd` | 从真实附近风铃交互到潮汐结局、章节流送、保存和完成态恢复；逐阶段校验目标提示与可交互合同 |
 
 ## 关键通过结果
 

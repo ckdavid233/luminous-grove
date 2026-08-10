@@ -387,8 +387,20 @@ func _initialize() -> void:
 
 
 func _assert_objective_target(main: Node, description: String) -> void:
-	var target = main.call("_resolve_objective_target")
+	var target: Variant = main.call("_resolve_objective_target")
 	assert(
 		target != null and is_instance_valid(target),
 		"Objective guide target missing: " + description,
 	)
+	# The full-flow test intentionally drives the narrative directly, but every
+	# target still has to expose the same interaction contract the player sees.
+	# This catches a stage that has a valid node yet leaves the player with no
+	# usable prompt (a common soft-lock when streamed phases change).
+	var player := main.get_node("Player") as Node3D
+	if target.has_method("get_prompt"):
+		var prompt: String = str(target.get_prompt(player)).strip_edges()
+		assert(not prompt.is_empty(), "Objective prompt missing: " + description)
+		assert(
+			target.can_interact(player),
+			"Objective target is gated at stage: " + description,
+		)
