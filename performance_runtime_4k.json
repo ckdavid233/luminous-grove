@@ -4,13 +4,13 @@
 		2160
 	],
 	"average_fps": 2.0,
-	"average_frame_ms": 511.061,
+	"average_frame_ms": 494.68,
 	"display_server": "X11",
 	"draw_calls": 397,
 	"gpu_metrics_available": true,
 	"measurement_mode": "real_vulkan",
-	"p95_frame_ms": 966.345,
-	"p99_frame_ms": 977.771,
+	"p95_frame_ms": 503.819,
+	"p99_frame_ms": 525.618,
 	"primitives": 6113658,
 	"quality_profile": "high",
 	"render_scale": 1.0,
@@ -20,5 +20,5 @@
 		2160
 	],
 	"sample_frames": 600,
-	"video_memory_bytes": 4039829168
+	"video_memory_bytes": 4029081168
 }

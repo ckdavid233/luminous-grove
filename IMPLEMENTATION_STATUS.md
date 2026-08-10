@@ -52,7 +52,7 @@
 
 ### 已完成
 
-- PhysicalSky、Filmic、Glow；
+- Poly Haven Mossy Forest CC0 色调映射 4K PanoramaSkyMaterial、Filmic、Glow；原始 HDR/EXR 外置；
 - SSR、SSAO、SSIL、SDFGI、体积雾；
 - 4K PBR 地面、树皮、叶片、路径、湖石、神龛石；
 - 65×65 可碰撞高度地形、54 棵有树干碰撞的多级分枝树、16,000 个风动草簇；
@@ -136,8 +136,9 @@
   校验地面、湿泥、树木、湖面、水花和角色的 3840×2160 PNG；另已在临时 3840×2160 X11 mode
   完成湖面原生窗口截图。实体 4K 显示器、Windows 驱动和高质量 P95 仍需复测。
 - 4K runtime 已入库；8K 英雄材质仍需按真实 GPU 显存预算启用，Mossy Rock 湖石已完成扫描
-  替换但 HDRI 尚未进入运行包：当前 Godot 4.7.1 构建对 Poly Haven 的 `.hdr`/`.exr` 没有资源
-  加载器，具体阻塞和后续导入要求见 `MATERIAL_LIBRARY_SOURCES.md`。
+  替换。当前 Godot 4.7.1 构建对 `.hdr`/`.exr` 没有资源加载器，运行包已改用同一 CC0
+  Mossy Forest 的 4096×2048 tonemapped JPG PanoramaSkyMaterial；原始 HDR/EXR 仍外置，最终
+  未裁剪 HDR 光照需在支持导入器的构建中复验，见 `MATERIAL_LIBRARY_SOURCES.md`。
 
 ## 设备与性能
 
@@ -153,8 +154,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `264704b97443fca79c576c06ae17ed5d4dff02da4b238e7ebb9b247aba8961fe`（527,455,996 bytes）；
-- ZIP SHA-256 为 `6392b6cb72c53c9b34578af65518acc9bb31886a4cf1bba58c7a01383768d58a`（564,975,909 bytes）；
+- 当前 PCK SHA-256 为 `90dc210375c1b72bb8a14f466cfff44346ff9b30451f7330352061a495af27f9`（538,707,200 bytes）；
+- ZIP SHA-256 为 `50cbbe30b23120895fd53d94e167d7c9aaf9361f1571edfd8aa238927161167b`（576,220,387 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

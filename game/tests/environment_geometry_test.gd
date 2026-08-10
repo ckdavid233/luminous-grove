@@ -28,6 +28,7 @@ class PhysicsRayProbe:
 		for ray in rays:
 			ray.exclude.clear()
 		completed = true
+		space = null
 		set_physics_process(false)
 
 
@@ -35,6 +36,8 @@ class PhysicsRayProbe:
 		for ray in rays:
 			ray.exclude.clear()
 		rays.clear()
+		hits.clear()
+		samples.clear()
 
 
 func _initialize() -> void:

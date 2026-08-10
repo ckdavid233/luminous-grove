@@ -4,6 +4,10 @@
 
 ### 林地湖区材质、视觉、光照与交互升级
 
+- 接入 Poly Haven Mossy Forest CC0 的 4096×2048 tonemapped JPG 运行天空，使用
+  `PanoramaSkyMaterial` 替代当前构建不支持的 HDR/EXR 直接导入；新增资产 SHA-256、材质完整性
+  断言和 1280×720/3840×2160 真实 Vulkan 湖面复验。原始未裁剪 HDR/EXR 继续外置，不宣称等价的
+  HDR 光照验收。
 - 继续收紧退出顺序：Main 会先停止所有脚本子节点的 process/physics/input 回调，SurfaceLibrary 与
   WetnessController 提前清空运行时注册表；Player、SurfaceProbe、PhaseShift 的 Jolt 查询改为显式
   持有并在同一帧释放 direct-space wrapper。24 项功能回归保持通过，但 Jolt 独立线程、4K SubViewport

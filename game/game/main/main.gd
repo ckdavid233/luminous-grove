@@ -22,6 +22,9 @@ const OBJECTIVE_GUIDE := preload("res://game/ui/objective_guide.gd")
 const MEMORY_DROPLET_SCENE := preload("res://game/narrative/memory_droplet.tscn")
 const ENDING_CHOICE_SCENE := preload("res://game/narrative/ending_choice.tscn")
 const STORY_RESONATOR := preload("res://game/narrative/story_resonator.gd")
+const FOREST_SKY_TEXTURE := preload(
+	"res://content/environments/sky/mossy_forest_tonemapped_4k.jpg"
+)
 const ECHO_LEVEL_PATH := "res://content/levels/echo_ruins/echo_ruins.tscn"
 const CITY_PRESENT_PATH := (
 	"res://content/levels/lantern_city/lantern_city_present.tscn"
@@ -475,15 +478,15 @@ func _create_environment() -> void:
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	var physical_sky := PhysicalSkyMaterial.new()
-	physical_sky.turbidity = 2.45
-	physical_sky.rayleigh_coefficient = 1.42
-	physical_sky.rayleigh_color = Color("9bc8d0")
-	physical_sky.mie_coefficient = 0.006
-	physical_sky.mie_color = Color("f0d5b4")
-	physical_sky.ground_color = Color("31433b")
-	physical_sky.sun_disk_scale = 1.65
-	sky.sky_material = physical_sky
+	# The Godot 4.7.1 build used for development has no HDR/EXR resource
+	# loader. Use Poly Haven's CC0 tonemapped equirectangular runtime map so the
+	# forest reflection/ambient path is still authored from the scanned sky,
+	# while the original unclipped HDR/EXR remains an external source asset.
+	var panorama_sky := PanoramaSkyMaterial.new()
+	panorama_sky.panorama = FOREST_SKY_TEXTURE
+	panorama_sky.filter = true
+	panorama_sky.energy_multiplier = 0.72
+	sky.sky_material = panorama_sky
 	environment.sky = sky
 	environment.background_energy_multiplier = 0.52
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY

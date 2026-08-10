@@ -61,6 +61,16 @@ func _initialize() -> void:
 	var main := main_scene.instantiate()
 	root.add_child(main)
 	await process_frame
+	var world_environment := main.get("_world_environment") as WorldEnvironment
+	assert(world_environment != null and world_environment.environment != null)
+	assert(
+		world_environment.environment.sky != null
+			and world_environment.environment.sky.sky_material is PanoramaSkyMaterial,
+	)
+	assert(
+		(world_environment.environment.sky.sky_material as PanoramaSkyMaterial).panorama != null,
+		"Forest PanoramaSkyMaterial must retain its Godot-compatible runtime map",
+	)
 	var ending_overlay := main.get("_ending_overlay") as ColorRect
 	var ending_label := main.get("_ending_label") as Label
 	assert(ending_overlay != null and not ending_overlay.visible)

@@ -238,6 +238,23 @@ DISPLAY=:1 CAPTURE_PREFIX=playershutdown4k CAPTURE_RESOLUTION=3840x2160 CAPTURE_
 |---|---|---|---|
 | 湖面 | `previews/native4k_lake_4k.png` | `9bab7007c090701d167eab3407822b28196507406f1e0d9126358c5997787c8e` | `actual_resolution=3840×2160`, Forward+ |
 
+### 2026-08-10 PanoramaSkyMaterial 运行图复验
+
+当前 Godot 4.7.1 构建无法直接读取 HDR/EXR；本轮将 Poly Haven Mossy Forest 的 CC0 色调映射
+JPG 下采样为 4096×2048，并以 `PanoramaSkyMaterial` 接入固定电影光照。真实 Vulkan Renoir
+Forward+ 的 1280×720 与 3840×2160 湖面捕获均输出成功，未改变湖面反射、水纹、湿润和湖石扫描
+材质路径；PNG 仍仅作运行路径证据，不等价于实体 4K/Windows 性能验收。
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面（1280×720） | `previews/after_panorama_lake.png` | `7e8684cd9713ae90fde511d0ed1266679b82066234a00884fa8c1541c6773190` |
+| 湖面水花（1280×720） | `previews/after_panorama_lake_splash.png` | `6fc2c19c3acb3ac52ac1784f695ed9b00d56fe9a889fbdc32237b220bef21ee1` |
+| 湖面（3840×2160） | `previews/after_panorama_4k_lake_4k.png` | `4b5005187021016d3d50e7fade82ee50e91f495f213fe7c82521b48f13c44d4d` |
+| 湖面水花（3840×2160） | `previews/after_panorama_4k_lake_splash_4k.png` | `cc251a1caa5f52f1d8095683652f7f245d4a162a97c4994b915962669c5d51aa` |
+
+两次捕获日志均为 `Vulkan 1.3.255 - Forward+ - AMD RADV RENOIR` 与
+`SURFACE_VALIDATION_CAPTURE_OK`；退出时仍可能出现 7 个 Texture RID，零泄漏结论保持未通过。
+
 ## 视觉结论与剩余项
 
 - 地面、泥滩、树皮、湖面和角色动作均已在真实 Vulkan 表面完成同机位前后对比。

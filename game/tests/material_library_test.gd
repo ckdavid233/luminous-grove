@@ -14,6 +14,14 @@ const PROFILE_PATHS := {
 
 
 func _initialize() -> void:
+	var forest_sky := ResourceLoader.load(
+		"res://content/environments/sky/mossy_forest_tonemapped_4k.jpg",
+		"Texture2D",
+		ResourceLoader.CACHE_MODE_IGNORE,
+	) as Texture2D
+	assert(forest_sky != null, "Poly Haven forest sky runtime map must load")
+	assert(forest_sky.get_size() == Vector2(4096, 2048))
+	forest_sky = null
 	var manifest_text := FileAccess.get_file_as_string(
 		ProjectSettings.globalize_path("res://content/materials/material_library.json")
 	)

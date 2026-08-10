@@ -56,6 +56,9 @@
 - 退出与流送：旧版地面 PBR 兜底贴图改为按需加载；WorldStreamer 在关卡卸载前调用关卡级
   `shutdown()`，Echo Ruins 会解绑生成 Mesh 的 PBR 贴图与材质；Vulkan 捕获脚本会预热并释放
   临时相机/Viewport 引用，避免验证工具本身扩大退出告警。
+- HDRI 运行路径：Godot 4.7.1 无法直接加载 HDR/EXR，本轮将 Poly Haven Mossy Forest CC0
+  tonemapped JPG 下采样为 4096×2048，接入 `PanoramaSkyMaterial`，并以 SHA-256 和 4K Vulkan
+  湖面截图记录；未将外置原始 HDR/EXR 伪装成已验证运行资源。
 
 ## 自动化与实机证据
 
@@ -88,8 +91,8 @@ SurfaceProbe 和 PhaseShift 在同一退出窗口释放注册表、物理查询�
 - 高画质（原生 1.00）：8.4 FPS，P95 121.219 ms，P99 124.506 ms，显存监视值约 3.06 GB，用于画面验收；
 - 平衡（FSR 0.77）：13.3 FPS，P95 78.047 ms，P99 80.342 ms；
 - 性能档（FSR 0.59）：29.3 FPS，P95 36.994 ms，P99 61.053 ms，已接近但仍未达到 30 FPS 的 P95 预算。
-- 3840×2160 原生 X11 窗口探针（高画质 1.00）：2.0 FPS，P95 966.345 ms，P99 977.771 ms，显存监视值约
-  4.04 GB；证明 4K Forward+ 路径有效，但高画质不可玩。
+- 3840×2160 原生 X11 窗口探针（高画质 1.00）：2.0 FPS，平均 494.680 ms，P95 503.819 ms，P99
+  525.618 ms，显存监视值约 4.03 GB；证明 4K Forward+ 路径有效，但高画质不可玩。
 
 当前已保存的视觉证据位于 `previews/`（该目录被 Git 忽略，避免提交大量生成截图）；重新
 生成方式和验收标准见 `TESTING_AND_ACCEPTANCE.md` 与 `PERFORMANCE_REPORT.md`。
@@ -108,9 +111,9 @@ SurfaceProbe 和 PhaseShift 在同一退出窗口释放注册表、物理查询�
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮退出清理与查询释放代码接入后已重新导出 PCK，SHA-256 为
-  `264704b97443fca79c576c06ae17ed5d4dff02da4b238e7ebb9b247aba8961fe`（527,455,996 bytes）。
-  ZIP SHA-256 为 `6392b6cb72c53c9b34578af65518acc9bb31886a4cf1bba58c7a01383768d58a`
-  （564,975,909 bytes）。
+  `90dc210375c1b72bb8a14f466cfff44346ff9b30451f7330352061a495af27f9`（538,707,200 bytes）。
+  ZIP SHA-256 为 `50cbbe30b23120895fd53d94e167d7c9aaf9361f1571edfd8aa238927161167b`
+  （576,220,387 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、
@@ -134,8 +137,8 @@ SurfaceProbe 和 PhaseShift 在同一退出窗口释放注册表、物理查询�
 
 下一阶段以“可验收的唯美写实与稳定发行”为目标：先在实体 4K 桌面、Windows 10/11 和至少两类
 GPU 上重跑地面、湿泥、树皮、湖石扫描材质、湖面反射、湿润联动、脚印和角色动作的截图与帧时，
-明确 4K/8K 英雄材质的显存预算并把高质量 P95 压到 ≤41.7 ms；先解决当前 Godot 4.7.1 构建
-无法直接加载 HDR/EXR 的导入链路，再补齐主角起步／急停／转身、
+明确 4K/8K 英雄材质的显存预算并把高质量 P95 压到 ≤41.7 ms；当前已用 Godot 支持的 CC0
+tonemapped PanoramaSkyMaterial 解除运行格式阻塞，仍需在支持 HDR/EXR 的导入器上复验未裁剪光照；再补齐主角起步／急停／转身、
 坡面 IK 稳定性、脚步动画相位、面部表演以及朔和城市居民等专业资产，完成 HDRI、许可和 SHA-256
 登记；按真实玩家路径复测交互提示、门控、失败回退和三结局，修正迷路或卡关点；针对
 WorldStreamer、InteractiveLake、4K SubViewport 和 Jolt 交互的 ObjectDB/Texture RID 清理警告定位

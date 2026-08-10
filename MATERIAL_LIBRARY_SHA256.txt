@@ -1,5 +1,6 @@
 # Poly Haven 4K runtime maps (downloaded 2026-08-10)
 # Source license: CC0, see MATERIAL_LIBRARY_SOURCES.md
+311b9a0e46c5cea8b81cac5440ba7efe33b975d3715b8677b979674b751b9511  game/content/environments/sky/mossy_forest_tonemapped_4k.jpg
 2371d84b080ed5c91c16feeaf32808693fd4e12b962ef0a55a1e2ff452bdc13d  game/content/materials/scanned/forest_ground/albedo.jpg
 0dc45c3acb2c0eadc3d832a104e49400579ba6e2a27246580d2665ea5bd988df  game/content/materials/scanned/forest_ground/ao.jpg
 044b02b2382460c2a74b63686bc3e792d17950485968058956dea17c76c3bf0f  game/content/materials/scanned/forest_ground/height.jpg

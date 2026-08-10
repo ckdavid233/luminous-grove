@@ -52,7 +52,7 @@ Renoir 使用共享系统内存。`Performance.RENDER_VIDEO_MEM_USED` 是 Godot 
 
 ## 3. 高画质档内容
 
-- PhysicalSky、Filmic 色调映射和 Glow。
+- Poly Haven Mossy Forest CC0 tonemapped PanoramaSkyMaterial、Filmic 色调映射和 Glow（原始 HDR/EXR 外置）。
 - SSR、SSAO、SSIL、SDFGI 与体积雾。
 - 45 米阴影范围。
 - 湖面折射、Fresnel、焦散和岸边泡沫。
@@ -127,12 +127,12 @@ game/tests/performance_chapters_test.gd
 |---|---:|
 | 样本帧 | 600 |
 | 平均 FPS | 2.0 |
-| 平均帧时间 | 511.061 ms |
-| P95 | 966.345 ms |
-| P99 | 977.771 ms |
+| 平均帧时间 | 494.680 ms |
+| P95 | 503.819 ms |
+| P99 | 525.618 ms |
 | Draw calls | 397 |
 | Primitives | 6,113,658 |
-| 渲染资源监视值 | 4,039,829,168 bytes |
+| 渲染资源监视值 | 4,029,081,168 bytes |
 
 结果中的 `actual_resolution=[3840,2160]`、`measurement_mode=real_vulkan`、`gpu_metrics_available=true`；
 该数据证明 4K 窗口路径确实运行在 Renoir Forward+，同时证明当前设备高画质完全不满足
@@ -190,7 +190,7 @@ resolution = 1280×720
 - 性能档关闭屏幕空间／全局光／体积雾和高成本角色材质，减少草量与阴影，并以 0.59 FSR
   内部缩放降低像素成本；在 1280×720 X11/VNC 表面为 29.3 FPS，P95 36.994 ms、P99 61.053 ms，
   说明仍需要原生桌面复测、纹理/资源流送和卡顿尖峰治理。
-- 3840×2160 原生窗口探针平均只有 2.0 FPS、P95 966.345 ms，当前设备只能把 4K 用作材质
+- 3840×2160 原生窗口探针平均只有 2.0 FPS、P95 503.819 ms，当前设备只能把 4K 用作材质
   验收或低帧率镜头捕获，不能作为可玩高画质档。
 - 城市进入雨眼后完整关卡实例回到 2，说明异步流送与 LRU 驱逐没有随章节累计实例。
 - P95/P99 是当前最重要的流畅度指标；城市此岸 P99 约 99 ms，仍存在肉眼可见卡顿。
