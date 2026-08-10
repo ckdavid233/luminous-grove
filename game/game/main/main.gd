@@ -47,6 +47,11 @@ const GROUND_ROUGHNESS := preload(
 	"res://content/environments/ground/forest_ground_roughness.png"
 )
 const SETTINGS_PATH := "user://settings.cfg"
+const DEFAULT_RENDER_SCALE_BY_PROFILE := {
+	&"high": 1.0,
+	&"balanced": 0.77,
+	&"performance": 0.59,
+}
 
 var _rng := RandomNumberGenerator.new()
 var _player
@@ -84,6 +89,7 @@ var _campaign_progress: ProgressBar
 var _toast_label: Label
 var _ending_overlay: ColorRect
 var _ending_label: Label
+var _ending_tween: Tween
 var _pause_overlay: Control
 var _quality_button: Button
 var _quality_profile := &"high"
@@ -131,7 +137,12 @@ func _ready() -> void:
 	_setup_cinematic()
 	_setup_phase_shift()
 	_apply_quality_profile()
-	var restored := _restore_saved_game()
+	# The release probe must validate the canonical forest/echo package instead
+	# of inheriting a developer's user save (which may already be in Lantern
+	# City or Rain Eye and intentionally unloads the forest echo level).
+	var restored := false
+	if not _has_runtime_argument("--release-smoke"):
+		restored = _restore_saved_game()
 	if not restored:
 		_narrative.begin_journey()
 	_sync_world_to_narrative()
@@ -149,6 +160,9 @@ func shutdown() -> void:
 	if _shutdown_requested:
 		return
 	_shutdown_requested = true
+	if _ending_tween != null and _ending_tween.is_valid():
+		_ending_tween.kill()
+	_ending_tween = null
 	# Stop any UI/cinematic tweens before child resources are released.  This
 	# also covers a toast or transition started immediately before a test exits.
 	for tween in get_tree().get_processed_tweens():
@@ -1544,6 +1558,7 @@ func _apply_quality_profile() -> void:
 			environment.sdfgi_enabled = true
 			environment.volumetric_fog_enabled = true
 			_sun.directional_shadow_max_distance = 45.0
+	_apply_render_scaling()
 	_apply_grass_quality()
 	_apply_forest_quality()
 	var ambient_vfx := get_node_or_null("AmbientVFX") as Node3D
@@ -1556,6 +1571,41 @@ func _apply_quality_profile() -> void:
 		_player.set_visual_quality_profile(_quality_profile)
 	if _water != null and _water.has_method("set_visual_quality_profile"):
 		_water.set_visual_quality_profile(_quality_profile)
+
+
+func _apply_render_scaling() -> void:
+	var viewport := get_viewport()
+	if viewport == null:
+		return
+	var render_scale := float(
+		DEFAULT_RENDER_SCALE_BY_PROFILE.get(_quality_profile, 1.0)
+	)
+	var override_scale := _requested_render_scale_override()
+	if override_scale > 0.0:
+		render_scale = override_scale
+	render_scale = clampf(render_scale, 0.5, 1.0)
+	# FSR keeps the window/output at its requested size while reducing the 3D
+	# render buffer. High quality remains native by default so existing 4K
+	# screenshots retain their exact evidence; lower profiles trade samples for
+	# a predictable frame-time budget on integrated GPUs.
+	viewport.scaling_3d_scale = render_scale
+	viewport.scaling_3d_mode = (
+		Viewport.SCALING_3D_MODE_FSR
+		if render_scale < 0.999
+		else Viewport.SCALING_3D_MODE_BILINEAR
+	)
+	viewport.fsr_sharpness = 0.18 if render_scale < 0.999 else 0.0
+
+
+func _requested_render_scale_override() -> float:
+	var value := OS.get_environment("LUMINOUS_RENDER_SCALE").strip_edges()
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--render-scale="):
+			value = argument.trim_prefix("--render-scale=")
+	if value.is_empty():
+		return -1.0
+	var parsed := value.to_float()
+	return parsed if parsed > 0.0 else -1.0
 
 
 func _apply_grass_quality() -> void:
@@ -1615,6 +1665,10 @@ func _toggle_fullscreen() -> void:
 
 func get_quality_profile() -> StringName:
 	return _quality_profile
+
+
+func get_render_scale() -> float:
+	return get_viewport().scaling_3d_scale if get_viewport() != null else 1.0
 
 
 func _on_shrine_activated(_shrine_id: StringName) -> void:
@@ -2581,10 +2635,18 @@ func _show_ending() -> void:
 	_ending_overlay.color.a = 0.0
 	_ending_label.modulate.a = 0.0
 	_ending_overlay.visible = true
-	var tween := create_tween()
-	tween.tween_interval(1.2)
-	tween.tween_property(_ending_overlay, "color:a", 0.82, 1.8).set_trans(Tween.TRANS_SINE)
-	tween.parallel().tween_property(_ending_label, "modulate:a", 1.0, 2.1)
+	if _has_runtime_argument("--script"):
+		# Test/capture runs must not leave a RefCounted Tween alive while the
+		# process is deliberately tearing down immediately after the assertion.
+		_ending_overlay.color.a = 0.82
+		_ending_label.modulate.a = 1.0
+		return
+	if _ending_tween != null and _ending_tween.is_valid():
+		_ending_tween.kill()
+	_ending_tween = create_tween()
+	_ending_tween.tween_interval(1.2)
+	_ending_tween.tween_property(_ending_overlay, "color:a", 0.82, 1.8).set_trans(Tween.TRANS_SINE)
+	_ending_tween.parallel().tween_property(_ending_label, "modulate:a", 1.0, 2.1)
 
 
 func _prepare_ending_overlay(ending_id: StringName) -> void:

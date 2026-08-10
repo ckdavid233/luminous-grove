@@ -109,7 +109,7 @@
   `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子和 WorldEnvironment 已脱钩；Player 的
   控制器、SurfaceProbe、AnimationTree、SkeletonIK 和脚部目标引用也已在 `_exit_tree()` 释放，但
   仍需用 Godot 内存检查继续定位剩余资源，当前不能宣称零泄漏。
-- 画质档没有动态分辨率和逐项高级设置。
+- 画质档已具备固定 FSR 3D 缩放（高 1.00、均衡 0.77、性能 0.59），但仍没有按帧动态分辨率和逐项高级设置。
 - 没有输入重映射、字幕缩放或色盲设置。
 - 真实 Vulkan X11 捕获已完成；`VISUAL_VALIDATION_REPORT.md` 保存地面、泥滩、树皮、湖面、水花、
   脚印和角色动作的前后对比。常规截图为 1280×720，同时已用独立 Vulkan `SubViewport` 输出并
@@ -121,7 +121,7 @@
 ## 设备与性能
 
 目标机是 Ryzen 5 PRO 4650U + Renoir 集显 + 15 GiB。高画质档用于画面验收，不是该集显上的
-60 FPS 档；本轮 1280×720 X11 实测高画质 8.4 FPS、平衡 10.3 FPS、性能档 17.6 FPS，
+60 FPS 档；本轮 1280×720 X11 实测高画质 8.4 FPS、平衡 13.3 FPS、性能档 29.3 FPS，
 高质量 P95 目标未达成。准确数字见
 `PERFORMANCE_REPORT.md`。正式发行还需针对多台 Windows 独显/集显建立矩阵。
 
@@ -130,10 +130,10 @@
 - Godot 4.7.1 官方 Windows x86_64 release 模板已 CRC 校验；
 - Windows Desktop preset 已加入；
 - EXE + PCK 结构已导出；
-- v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；564,948,065 字节 ZIP 已通过
+- v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；564,764,197 字节 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- ZIP SHA-256 为 `d6aaa48fc05eedb1024e67b3e203fa3502d4a64203c4226d77d378a38a0de7a4`；PCK SHA-256 为
-  `b71393edfd0849cd60ffc0f9ffbc307acb67d5c0cc5da52cd0444ba01884788d`；
+- ZIP SHA-256 为 `0995b816d81caef584b8bdb4d0c8bc2397a35dc965be8c814f8fca3247451efc`；PCK SHA-256 为
+  `397618916b316a1eeba7a6321987f1cf020c2453806f6c04073046c8595efe94`；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

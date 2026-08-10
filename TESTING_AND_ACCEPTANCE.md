@@ -109,7 +109,7 @@ Godot 编辑器级解析检查：
 3. Draw calls 和 primitives 大于 0；
 4. Vulkan surface 无创建失败；
 5. 明确指定并在结果中记录高画质或性能档；
-6. 保存原始 JSON。
+6. 结果必须包含 `render_scale`，并保存原始 JSON；高画质默认 1.0，均衡/性能默认 0.77/0.59。
 
 结果中的 `measurement_mode` 必须为 `real_vulkan` 才能进入性能报告；
 `headless_cpu_smoke` 只证明测试脚本和资源加载可完成。
@@ -129,6 +129,9 @@ DISPLAY=:1 PERFORMANCE_RESOLUTION=3840x2160 \
   --path /home/cenkai/game_dev_plan/game \
   --script res://tests/performance_test.gd
 ```
+
+性能档 FSR 比例可用 `LUMINOUS_RENDER_SCALE=0.5` 或 `--render-scale=0.5` 临时覆盖；覆盖结果应
+使用 `PERFORMANCE_OUTPUT=/absolute/path/result.json` 另存，不能覆盖默认高画质 4K 证据。
 
 ## Windows 包验收
 

@@ -28,11 +28,15 @@
   未完成的零泄漏验收项。
 - 角色退出时补齐控制器、SurfaceProbe、AnimationTree、SkeletonIK 和脚部目标引用释放；24 项回归
   仍通过，但部分场景仍有少量 ObjectDB 警告，继续列为内存检查任务。
+- 均衡/性能画质接入固定 FSR 3D 缩放（0.77/0.59），并把 `render_scale` 写入 Vulkan 性能 JSON；
+  Renoir 1280×720 性能档由 17.6 FPS 提升到 29.3 FPS、P95 由 59.794ms 降至 36.994ms，仍待
+  原生桌面和独立 GPU 复测。
 - 性能与截图入口新增 `PERFORMANCE_RESOLUTION=3840x2160` 和 `CAPTURE_NATIVE=1`；在真实
-  Renoir Vulkan Forward+ 的 3840×2160 X11 mode 完成高画质采样（平均 513.418 ms、P95 974.597 ms）
+  Renoir Vulkan Forward+ 的 3840×2160 X11 mode 完成高画质采样（平均 511.061 ms、P95 966.345 ms）
   与湖面原生窗口截图，结果证明 4K 路径有效但目标性能未达成。
-- Windows/PCK release smoke 改为允许冷启动材质与 threaded PCK 最多 3600 帧，并在成功标志后直接
-  退出探针；本轮导出包已通过 Linux 同版本自检和 ZIP 完整性检查。
+- Windows/PCK release smoke 改为允许冷启动材质与 threaded PCK 最多 3600 帧；探针忽略开发者存档，
+  固定从林地基线确认 Echo Ruins 异步加载，并在成功标志后直接退出；本轮导出包已通过 Linux 同版本
+  自检和 ZIP 完整性检查。源目录 headless 仍可能出现 1 个通用 ObjectDB 清理警告，未宣称零泄漏。
 - 回归套件从 21 项扩展为 23 项，新增材质完整性和表面交互测试；真实 Vulkan 性能基线保留，
   当前容器仅能运行 64×64 headless CPU 冒烟。
 

@@ -47,6 +47,7 @@ func _initialize() -> void:
 		"renderer": RenderingServer.get_current_rendering_method(),
 		"display_server": DisplayServer.get_name(),
 		"gpu_metrics_available": gpu_metrics_available,
+		"render_scale": snappedf(main.get_render_scale(), 0.001),
 		"sample_frames": SAMPLE_FRAMES,
 		"average_frame_ms": snappedf(average_ms, 0.001),
 		"average_fps": snappedf(1000.0 / average_ms, 0.1),
@@ -56,13 +57,15 @@ func _initialize() -> void:
 		"primitives": int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
 		"video_memory_bytes": int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED)),
 	}
-	var output_path := (
-		OUTPUT_DIRECTORY + "/performance_runtime_4k.json"
-		if _resolution == Vector2i(3840, 2160) and quality_profile == &"high"
-		else OUTPUT_DIRECTORY + "/performance_runtime.json"
-		if quality_profile == &"high"
-		else OUTPUT_DIRECTORY + "/performance_runtime_%s.json" % quality_profile
-	)
+	var output_path := OS.get_environment("PERFORMANCE_OUTPUT").strip_edges()
+	if output_path.is_empty():
+		output_path = (
+			OUTPUT_DIRECTORY + "/performance_runtime_4k.json"
+			if _resolution == Vector2i(3840, 2160) and quality_profile == &"high"
+			else OUTPUT_DIRECTORY + "/performance_runtime.json"
+			if quality_profile == &"high"
+			else OUTPUT_DIRECTORY + "/performance_runtime_%s.json" % quality_profile
+		)
 	var file := FileAccess.open(output_path, FileAccess.WRITE)
 	file.store_string(JSON.stringify(result, "\t"))
 	file.close()

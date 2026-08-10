@@ -67,10 +67,10 @@ WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但
 目标设备为 Ryzen 5 PRO 4650U / Renoir 集成显卡。本轮已在 `DISPLAY=:1` 的真实 X11/Vulkan
 表面以 1280×720 重测：
 
-- 高画质：8.4 FPS，P95 120.904 ms，P99 123.745 ms，显存监视值约 3.06 GB，用于画面验收；
-- 平衡：10.3 FPS，P95 100.224 ms，P99 110.850 ms；
-- 性能档：17.6 FPS，P95 59.794 ms，P99 106.463 ms，暂不能宣称为 30 FPS 建议档。
-- 3840×2160 原生 X11 窗口探针：1.9 FPS，P95 974.597 ms，P99 992.221 ms，显存监视值约
+- 高画质（原生 1.00）：8.4 FPS，P95 121.219 ms，P99 124.506 ms，显存监视值约 3.06 GB，用于画面验收；
+- 平衡（FSR 0.77）：13.3 FPS，P95 78.047 ms，P99 80.342 ms；
+- 性能档（FSR 0.59）：29.3 FPS，P95 36.994 ms，P99 61.053 ms，已接近但仍未达到 30 FPS 的 P95 预算。
+- 3840×2160 原生 X11 窗口探针（高画质 1.00）：2.0 FPS，P95 966.345 ms，P99 977.771 ms，显存监视值约
   4.04 GB；证明 4K Forward+ 路径有效，但高画质不可玩。
 
 当前已保存的视觉证据位于 `previews/`（该目录被 Git 忽略，避免提交大量生成截图）；重新
@@ -89,9 +89,9 @@ WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但
 - 官方 Godot 4.7.1 release 模板导出；
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
-- ZIP `unzip -t` 通过，更新材质与水花逻辑后的 SHA-256 为
-  `d6aaa48fc05eedb1024e67b3e203fa3502d4a64203c4226d77d378a38a0de7a4`（564,948,065 bytes）；PCK
-  SHA-256 为 `b71393edfd0849cd60ffc0f9ffbc307acb67d5c0cc5da52cd0444ba01884788d`（527,427,312 bytes）。
+- ZIP `unzip -t` 通过，加入固定 FSR 和发布自检修复后的 SHA-256 为
+  `0995b816d81caef584b8bdb4d0c8bc2397a35dc965be8c814f8fca3247451efc`（564,764,197 bytes）；PCK
+  SHA-256 为 `397618916b316a1eeba7a6321987f1cf020c2453806f6c04073046c8595efe94`（527,429,744 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

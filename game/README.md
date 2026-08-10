@@ -117,10 +117,11 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 
 ## 本机林地基准
 
-Ryzen 5 PRO 4650U / 15 GiB / Renoir 集显，1280×720、真实 Wayland/Vulkan 表面：
+Ryzen 5 PRO 4650U / 15 GiB / Renoir 集显，1280×720、真实 X11/Vulkan 表面：
 
-- 当前高画质：13.8 FPS，P95 73.491 ms（画面验收档）。
-- 当前性能档：38.4 FPS，P95 27.191 ms（该集显的建议游玩档）。
+- 当前高画质（原生 1.00）：8.4 FPS，P95 121.219 ms（画面验收档）。
+- 当前均衡（FSR 0.77）：13.3 FPS，P95 78.047 ms。
+- 当前性能档（FSR 0.59）：29.3 FPS，P95 36.994 ms（接近但尚未达到 30 FPS P95 预算）。
 - 0.6.0 章节参考：行灯之城 14.3–14.4 FPS，雨眼 31.2–32.0 FPS；本次林地重构后未重跑。
 - 城市进入雨眼后完整关卡常驻数为 2。
 

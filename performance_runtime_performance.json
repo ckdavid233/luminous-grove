@@ -3,21 +3,22 @@
 		1280,
 		720
 	],
-	"average_fps": 17.6,
-	"average_frame_ms": 56.963,
+	"average_fps": 29.3,
+	"average_frame_ms": 34.091,
 	"display_server": "X11",
 	"draw_calls": 247,
 	"gpu_metrics_available": true,
 	"measurement_mode": "real_vulkan",
-	"p95_frame_ms": 59.794,
-	"p99_frame_ms": 106.463,
+	"p95_frame_ms": 36.994,
+	"p99_frame_ms": 61.053,
 	"primitives": 864400,
 	"quality_profile": "performance",
+	"render_scale": 0.59,
 	"renderer": "forward_plus",
 	"requested_resolution": [
 		1280,
 		720
 	],
 	"sample_frames": 600,
-	"video_memory_bytes": 2579226496
+	"video_memory_bytes": 2553202208
 }
