@@ -43,6 +43,11 @@ func _initialize() -> void:
 			assert(not particles.emitting)
 			assert(particles.process_material == null)
 			assert(particles.draw_pass_1 == null)
+		elif node is AnimationTree:
+			var animation_tree := node as AnimationTree
+			assert(not animation_tree.active)
+			assert(animation_tree.tree_root == null)
+			assert(animation_tree.anim_player == NodePath(""))
 		elif node is WorldEnvironment:
 			environment_count += 1
 			assert((node as WorldEnvironment).environment == null)

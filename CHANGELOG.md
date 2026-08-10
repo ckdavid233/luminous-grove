@@ -28,6 +28,8 @@
   未完成的零泄漏验收项。
 - 角色退出时补齐控制器、SurfaceProbe、AnimationTree、SkeletonIK 和脚部目标引用释放；24 项回归
   仍通过，但部分场景仍有少量 ObjectDB 警告，继续列为内存检查任务。
+- WorldStreamer 退出时现在会收束未完成的 threaded PackedScene 请求，并断开流送实例及子节点的
+  信号 Callable；AnimationTree 同步解除 anim_player 引用。退出警告已减少但仍偶发，当前仍不宣称零泄漏。
 - 均衡/性能画质接入固定 FSR 3D 缩放（0.77/0.59），并把 `render_scale` 写入 Vulkan 性能 JSON；
   Renoir 1280×720 性能档由 17.6 FPS 提升到 29.3 FPS、P95 由 59.794ms 降至 36.994ms，仍待
   原生桌面和独立 GPU 复测。

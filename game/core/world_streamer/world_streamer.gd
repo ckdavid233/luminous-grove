@@ -36,6 +36,7 @@ func _exit_tree() -> void:
 func shutdown() -> void:
 	set_process(false)
 	_disconnect_runtime_signals()
+	_drain_threaded_requests()
 	_current_path = ""
 	var can_free_instances := is_inside_tree() and not _tearing_down
 	for path in _instances.keys():
@@ -52,6 +53,22 @@ func shutdown() -> void:
 	_last_used.clear()
 	_requests.clear()
 	_host = null
+
+
+func _drain_threaded_requests() -> void:
+	# ResourceLoader has no cancellation API for a threaded PackedScene request.
+	# Calling load_threaded_get during shutdown waits for the worker and releases
+	# the returned resource, preventing a request from surviving the scene tree
+	# that started it. This path only runs during teardown, never per frame.
+	for path_variant in _requests.keys():
+		var path := str(path_variant)
+		var status := ResourceLoader.load_threaded_get_status(path)
+		if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			var pending_resource = ResourceLoader.load_threaded_get(path)
+			pending_resource = null
+		elif status == ResourceLoader.THREAD_LOAD_LOADED:
+			var loaded_resource = ResourceLoader.load_threaded_get(path)
+			loaded_resource = null
 
 
 func _disconnect_runtime_signals() -> void:
@@ -76,6 +93,7 @@ func _release_instance_resources(instance: Node) -> void:
 	# A streamed level creates several runtime-only Mesh/Material resources.
 	# Detach those references before queue_free so CACHE_MODE_IGNORE loads do not
 	# leave a zero-reference RefCounted alive until process shutdown.
+	_disconnect_instance_signals(instance)
 	for geometry in instance.find_children("*", "GeometryInstance3D", true, false):
 		var visual := geometry as GeometryInstance3D
 		visual.material_override = null
@@ -88,6 +106,22 @@ func _release_instance_resources(instance: Node) -> void:
 			var collision_object := node as CollisionObject3D
 			if collision_object.physics_material_override != null:
 				collision_object.physics_material_override = null
+
+
+func _disconnect_instance_signals(instance: Node) -> void:
+	var nodes: Array[Node] = [instance]
+	nodes.append_array(instance.find_children("*", "Node", true, false))
+	for node in nodes:
+		if not is_instance_valid(node):
+			continue
+		for signal_info in node.get_signal_list():
+			var signal_name: StringName = signal_info.get("name", &"")
+			if signal_name.is_empty():
+				continue
+			for connection in node.get_signal_connection_list(signal_name):
+				var callback: Callable = connection.get("callable", Callable())
+				if callback.is_valid() and node.is_connected(signal_name, callback):
+					node.disconnect(signal_name, callback)
 
 
 func configure(host: Node, resident_limit: int = 2) -> void:

@@ -90,8 +90,8 @@ WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过，加入固定 FSR 和发布自检修复后的 SHA-256 为
-  `0995b816d81caef584b8bdb4d0c8bc2397a35dc965be8c814f8fca3247451efc`（564,764,197 bytes）；PCK
-  SHA-256 为 `397618916b316a1eeba7a6321987f1cf020c2453806f6c04073046c8595efe94`（527,429,744 bytes）。
+  `07800ebc595548cc308eda0a892f5b90dfaed4807919ce128da2d75f3bf1a12e`（564,765,201 bytes）；PCK
+  SHA-256 为 `aea69205b25bc56dfc8d076b14146578fd118f019c8b1ccbbae2e840a6a53f80`（527,430,720 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

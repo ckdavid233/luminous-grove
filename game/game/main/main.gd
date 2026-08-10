@@ -266,6 +266,7 @@ func _release_runtime_references() -> void:
 			var animation_tree := node as AnimationTree
 			animation_tree.active = false
 			animation_tree.tree_root = null
+			animation_tree.anim_player = NodePath("")
 		elif node is SkeletonIK3D:
 			(node as SkeletonIK3D).stop()
 		elif node is WorldEnvironment:
@@ -325,6 +326,7 @@ func _run_release_smoke() -> void:
 			"RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high "
 			+ "echo_async=ready"
 		)
+		shutdown()
 		# This is a packaging/startup probe, not a teardown benchmark. Waiting for
 		# threaded scene resources to drain here can keep a headless process alive
 		# indefinitely on Linux, even after the success marker is printed. Let the

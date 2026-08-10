@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 564,764,197 bytes
-SHA256: 0995b816d81caef584b8bdb4d0c8bc2397a35dc965be8c814f8fca3247451efc
+size: 564,765,201 bytes
+SHA256: 07800ebc595548cc308eda0a892f5b90dfaed4807919ce128da2d75f3bf1a12e
 integrity: unzip -t passed, 4 entries, no errors
 ```
 
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 4 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,429,744 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 527,430,720 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 
@@ -67,8 +67,8 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 
 PCK 自检证明导出的游戏数据与脚本可由 4.7.1 运行时读取；它不等于执行 Windows EXE。
 release smoke 会忽略开发者用户存档，从林地基线验证 Echo Ruins 异步加载，并在成功标志后直接
-结束探针进程。源码 headless 自检仍可能出现 1 个通用 Godot ObjectDB 清理警告，真实 Vulkan
-运行还观察到纹理 RID 泄漏；这些是尚未关闭的技术债，不能等同于零泄漏。
+结束探针进程。源码和导出 PCK headless 自检仍可能出现 1 个通用 Godot ObjectDB 清理警告，真实
+Vulkan 运行还观察到纹理 RID 泄漏；这些是尚未关闭的技术债，不能等同于零泄漏。
 当前设备没有 Windows 或 Wine，因此不能声称已经完成真实 Windows 启动、驱动、全屏、
 音频、手柄热插拔和 SmartScreen 测试。
 
