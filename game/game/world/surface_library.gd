@@ -21,6 +21,10 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
 	# Profiles own imported texture references and generated physics materials.
 	# Drop the references before Jolt tears down the parent scene so a streamed
 	# test scene cannot retain a Resource through the surface registry.

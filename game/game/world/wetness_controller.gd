@@ -20,11 +20,18 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
+	set_process(false)
 	# Materials are owned by scene meshes; this controller only observes them.
 	# Release the registry explicitly before the scene's GeometryInstances leave
 	# the tree to avoid keeping RefCounted material handles alive during teardown.
 	_registered_materials.clear()
 	_base_material_state.clear()
+	_target_rain_intensity = rain_intensity
+	_target_wetness = wetness
 
 
 func _process(delta: float) -> void:

@@ -4,6 +4,10 @@
 
 ### 林地湖区材质、视觉、光照与交互升级
 
+- 继续收紧退出顺序：Main 会先停止所有脚本子节点的 process/physics/input 回调，SurfaceLibrary 与
+  WetnessController 提前清空运行时注册表；Player、SurfaceProbe、PhaseShift 的 Jolt 查询改为显式
+  持有并在同一帧释放 direct-space wrapper。24 项功能回归保持通过，但 Jolt 独立线程、4K SubViewport
+  和渲染器退出时序仍会偶发 ObjectDB/Texture RID，未达到零泄漏验收。
 - 加入 Main/Player 退出前的 process、physics、IK、交互查询与 SurfaceProbe 清理，并在
   WorldStreamer/EchoRuins 释放前解绑 MeshInstance3D 的 surface override；24 项回归仍全部通过，
   4K 捕获的 Texture/ObjectDB 警告继续作为未关闭技术债记录。

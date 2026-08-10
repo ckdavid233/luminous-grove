@@ -54,7 +54,9 @@ func raycast_sample(body: CharacterBody3D, height := 0.72, depth := 1.42) -> Dic
 	_ray_query.to = origin + Vector3.DOWN * depth
 	_ray_query.exclude = [body.get_rid()]
 	_ray_query.collision_mask = 1
-	var hit := body.get_world_3d().direct_space_state.intersect_ray(_ray_query)
+	var space_state: PhysicsDirectSpaceState3D = body.get_world_3d().direct_space_state
+	var hit := space_state.intersect_ray(_ray_query)
+	space_state = null
 	_ray_query.exclude.clear()
 	if hit.is_empty():
 		return sample(body.global_position)

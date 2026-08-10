@@ -77,6 +77,11 @@ WorldStreamer/EchoRuins 释放前解绑 surface override；24 项回归仍通过
 复验仍为 7 个 Texture RID 与 1 个 ObjectDB，说明项目引用清理已加强但渲染器/Jolt 退出资源仍未
 完成零泄漏验收。
 
+最新一轮又把 Main 的停止范围扩展到所有脚本子节点，并让 SurfaceLibrary、WetnessController、Player、
+SurfaceProbe 和 PhaseShift 在同一退出窗口释放注册表、物理查询和场景引用；这避免了退出阶段继续产生
+新的查询对象，但 Jolt 独立线程的通用 RefCounted 警告仍会随测试时序出现，需在升级的 Godot/Jolt
+构建或实体 Windows 实机上继续定位，不能把当前回归通过误认为零泄漏。
+
 目标设备为 Ryzen 5 PRO 4650U / Renoir 集成显卡。本轮已在 `DISPLAY=:1` 的真实 X11/Vulkan
 表面以 1280×720 重测：
 
@@ -102,10 +107,10 @@ WorldStreamer/EchoRuins 释放前解绑 surface override；24 项回归仍通过
 - 官方 Godot 4.7.1 release 模板导出；
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
-- ZIP `unzip -t` 通过；本轮目标引导与流程断言接入后已重新导出 PCK，SHA-256 为
-  `dd959fea857efa5455587f7d3ff0e9edcbf644ab48feac93145bc0e0bf9f09d4`（527,454,780 bytes）。
-  ZIP SHA-256 为 `8a6dc7589f0953a21ab958891bd843f95b993e4ebdcfbffde796c122511be511`
-  （564,974,697 bytes）。
+- ZIP `unzip -t` 通过；本轮退出清理与查询释放代码接入后已重新导出 PCK，SHA-256 为
+  `264704b97443fca79c576c06ae17ed5d4dff02da4b238e7ebb9b247aba8961fe`（527,455,996 bytes）。
+  ZIP SHA-256 为 `6392b6cb72c53c9b34578af65518acc9bb31886a4cf1bba58c7a01383768d58a`
+  （564,975,909 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

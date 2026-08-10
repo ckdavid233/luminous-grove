@@ -107,6 +107,10 @@
 - Main/Player 退出前现在会停止 process/physics/input，清空脚部 IK、交互查询与 SurfaceProbe；
   WorldStreamer/EchoRuins 也会先清理 surface override。普通 smoke/动画测试的告警不再稳定复现，
   但完整回归和 4K 捕获仍偶发 ObjectDB/Texture RID，尚未达到零泄漏。
+- 最新退出路径再提前停止所有脚本子节点，并显式清理 SurfaceLibrary/WetnessController 注册表；Player、
+  SurfaceProbe、PhaseShift 的 Jolt direct-space wrapper 不再使用链式临时引用。该修复避免了项目层面
+  可控引用继续增长，但 Jolt 独立物理线程的 RefCounted 告警仍会在 smoke、流送、4K 或多场景顺序中
+  间歇出现，当前仍需 Godot/Jolt 内存检查或升级构建才能宣称零泄漏。
 - 部分大型场景回归仍有少量 Godot ObjectDB RefCounted/Texture RID leak warning（功能与流送结果
   通过）；WorldStreamer/InteractiveLake/4K 捕获视口和 Main 运行时引用解绑已增加退出清理，且
   `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子、3 个 Camera3D 和 WorldEnvironment 已
@@ -149,8 +153,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `dd959fea857efa5455587f7d3ff0e9edcbf644ab48feac93145bc0e0bf9f09d4`（527,454,780 bytes）；
-- ZIP SHA-256 为 `8a6dc7589f0953a21ab958891bd843f95b993e4ebdcfbffde796c122511be511`（564,974,697 bytes）；
+- 当前 PCK SHA-256 为 `264704b97443fca79c576c06ae17ed5d4dff02da4b238e7ebb9b247aba8961fe`（527,455,996 bytes）；
+- ZIP SHA-256 为 `6392b6cb72c53c9b34578af65518acc9bb31886a4cf1bba58c7a01383768d58a`（564,975,909 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

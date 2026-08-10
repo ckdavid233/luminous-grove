@@ -151,7 +151,9 @@ func _restore_player_safely(saved_transform: Transform3D, saved_velocity: Vector
 	_restore_query.to = saved_transform.origin + Vector3.DOWN * 8.0
 	_restore_query.exclude = [_player.get_rid()]
 	_restore_query.collision_mask = 1
-	var hit := _player.get_world_3d().direct_space_state.intersect_ray(_restore_query)
+	var space_state: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
+	var hit := space_state.intersect_ray(_restore_query)
+	space_state = null
 	_restore_query.exclude.clear()
 	if not hit.is_empty():
 		var floor_position: Vector3 = hit.position

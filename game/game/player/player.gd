@@ -402,7 +402,12 @@ func _update_foot_target(
 	query.to = origin + Vector3.DOWN * 1.42
 	query.exclude = [get_rid()]
 	query.collision_mask = 1
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	# Hold and explicitly release the Jolt direct-space wrapper in the same
+	# physics tick.  Chaining the property access leaves a transient
+	# JoltPhysicsDirectSpaceState3D alive until world teardown on some builds.
+	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var hit := space_state.intersect_ray(query)
+	space_state = null
 	query.exclude.clear()
 	var normal := Vector3.UP
 	if hit.is_empty():
@@ -539,7 +544,9 @@ func _update_interaction_target() -> void:
 	_interaction_ray_query.to = to
 	_interaction_ray_query.exclude = [get_rid()]
 	_interaction_ray_query.collision_mask = 0b101
-	var hit := get_world_3d().direct_space_state.intersect_ray(_interaction_ray_query)
+	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var hit := space_state.intersect_ray(_interaction_ray_query)
+	space_state = null
 	_interaction_ray_query.exclude.clear()
 	var candidate: Node = hit.get("collider") if not hit.is_empty() else null
 	var next_target := _find_interactable(candidate)
@@ -566,7 +573,9 @@ func _find_best_nearby_interactable() -> Node:
 		global_position + Vector3.UP * 1.0,
 	)
 	_interaction_query.exclude = [get_rid()]
-	var hits := get_world_3d().direct_space_state.intersect_shape(_interaction_query, 32)
+	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var hits := space_state.intersect_shape(_interaction_query, 32)
+	space_state = null
 	_interaction_query.exclude.clear()
 	var camera_forward := -camera.global_basis.z.normalized()
 	var best_target: Node = null

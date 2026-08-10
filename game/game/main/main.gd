@@ -153,12 +153,18 @@ func shutdown() -> void:
 	if _shutdown_requested:
 		return
 	_shutdown_requested = true
-	# Stop gameplay callbacks before releasing physics/render resources. The
-	# player can otherwise run one more physics tick while Main is detaching its
-	# world, creating a JoltPhysicsDirectSpaceState3D that survives teardown.
-	set_process(false)
-	set_process_input(false)
-	set_process_unhandled_input(false)
+	# Stop every scripted child before releasing physics/render resources. Main is
+	# PROCESS_MODE_ALWAYS, so disabling only its own callbacks still lets the
+	# PhaseShift, lake, streamed-level and narrative children run one more tick;
+	# those callbacks can create a JoltPhysicsDirectSpaceState3D while the world
+	# is already being detached.
+	_stop_runtime_processing()
+	if _surface_library != null and is_instance_valid(_surface_library):
+		if _surface_library.has_method("shutdown"):
+			_surface_library.shutdown()
+	if _wetness_controller != null and is_instance_valid(_wetness_controller):
+		if _wetness_controller.has_method("shutdown"):
+			_wetness_controller.shutdown()
 	if _player != null and is_instance_valid(_player):
 		if _player.has_method("shutdown"):
 			_player.shutdown()
@@ -250,6 +256,19 @@ func shutdown() -> void:
 	_objective_guide = null
 	_player = null
 	_rng = null
+
+
+func _stop_runtime_processing() -> void:
+	var nodes: Array[Node] = [self]
+	nodes.append_array(find_children("*", "Node", true, false))
+	for node in nodes:
+		if not is_instance_valid(node):
+			continue
+		node.set_process(false)
+		node.set_physics_process(false)
+		node.set_process_input(false)
+		node.set_process_unhandled_input(false)
+		node.set_process_unhandled_key_input(false)
 
 
 func _disconnect_runtime_signals() -> void:
