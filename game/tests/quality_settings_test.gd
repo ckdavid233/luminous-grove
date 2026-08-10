@@ -90,4 +90,5 @@ func _initialize() -> void:
 		await process_frame
 		await physics_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://settings.cfg"))
+	main_scene = null
 	call_deferred("quit")

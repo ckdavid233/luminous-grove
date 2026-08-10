@@ -33,4 +33,6 @@ func _initialize() -> void:
 	for _frame in 120:
 		await process_frame
 		await physics_frame
+	streamer = null
+	main_scene = null
 	call_deferred("quit")

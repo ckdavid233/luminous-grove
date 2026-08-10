@@ -76,6 +76,10 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 Camera3D 和 WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但剩余 ObjectDB/Texture
 RID 警告仍未达到零泄漏验收。
 
+随后测试退出路径显式丢弃 `PackedScene` 局部引用，末次 24 项 headless 回归仍为
+`REGRESSION_OK tests=24`，通用 ObjectDB 提示降至 2 个；这只证明测试句柄清理有所改善，不能替代
+Godot/Jolt 内存检查或真实 Windows/4K 设备上的零泄漏验收。
+
 门户退出顺序已补强：`alternate_texture`、曲面材质和预览相机在 SubViewport 释放前解绑，门户回归
 增加断言；单独 smoke 复验曾不再出现 ObjectDB，但完整回归仍会随退出时序报告，真实 4K 湖面
 复验仍报告 7 个 Texture RID，因此仍需 Windows/实体 4K 内存检查。

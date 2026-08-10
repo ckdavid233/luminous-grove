@@ -134,6 +134,9 @@
   告警还需在真实 GPU/Windows 环境用 Godot 内存检查区分渲染器 transient buffer 与项目引用。
 - GPUParticles3D 退出时会先清理每个 draw pass 的 PrimitiveMesh 材质，再解除 pass 引用；这是降低
   渲染线程残留风险的防御性清理，不能替代完整回归与 4K 捕获的零泄漏验收。
+- 回归脚本退出前显式丢弃 `PackedScene` 局部引用，末次 24 项 headless 回归的通用 ObjectDB 提示
+  从 3 个降为 2 个；剩余提示仍无法在当前 Godot/Jolt 构建中定位到项目对象，真实 Vulkan 捕获的
+  7 个 Texture RID 也仍需实体 Windows/Godot 内存检查确认。
 - 临时 1280×720 Vulkan A/B 探针关闭反射探针、环境、粒子、水体和门户后仍固定报告 7 个 Texture RID，
   说明剩余数量更像根窗口/Vulkan transient render target；ObjectDB 仍随退出时序变化，需实体 Windows
  及 Godot 内存检查确认，探针脚本已删除。

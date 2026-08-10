@@ -51,6 +51,7 @@ func _initialize() -> void:
 	main.queue_free()
 	for _frame in 3:
 		await process_frame
+	main_scene = null
 	call_deferred("quit")
 
 
