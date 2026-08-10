@@ -88,6 +88,20 @@ SubViewport；每个进程都输出 `SURFACE_VALIDATION_CAPTURE_OK`、`size=(384
 退出时序调整可以偶尔消掉 ObjectDB，但不能稳定消除 7 个 Texture RID；1280×720 复测仍出现
 `7 Texture + 1 ObjectDB`，因此零泄漏验收保持未通过。
 
+### 2026-08-10 退出时序定向拆分
+
+为避免把渲染器 transient buffer 误判成项目引用，本轮在同一 `DISPLAY=:1` Renoir Vulkan 设备上
+用临时探针拆分了根窗口、验证相机、`Main.shutdown()`、`queue_free()` 和独立 `SubViewport`：
+不主动触发场景 teardown 的根窗口探针可干净退出；加入验证相机或在同帧执行 `shutdown()`/释放
+视口时，会重新出现 7 个 Texture RID，ObjectDB 数量则随 SubViewport 所有权和退出顺序在 0–2
+之间变化。延迟等待或改用立即 `free()` 都没有在正式截图路径上稳定消除告警，因此本轮没有把
+未经证实的退出改动合入运行时代码，零泄漏仍保留为待在 Windows/实体 4K 与 Godot 内存检查下
+完成的验收项。探针文件已删除，工作树没有测试残留。
+
+删除探针后完整 `./tools/run_regression.sh` 重新通过 `REGRESSION_OK tests=24`；日志中仍有少量
+通用 ObjectDB 清理提示，但没有 `SCRIPT ERROR` 或解析错误。验证结束后用户存档已恢复到基准
+SHA-256：`f2b6348d80f1106784a3f4eda3a4686654c921fc7fee87656553f74858aeb997`。
+
 ### Profile 映射后的湖面复验
 
 在显式 `MaterialProfile` 接入地表 Shader 后，重新用真实 Vulkan `SubViewport` 单独捕获地面、湿泥、
