@@ -56,7 +56,8 @@
   跨时相关卡中迷路。
 - 退出与流送：旧版地面 PBR 兜底贴图改为按需加载；WorldStreamer 在关卡卸载前调用关卡级
   `shutdown()`，Echo Ruins 会解绑生成 Mesh 的 PBR 贴图与材质；Vulkan 捕获脚本会预热并释放
-  临时相机/Viewport 引用，避免验证工具本身扩大退出告警。
+  临时相机/Viewport 引用；GPUParticles3D 在解除 draw pass 前也会清理 PrimitiveMesh 材质，避免
+  验证工具本身扩大退出告警，但零泄漏结论仍未通过。
 - HDRI 运行路径：Godot 4.7.1 无法直接加载 HDR/EXR，本轮将 Poly Haven Mossy Forest CC0
   tonemapped JPG 下采样为 4096×2048，接入 `PanoramaSkyMaterial`，并以 SHA-256 和 4K Vulkan
   湖面截图记录；未将外置原始 HDR/EXR 伪装成已验证运行资源。
@@ -111,10 +112,10 @@ SurfaceProbe 和 PhaseShift 在同一退出窗口释放注册表、物理查询�
 - 官方 Godot 4.7.1 release 模板导出；
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
-- ZIP `unzip -t` 通过；本轮退出清理与查询释放代码接入后已重新导出 PCK，SHA-256 为
-  `90dc210375c1b72bb8a14f466cfff44346ff9b30451f7330352061a495af27f9`（538,707,200 bytes）。
-  ZIP SHA-256 为 `50cbbe30b23120895fd53d94e167d7c9aaf9361f1571edfd8aa238927161167b`
-  （576,220,387 bytes）。
+- ZIP `unzip -t` 通过；本轮粒子 draw pass 材质解绑接入后已重新导出 PCK，SHA-256 为
+  `27cfd2e15f13f27a61c2765d0041ef296cd5755a09c7ea07894690dc77eda4f1`（538,707,600 bytes）。
+  ZIP SHA-256 为 `fcffabc410b1e39e4c22181ab41223e2e1e0c233d5818f33ef3a53045e74af8c`
+  （576,034,606 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

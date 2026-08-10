@@ -128,6 +128,8 @@
   fallback 改为按需加载；相机清理后普通 1280×720 Vulkan 捕获的 7 个 Texture RID 不再稳定复现，
   但 `--verbose`、4K SubViewport 或不同退出时序仍可能报告 Texture RID/通用 RefCounted，说明剩余
   告警还需在真实 GPU/Windows 环境用 Godot 内存检查区分渲染器 transient buffer 与项目引用。
+- GPUParticles3D 退出时会先清理每个 draw pass 的 PrimitiveMesh 材质，再解除 pass 引用；这是降低
+  渲染线程残留风险的防御性清理，不能替代完整回归与 4K 捕获的零泄漏验收。
 - 画质档已具备固定 FSR 3D 缩放（高 1.00、均衡 0.77、性能 0.59），但仍没有按帧动态分辨率和逐项高级设置。
 - NarrativeDirector 现在由 `ObjectiveGuide` 将当前风铃、记忆、档案、城市和雨眼交互投影到屏幕边缘，
   并显示距离；`gameplay_test.gd` 在完整潮汐流程中新增 15 个目标存在性断言，结局后确认目标清空。
@@ -155,8 +157,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `90dc210375c1b72bb8a14f466cfff44346ff9b30451f7330352061a495af27f9`（538,707,200 bytes）；
-- ZIP SHA-256 为 `50cbbe30b23120895fd53d94e167d7c9aaf9361f1571edfd8aa238927161167b`（576,220,387 bytes）；
+- 当前 PCK SHA-256 为 `27cfd2e15f13f27a61c2765d0041ef296cd5755a09c7ea07894690dc77eda4f1`（538,707,600 bytes）；
+- ZIP SHA-256 为 `fcffabc410b1e39e4c22181ab41223e2e1e0c233d5818f33ef3a53045e74af8c`（576,034,606 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

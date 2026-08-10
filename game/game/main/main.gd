@@ -323,6 +323,17 @@ func _release_runtime_references() -> void:
 				var particles := visual as GPUParticles3D
 				particles.emitting = false
 				particles.process_material = null
+				# Draw passes own generated PrimitiveMesh materials. Drop those
+				# material links before detaching the pass meshes so the particle
+				# server cannot retain a zero-reference RefCounted through teardown.
+				if particles.draw_passes >= 1 and particles.draw_pass_1 is PrimitiveMesh:
+					(particles.draw_pass_1 as PrimitiveMesh).material = null
+				if particles.draw_passes >= 2 and particles.draw_pass_2 is PrimitiveMesh:
+					(particles.draw_pass_2 as PrimitiveMesh).material = null
+				if particles.draw_passes >= 3 and particles.draw_pass_3 is PrimitiveMesh:
+					(particles.draw_pass_3 as PrimitiveMesh).material = null
+				if particles.draw_passes >= 4 and particles.draw_pass_4 is PrimitiveMesh:
+					(particles.draw_pass_4 as PrimitiveMesh).material = null
 				if particles.draw_passes >= 4:
 					particles.draw_pass_4 = null
 				if particles.draw_passes >= 3:
