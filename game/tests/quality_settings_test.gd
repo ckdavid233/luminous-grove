@@ -66,13 +66,25 @@ func _initialize() -> void:
 	assert(is_equal_approx(far_tree_batch.visibility_range_end, 72.0))
 	assert(is_equal_approx(mid_tree_batch.visibility_range_begin, 0.0))
 	assert(is_equal_approx(mid_tree_batch.visibility_range_end, 72.0))
+	assert(not main.is_dynamic_resolution_enabled())
+	main.set_dynamic_resolution_enabled(true)
+	assert(main.is_dynamic_resolution_enabled())
+	main.call("_process", 0.6)
+	assert(
+		main.get_render_scale() < 1.0,
+		"Dynamic resolution must reduce 3D scale after a sustained slow frame",
+	)
+	assert(main.get_dynamic_resolution_frame_ms() > 0.0)
+	main.set_dynamic_resolution_enabled(false)
+	assert(not main.is_dynamic_resolution_enabled())
+	assert(is_equal_approx(main.get_render_scale(), 1.0))
 	var pause_overlay = main.get("_pause_overlay") as Control
 	assert(pause_overlay != null and not pause_overlay.visible)
 	main.call("_set_paused", true)
 	assert(paused and pause_overlay.visible)
 	main.call("_set_paused", false)
 	assert(not paused and not pause_overlay.visible)
-	print("QUALITY_SETTINGS_TEST_OK high=full balanced=hybrid performance=igpu pause=ok")
+	print("QUALITY_SETTINGS_TEST_OK high=full balanced=hybrid performance=igpu dynamic=ok pause=ok")
 	var streamer = main.get("_world_streamer")
 	for _frame in 300:
 		if streamer.is_level_ready(

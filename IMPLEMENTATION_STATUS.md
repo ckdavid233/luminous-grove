@@ -141,7 +141,9 @@
 - 临时 1280×720 Vulkan A/B 探针关闭反射探针、环境、粒子、水体和门户后仍固定报告 7 个 Texture RID，
   说明剩余数量更像根窗口/Vulkan transient render target；ObjectDB 仍随退出时序变化，需实体 Windows
  及 Godot 内存检查确认，探针脚本已删除。
-- 画质档已具备固定 FSR 3D 缩放（高 1.00、均衡 0.77、性能 0.59），但仍没有按帧动态分辨率和逐项高级设置。
+- 画质档具备固定 FSR 3D 缩放（高 1.00、均衡 0.77、性能 0.59），并新增默认关闭的可选按帧动态
+  分辨率（`--dynamic-resolution` 或 `LUMINOUS_DYNAMIC_RESOLUTION=1`，范围 0.35 至当前档位基线）；
+  仍没有逐项高级设置，动态控制也必须在目标硬件上重新调校。
 - NarrativeDirector 现在由 `ObjectiveGuide` 将当前风铃、记忆、档案、城市和雨眼交互投影到屏幕边缘，
   并显示距离；`gameplay_test.gd` 在完整潮汐流程中新增 15 个目标存在性断言，结局后确认目标清空。
 - 没有输入重映射、字幕缩放或色盲设置。
@@ -162,6 +164,9 @@
   P95 460.946 ms、均衡 60 帧 P95 262.851 ms、性能 60 帧 P95 130.228 ms；LOD 已通过几何、质量
   档和 teardown 回归，但仍只是短样本诊断。`VISUAL_VALIDATION_REPORT.md` 新增的 `lodsplit4k_*`
   哈希覆盖当前代码版本的 4K 地面、湿泥、树皮、湖面、水花、脚印前后与角色动作证据。
+- 动态分辨率通过真实 Vulkan Renoir 1280×720 短采样验证：高画质启用后自动降至 0.35，60 帧平均
+  21.3 FPS、P95 51.041 ms；这证明控制器进入 GPU 路径，但不是 4K/Windows 性能目标通过证据，原始
+  结果见 `performance_runtime_dynamic_resolution_720.json`。
 
 ## 设备与性能
 
@@ -177,8 +182,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `1ab7baa7dafea4e422f298182d1d079aa5ee94af1d71bbf7da19e6a8e07e6ce8`（538,711,616 bytes）；
-- ZIP SHA-256 为 `895b65d7247a9c6a9c95d9cc7c972e6b1fd5d66e2cc33ae05787f922774018e5`（576,224,620 bytes）；
+- 当前 PCK SHA-256 为 `0347fd6d7967c99b063c1c77a803a1c59bf53451b562116c1b963929dd41ac29`（538,713,184 bytes）；
+- ZIP SHA-256 为 `9bfe4e32664ed4a7640e96faf482e31334bd95cc9bc43ea60910cf74712c70ee`（576,226,298 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

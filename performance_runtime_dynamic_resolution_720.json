@@ -1,0 +1,26 @@
+{
+	"actual_resolution": [
+		1280,
+		720
+	],
+	"average_fps": 21.3,
+	"average_frame_ms": 47.011,
+	"display_server": "X11",
+	"draw_calls": 401,
+	"dynamic_resolution_enabled": true,
+	"dynamic_resolution_frame_ms": 46.489,
+	"gpu_metrics_available": true,
+	"measurement_mode": "real_vulkan",
+	"p95_frame_ms": 51.041,
+	"p99_frame_ms": 51.697,
+	"primitives": 6092878,
+	"quality_profile": "high",
+	"render_scale": 0.35,
+	"renderer": "forward_plus",
+	"requested_resolution": [
+		1280,
+		720
+	],
+	"sample_frames": 60,
+	"video_memory_bytes": 2947696512
+}

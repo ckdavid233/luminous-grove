@@ -303,20 +303,20 @@ RENOIR`，并通过 `SURFACE_VALIDATION_CAPTURE_OK` 与 `file` 的 `3840×2160`�
 对应 `performance_runtime_4k_lod_matrix.json`，高画质仍远超 P95 目标，不能把 LOD 变化误报为
 高质量性能验收。
 
-### 2026-08-10 三级 LOD 后的最新 4K 复验
+### 2026-08-10 动态分辨率代码变更后的最新 4K 复验
 
 将中景双冠代理加入近/远 LOD 后再次逐镜头捕获；以下是当前工作树的最终 4K 证据索引：
 
 | 镜头 | 文件 | SHA-256 |
 |---|---|---|
-| 地面 | `previews/lod3tier4k_ground_4k.png` | `575af876e770a68aaaa8d10558b9dd9092f61fd2cc85219be9a1fe218dbca2ed` |
-| 湿泥/湖岸 | `previews/lod3tier4k_wet_mud_4k.png` | `56d029e540e42e1bf23588cc56641fae17e5c77e788265175b86bd5025a9b2d1` |
-| 树皮/树冠 | `previews/lod3tier4k_tree_detail_4k.png` | `5ef76fc5d7a52564e0b7dff598da7293e867aec8f7e0d9243c46e5d5031c15fe` |
-| 湖面 | `previews/lod3tier4k_lake_4k.png` | `3786d635fa6e29a4c3ee852003ca92f2693033e5bba6d22e9d73ba480c8f40f6` |
-| 湖面水花 | `previews/lod3tier4k_lake_splash_4k.png` | `0d1de67ef1eac2160daacc724c0b87a99c83f97f1f74b971c1b546350737d45e` |
-| 脚印空场 | `previews/lod3tier4k_footprints_before_4k.png` | `e9d1de5ca93ab14fe75e862ce7bab14a2596a3df58ac8990691b1f7fd544e1db` |
-| 脚印反馈 | `previews/lod3tier4k_footprints_after_4k.png` | `be006dd1583080cd7bb1365e3de8f6164daa684da6d2960ad04f9429eaee3720` |
-| 角色动作 | `previews/lod3tier4k_character_clean_4k.png` | `a1ba9bb9f8eaa4d9a4fea50ec115214db71ea75762544206c2e244a1660a22fe` |
+| 地面 | `previews/lod3tier4k_ground_4k.png` | `5f3008ca9025a2112142fb40eabc5514aadffff66d70be9606a34737c6703920` |
+| 湿泥/湖岸 | `previews/lod3tier4k_wet_mud_4k.png` | `cd4c5dca249857440243d3fb92d3e5eafa3a448de5bdaad93a5ca2a3e56cf793` |
+| 树皮/树冠 | `previews/lod3tier4k_tree_detail_4k.png` | `501929ac8039c76a6b9d931d31e30dd97483b8a395fa1967e745343061e8894e` |
+| 湖面 | `previews/lod3tier4k_lake_4k.png` | `d4924f459f97622e9e2f829478a8d9cd73fe2874b6cee865515569e966f62439` |
+| 湖面水花 | `previews/lod3tier4k_lake_splash_4k.png` | `42d6775755958087d39917985341aa2a67db7554721f5aba5d01c2a2e9af4ed8` |
+| 脚印空场 | `previews/lod3tier4k_footprints_before_4k.png` | `4a79784ca4fce634e67d09b88a93765da1f3af951f7336bf6a468bc86d45d16e` |
+| 脚印反馈 | `previews/lod3tier4k_footprints_after_4k.png` | `c7cb3b5310b5093d3b83f40f5dbac9148f83d7b08b949bdc13a84d24cad13b1e` |
+| 角色动作 | `previews/lod3tier4k_character_clean_4k.png` | `158cd76b51834ee3ec71308deddf9ee5708b7b71144a99035b53bda48d897cfb` |
 
 所有 PNG 均为 `3840×2160`、8-bit RGB，并由 `Vulkan 1.3.255 - Forward+ - AMD RADV RENOIR`
 输出。捕获退出仍有 7 个 Texture RID，说明三级 LOD 没有改变之前的 transient target/退出时序

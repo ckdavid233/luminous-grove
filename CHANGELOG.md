@@ -23,6 +23,9 @@
   各级几何与画质档断言，并让树皮/树冠近景捕获隐藏中远景代理，避免前后对比被 LOD 代理污染。
 - LOD 后重新生成 `lodsplit4k_*` 全套 3840×2160 Vulkan 视觉证据，并将高/均衡/性能短样本结果
   写入 `performance_runtime_4k_lod_matrix.json`；结果仍明确标注为诊断，未把高质量 P95 目标误报为通过。
+- 增加可选动态分辨率：默认不改变既有画质档，使用 `--dynamic-resolution` 或
+  `LUMINOUS_DYNAMIC_RESOLUTION=1` 后按平滑帧时在 0.35–档位基线之间调节 FSR 3D 缩放；质量回归已覆盖
+  启停和慢帧降尺度，Renoir 真实 Vulkan 诊断记录在 `performance_runtime_dynamic_resolution_720.json`。
 - 继续收紧退出顺序：Main 会先停止所有脚本子节点的 process/physics/input 回调，SurfaceLibrary 与
   WetnessController 提前清空运行时注册表；Player、SurfaceProbe、PhaseShift 的 Jolt 查询改为显式
   持有并在同一帧释放 direct-space wrapper。24 项功能回归保持通过，但 Jolt 独立线程、4K SubViewport

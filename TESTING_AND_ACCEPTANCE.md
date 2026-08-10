@@ -145,6 +145,20 @@ DISPLAY=:1 PERFORMANCE_RESOLUTION=3840x2160 \
 近/远几何 LOD 后的最新短样本见 `performance_runtime_4k_lod_matrix.json`；该文件按配置记录各自
 样本帧数（高画质 30、均衡/性能 60），同样只能作为诊断证据，正式验收仍需 600 帧。
 
+动态分辨率诊断：
+
+```bash
+DISPLAY=:1 LUMINOUS_DYNAMIC_RESOLUTION=1 PERFORMANCE_RESOLUTION=1280x720 \
+  PERFORMANCE_SAMPLE_FRAMES=60 \
+  PERFORMANCE_OUTPUT=/tmp/luminous-dynamic-resolution.json \
+  /home/cenkai/game_dev_tools/godot/4.7.1/Godot_v4.7.1-stable_linux.x86_64 \
+  --path /home/cenkai/game \
+  --script res://tests/performance_test.gd -- --quality=high
+```
+
+该开关默认关闭，不改变固定画质档或 4K 截图；当前 Renoir 诊断结果见
+`performance_runtime_dynamic_resolution_720.json`，同样不能替代实体 4K/Windows 的 600 帧验收。
+
 ## Windows 包验收
 
 Windows ZIP 发布前必须满足：

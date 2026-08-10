@@ -44,6 +44,11 @@ const DEFAULT_RENDER_SCALE_BY_PROFILE := {
 	&"balanced": 0.77,
 	&"performance": 0.59,
 }
+const DYNAMIC_RESOLUTION_TARGET_MS := 41.7
+const DYNAMIC_RESOLUTION_SAMPLE_INTERVAL := 0.35
+const DYNAMIC_RESOLUTION_MIN_SCALE := 0.35
+const DYNAMIC_RESOLUTION_DOWN_STEP := 0.05
+const DYNAMIC_RESOLUTION_UP_STEP := 0.025
 
 var _rng := RandomNumberGenerator.new()
 var _player
@@ -87,6 +92,11 @@ var _ending_tween: Tween
 var _pause_overlay: Control
 var _quality_button: Button
 var _quality_profile := &"high"
+var _dynamic_resolution_enabled := false
+var _dynamic_resolution_scale := -1.0
+var _dynamic_resolution_cap := -1.0
+var _dynamic_resolution_frame_ms := 0.0
+var _dynamic_resolution_sample_left := 0.0
 var _city_present: Node
 var _city_echo: Node
 var _city_transition_pending := false
@@ -110,6 +120,11 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.seed = 0xC0D3
 	_load_quality_settings()
+	_dynamic_resolution_enabled = (
+		_has_runtime_argument("--dynamic-resolution")
+		or OS.get_environment("LUMINOUS_DYNAMIC_RESOLUTION").strip_edges()
+		in ["1", "true", "on"]
+	)
 	_create_narrative()
 	_create_environment()
 	_create_surface_system()
@@ -397,6 +412,7 @@ func _release_runtime_cameras() -> void:
 
 
 func _process(_delta: float) -> void:
+	_update_dynamic_resolution(_delta)
 	_objective_guide_refresh_left -= _delta
 	if _objective_guide_refresh_left <= 0.0:
 		_objective_guide_refresh_left = 0.25
@@ -1896,13 +1912,29 @@ func _apply_render_scaling() -> void:
 	var viewport := get_viewport()
 	if viewport == null:
 		return
-	var render_scale := float(
+	var profile_scale := float(
 		DEFAULT_RENDER_SCALE_BY_PROFILE.get(_quality_profile, 1.0)
 	)
 	var override_scale := _requested_render_scale_override()
 	if override_scale > 0.0:
-		render_scale = override_scale
-	render_scale = clampf(render_scale, 0.5, 1.0)
+		profile_scale = override_scale
+	profile_scale = clampf(profile_scale, 0.5, 1.0)
+	var render_scale := profile_scale
+	if _dynamic_resolution_enabled:
+		if (
+			_dynamic_resolution_cap < 0.0
+			or not is_equal_approx(_dynamic_resolution_cap, profile_scale)
+		):
+			_dynamic_resolution_cap = profile_scale
+			_dynamic_resolution_scale = profile_scale
+		render_scale = clampf(
+			_dynamic_resolution_scale,
+			DYNAMIC_RESOLUTION_MIN_SCALE,
+			profile_scale,
+		)
+	else:
+		_dynamic_resolution_cap = -1.0
+		_dynamic_resolution_scale = -1.0
 	# FSR keeps the window/output at its requested size while reducing the 3D
 	# render buffer. High quality remains native by default so existing 4K
 	# screenshots retain their exact evidence; lower profiles trade samples for
@@ -1916,6 +1948,41 @@ func _apply_render_scaling() -> void:
 	viewport.fsr_sharpness = 0.18 if render_scale < 0.999 else 0.0
 
 
+func _update_dynamic_resolution(delta: float) -> void:
+	if not _dynamic_resolution_enabled:
+		return
+	var frame_ms := clampf(delta * 1000.0, 0.0, 500.0)
+	if frame_ms <= 0.0:
+		return
+	if _dynamic_resolution_frame_ms <= 0.0:
+		_dynamic_resolution_frame_ms = frame_ms
+	else:
+		_dynamic_resolution_frame_ms = lerpf(
+			_dynamic_resolution_frame_ms,
+			frame_ms,
+			0.12,
+		)
+	_dynamic_resolution_sample_left += delta
+	if _dynamic_resolution_sample_left < DYNAMIC_RESOLUTION_SAMPLE_INTERVAL:
+		return
+	_dynamic_resolution_sample_left = 0.0
+	var current_scale := get_render_scale()
+	var next_scale := current_scale
+	if _dynamic_resolution_frame_ms > DYNAMIC_RESOLUTION_TARGET_MS * 1.08:
+		next_scale -= DYNAMIC_RESOLUTION_DOWN_STEP
+	elif _dynamic_resolution_frame_ms < DYNAMIC_RESOLUTION_TARGET_MS * 0.82:
+		next_scale += DYNAMIC_RESOLUTION_UP_STEP
+	next_scale = clampf(
+		next_scale,
+		DYNAMIC_RESOLUTION_MIN_SCALE,
+		_dynamic_resolution_cap,
+	)
+	if is_equal_approx(next_scale, current_scale):
+		return
+	_dynamic_resolution_scale = next_scale
+	_apply_render_scaling()
+
+
 func _requested_render_scale_override() -> float:
 	var value := OS.get_environment("LUMINOUS_RENDER_SCALE").strip_edges()
 	for argument in OS.get_cmdline_user_args():
@@ -1925,6 +1992,23 @@ func _requested_render_scale_override() -> float:
 		return -1.0
 	var parsed := value.to_float()
 	return parsed if parsed > 0.0 else -1.0
+
+
+func set_dynamic_resolution_enabled(value: bool) -> void:
+	_dynamic_resolution_enabled = value
+	_dynamic_resolution_scale = -1.0
+	_dynamic_resolution_cap = -1.0
+	_dynamic_resolution_frame_ms = 0.0
+	_dynamic_resolution_sample_left = 0.0
+	_apply_render_scaling()
+
+
+func is_dynamic_resolution_enabled() -> bool:
+	return _dynamic_resolution_enabled
+
+
+func get_dynamic_resolution_frame_ms() -> float:
+	return _dynamic_resolution_frame_ms
 
 
 func _apply_grass_quality() -> void:

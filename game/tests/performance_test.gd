@@ -50,6 +50,11 @@ func _initialize() -> void:
 		"display_server": DisplayServer.get_name(),
 		"gpu_metrics_available": gpu_metrics_available,
 		"render_scale": snappedf(main.get_render_scale(), 0.001),
+		"dynamic_resolution_enabled": main.is_dynamic_resolution_enabled(),
+		"dynamic_resolution_frame_ms": snappedf(
+			main.get_dynamic_resolution_frame_ms(),
+			0.001,
+		),
 		"sample_frames": _sample_frame_count,
 		"average_frame_ms": snappedf(average_ms, 0.001),
 		"average_fps": snappedf(1000.0 / average_ms, 0.1),

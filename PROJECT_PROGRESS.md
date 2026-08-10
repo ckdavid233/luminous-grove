@@ -123,6 +123,12 @@ Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能�
 水花、脚印前后和角色动作截图；截图哈希见 `VISUAL_VALIDATION_REPORT.md`，但性能仍未达到高质量
 41.7 ms 目标，不能把短样本当正式验收。
 
+新增的动态分辨率控制器默认关闭，仅在 `--dynamic-resolution` 或
+`LUMINOUS_DYNAMIC_RESOLUTION=1` 下运行；它按平滑帧时在 0.35 至当前画质档基线之间调节 FSR 3D
+缩放。Renoir 1280×720 真实 Vulkan 60 帧诊断降到 0.35 后 P95 为 51.041 ms，结果见
+`performance_runtime_dynamic_resolution_720.json`；该控制器已进入质量回归，但实体 4K/Windows
+目标仍需重新测量，不能把该短样本写成性能通过。
+
 当前已保存的视觉证据位于 `previews/`（该目录被 Git 忽略，避免提交大量生成截图）；重新
 生成方式和验收标准见 `TESTING_AND_ACCEPTANCE.md` 与 `PERFORMANCE_REPORT.md`。
 
@@ -141,9 +147,9 @@ Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能�
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮粒子 draw pass 材质解绑接入后已重新导出 PCK，SHA-256 为
-  `1ab7baa7dafea4e422f298182d1d079aa5ee94af1d71bbf7da19e6a8e07e6ce8`（538,711,616 bytes）。
-  ZIP SHA-256 为 `895b65d7247a9c6a9c95d9cc7c972e6b1fd5d66e2cc33ae05787f922774018e5`
-  （576,224,620 bytes）。
+  `0347fd6d7967c99b063c1c77a803a1c59bf53451b562116c1b963929dd41ac29`（538,713,184 bytes）。
+  ZIP SHA-256 为 `9bfe4e32664ed4a7640e96faf482e31334bd95cc9bc43ea60910cf74712c70ee`
+  （576,226,298 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、
