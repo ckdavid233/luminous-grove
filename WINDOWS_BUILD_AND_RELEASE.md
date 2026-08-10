@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 576,226,298 bytes
-SHA256: 9bfe4e32664ed4a7640e96faf482e31334bd95cc9bc43ea60910cf74712c70ee
+size: 576,041,003 bytes
+SHA256: 5c4c4e1d5271044e74b93125cfdfc0463d98f9906d5803c1c7064a3faf2a00f2
 integrity: unzip -t passed, 4 entries, no errors
 ```
 
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 4 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 538,713,184 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 538,714,448 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 
@@ -65,6 +65,8 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 - 工程侧 24 项回归还覆盖真实输入、移动状态、水体边界、环境几何与碰撞。
 - 本次 PCK 包含 ObjectiveGuide 目标距离提示；脚本回归会隐藏 HUD 引导并验证每个主线阶段都有可解析目标。
 - ZIP 已通过 `unzip -t` 完整性检查，4 个条目无错误；SHA256 已写入同名 `.sha256` 文件。
+- 本轮 teardown 清理逻辑更新后重新导出的 PCK 为 538,714,448 bytes，SHA-256 为
+  `205c26f8ed7bc46a1f0926ef8634c128808dd87510b72363e45da5bbe8fe655f`。
 
 PCK 自检证明导出的游戏数据与脚本可由 4.7.1 运行时读取；它不等于执行 Windows EXE。
 release smoke 会忽略开发者用户存档，从林地基线验证 Echo Ruins 异步加载，并在成功标志后直接
