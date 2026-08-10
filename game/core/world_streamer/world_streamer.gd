@@ -94,6 +94,8 @@ func _release_instance_resources(instance: Node) -> void:
 	# Detach those references before queue_free so CACHE_MODE_IGNORE loads do not
 	# leave a zero-reference RefCounted alive until process shutdown.
 	_disconnect_instance_signals(instance)
+	if instance.has_method("shutdown"):
+		instance.shutdown()
 	for geometry in instance.find_children("*", "GeometryInstance3D", true, false):
 		var visual := geometry as GeometryInstance3D
 		visual.material_override = null
@@ -188,6 +190,7 @@ func unload_level(path: String) -> bool:
 	_set_level_active(instance, false)
 	_instances.erase(path)
 	_last_used.erase(path)
+	_release_instance_resources(instance)
 	instance.queue_free()
 	level_unloaded.emit(path)
 	return true

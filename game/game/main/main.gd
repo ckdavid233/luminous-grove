@@ -34,18 +34,6 @@ const RAIN_EYE_PRESENT_PATH := (
 const RAIN_EYE_ECHO_PATH := (
 	"res://content/levels/rain_eye/rain_eye_echo.tscn"
 )
-const GROUND_ALBEDO := preload(
-	"res://content/environments/ground/forest_ground_albedo.png"
-)
-const GROUND_ALBEDO_V2 := preload(
-	"res://content/environments/ground/forest_ground_albedo_v2.png"
-)
-const GROUND_NORMAL := preload(
-	"res://content/environments/ground/forest_ground_normal.png"
-)
-const GROUND_ROUGHNESS := preload(
-	"res://content/environments/ground/forest_ground_roughness.png"
-)
 const SETTINGS_PATH := "user://settings.cfg"
 const DEFAULT_RENDER_SCALE_BY_PROFILE := {
 	&"high": 1.0,
@@ -2928,11 +2916,20 @@ func _ground_material() -> ShaderMaterial:
 	var mud_albedo := _profile_texture(&"wet_mud", &"albedo_texture")
 	var leaves_albedo := _profile_texture(&"moss", &"albedo_texture")
 	if ground_albedo == null:
-		ground_albedo = GROUND_ALBEDO_V2
+		ground_albedo = _load_material_texture(
+			"res://content/environments/ground/",
+			"forest_ground_albedo_v2",
+		)
 	if ground_normal == null:
-		ground_normal = GROUND_NORMAL
+		ground_normal = _load_material_texture(
+			"res://content/environments/ground/",
+			"forest_ground_normal",
+		)
 	if ground_roughness == null:
-		ground_roughness = GROUND_ROUGHNESS
+		ground_roughness = _load_material_texture(
+			"res://content/environments/ground/",
+			"forest_ground_roughness",
+		)
 	if ground_ao == null:
 		ground_ao = load("res://content/environments/ground/ao.png")
 	if ground_cavity == null:

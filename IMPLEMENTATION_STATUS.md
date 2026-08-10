@@ -111,6 +111,9 @@
   WorldStreamer 现在还会收束 pending threaded request、断开流送节点 Callable，PhaseShift/Cinematic
   也有显式 shutdown；1280×720 Vulkan 单镜头已不再出现 ObjectDB，但 4K SubViewport 与渲染器仍
   偶发 Texture RID/通用 RefCounted 警告，需继续用 Godot 内存检查定位剩余资源，当前不能宣称零泄漏。
+- 本轮继续把 `EchoRuins.shutdown()` 接入 WorldStreamer 的运行时卸载路径，并将地面旧版 PBR
+  fallback 改为按需加载；实机 Vulkan 新旅程捕获仍固定出现 7 个 Texture RID，说明剩余告警还需
+  在真实 GPU/Windows 环境用 Godot 内存检查区分渲染器 transient buffer 与项目引用。
 - 画质档已具备固定 FSR 3D 缩放（高 1.00、均衡 0.77、性能 0.59），但仍没有按帧动态分辨率和逐项高级设置。
 - 没有输入重映射、字幕缩放或色盲设置。
 - 真实 Vulkan X11 捕获已完成；`VISUAL_VALIDATION_REPORT.md` 保存地面、泥滩、树皮、湖面、水花、
@@ -134,8 +137,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `8aa83c3fc1c7e2f416299d69dd75ee2e6a11ebb93ace7e58ac639746357245ab`（527,432,224 bytes）；
-- ZIP SHA-256 为 `3864d96afb0e86dec159fdfa20399c26f3d940c05ff02171811b19e7f290e400`（564,766,333 bytes）；
+- 当前 PCK SHA-256 为 `8d82be120ea240797ff1cffde6289a7eb1f964c781a8a794e03c6585dfb19e7f`（527,432,720 bytes）；
+- ZIP SHA-256 为 `5da0b91f42905d1fd233b37cf0617ceab105f1d5e62e8342924b59f454da9429`（564,952,852 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

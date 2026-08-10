@@ -20,15 +20,47 @@ var _archive_anchors: Array[Node] = []
 var _counterweight_plate: Node
 var _counterweight_stone: RigidBody3D
 var _city_gate: Node
+var _shutdown_requested := false
 
 
 func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
+	if _shutdown_requested:
+		return
+	_shutdown_requested = true
+	# Echo Ruins is generated at runtime rather than loaded as a mesh scene.
+	# Clear the material maps before WorldStreamer detaches the MeshInstances;
+	# otherwise the shared imported textures can keep GPU Texture RIDs alive
+	# until RenderingDevice finalization.
+	for geometry in find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := geometry as MeshInstance3D
+		if mesh_instance.mesh is PrimitiveMesh:
+			(mesh_instance.mesh as PrimitiveMesh).material = null
+		mesh_instance.material_override = null
+		mesh_instance.mesh = null
+	_clear_material_maps(_stone_material)
+	_clear_material_maps(_floor_material)
 	_stone_material = null
 	_floor_material = null
 	_archive_anchors.clear()
 	_counterweight_plate = null
 	_counterweight_stone = null
 	_city_gate = null
+
+
+func _clear_material_maps(material: StandardMaterial3D) -> void:
+	if material == null:
+		return
+	material.albedo_texture = null
+	material.normal_texture = null
+	material.roughness_texture = null
+	material.metallic_texture = null
+	material.emission_texture = null
+	material.ao_texture = null
+	material.heightmap_texture = null
 
 
 func _ready() -> void:

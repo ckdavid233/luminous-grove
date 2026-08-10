@@ -261,6 +261,19 @@ func _terrain_normal(world_x: float, world_z: float) -> Vector3:
 
 
 func _shutdown_and_quit() -> void:
+	# A validation camera creates transient render buffers on the active
+	# viewport. Release it before Main starts detaching meshes; otherwise
+	# Forward+ can report the camera's seven Texture RIDs as leaked at exit.
+	# Give the active camera a few submitted frames even when CAPTURE_ONLY skips
+	# every shot, so the renderer can retire transient buffers cleanly.
+	for _frame in 4:
+		await process_frame
+	if _camera != null and is_instance_valid(_camera):
+		_camera.current = false
+		_camera.queue_free()
+		_camera = null
+		for _frame in 4:
+			await process_frame
 	if _main != null and is_instance_valid(_main):
 		if _main.has_method("shutdown"):
 			_main.shutdown()
@@ -270,6 +283,9 @@ func _shutdown_and_quit() -> void:
 		_offscreen_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		_offscreen_viewport.world_3d = null
 		_offscreen_viewport.queue_free()
+	_offscreen_viewport = null
+	_capture_viewport = null
+	_main = null
 	for _frame in 120:
 		await process_frame
 		await physics_frame

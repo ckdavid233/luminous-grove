@@ -37,6 +37,11 @@
   的物理查询、场景引用和失效 Tween；`runtime_teardown_test.gd` 新增对应断言。真实 Vulkan
   1280×720 地面/湖面捕获不再出现 ObjectDB 警告，4K SubViewport 与渲染器仍保留 Texture RID
   检查项。
+- 地面材质的旧版 PBR 兜底贴图改为按需 `load()`，正常 `MaterialProfile` 路径不再由脚本常量
+  全局持有旧贴图；WorldStreamer 在运行时卸载前会调用关卡级 `shutdown()`，Echo Ruins 会先解绑
+  生成 Mesh 的材质贴图和材质引用。捕获脚本也会预热并显式释放验证相机、Viewport 引用；24 项
+  回归仍通过，Renoir 新旅程 Vulkan 捕获仍报告 7 个 Texture RID，故继续保留为未完成的零泄漏
+  技术债。
 - 均衡/性能画质接入固定 FSR 3D 缩放（0.77/0.59），并把 `render_scale` 写入 Vulkan 性能 JSON；
   Renoir 1280×720 性能档由 17.6 FPS 提升到 29.3 FPS、P95 由 59.794ms 降至 36.994ms，仍待
   原生桌面和独立 GPU 复测。

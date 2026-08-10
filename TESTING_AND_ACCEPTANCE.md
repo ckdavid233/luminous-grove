@@ -75,7 +75,7 @@ Godot 编辑器级解析检查：
 | `interactive_water_test.gd` | 空中移动无脚步波纹、入水／出水状态、扩散环与水滴效果 |
 | `material_library_test.gd` | 6 个 MaterialProfile `.tres` 映射、6 张 PBR 贴图完整性、扫描 CC0 运行资源和表面摩擦关系 |
 | `surface_interaction_test.gd` | SurfaceProbe、PhysicsMaterial、脚印池、坡面法线双脚 IK、32 槽水纹事件接口 |
-| `runtime_teardown_test.gd` | shutdown 后网格、MultiMesh、粒子、WorldEnvironment、PhaseShift 查询/节点引用和 Cinematic Tween 引用解绑 |
+| `runtime_teardown_test.gd` | shutdown 后网格、MultiMesh、粒子、WorldEnvironment、PhaseShift 查询/节点引用、Cinematic Tween 和流送关卡材质引用解绑 |
 | `presentation_test.gd` | PBR 套装、粒子图集和程序音频 |
 | `quality_settings_test.gd` | 三档画质、默认高画质和暂停菜单 |
 | `input_regression_test.gd` | 真实 Escape、暂停中真实鼠标点击、画质按钮和真实 E 交互 |
@@ -96,6 +96,10 @@ Godot 编辑器级解析检查：
 - 正常流送：`resident_levels=2`、`resident_limit=2`。
 - 100 次时相切换后只保留一份 Echo 关卡实例。
 - 存档：主档损坏时成功恢复上一备份。
+
+本轮 24 项回归后，Echo Ruins 的运行时卸载会先调用关卡级 `shutdown()` 再解绑几何体；真实
+Vulkan 捕获脚本会先提交数帧并释放临时相机/Viewport 引用。Renoir 新旅程捕获仍可看到 7 个
+Texture RID 清理提示，不能把该工具告警视为已达到零泄漏。
 
 ## 性能测试规则
 

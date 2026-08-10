@@ -39,7 +39,7 @@ env DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake g
 
 | 项目 | 改造前 | 改造后 | 验证重点 |
 |---|---|---|---|
-| 林地地面 | `previews/before_ground.png`<br>`SHA-256 4de1b9896b56e17c989858a1c3d9613a8e72c49f0f322393f78a6bb8b5ac0d27` | `previews/after_ground.png`<br>`SHA-256 fa9280c781d211bbe64a4e333e26a66bff1c0f02041e16db755fddfe2567ea6a` | 扫描 Albedo/Normal/AO/Height、宏观色彩、湿润和近景细节 |
+| 林地地面 | `previews/before_ground.png`<br>`SHA-256 4de1b9896b56e17c989858a1c3d9613a8e72c49f0f322393f78a6bb8b5ac0d27` | `previews/after_ground.png`<br>`SHA-256 9ea2a01fe82751a267798567bf7570cfbf6f53b5b8f2a191fdcc57563702b662` | 扫描 Albedo/Normal/AO/Height、宏观色彩、湿润和近景细节 |
 | 湖岸湿泥 | `previews/before_wet_mud.png`<br>`SHA-256 f93f1501a9eafce2bc0895572288666983e7b8fbe41ea49fd2022e114cfd3385` | `previews/after_wet_mud.png`<br>`SHA-256 c93b0e65a68b04a37af5d081182972e72ebeeb2158dd493b477abcd30ef5a4d5` | 湿泥过渡、湖石扫描材质、浅水边缘与泡沫 |
 | 树皮/树冠 | `previews/before_forest_tree_detail.png`<br>`SHA-256 0c31d1c3a29d230d9980a33fdf8dd9e1cd20cb7c4902c88fc517de5250caca16` | `previews/forest_tree_detail.png`<br>`SHA-256 864d4534bc9868e2b4d8e1bf340a7ddc52823cfceca1290b1ab7e08ecaa4fb34` | Pine Bark PBR、叶片软风动、近景树干法线 |
 | 湖面 | `previews/before_realistic_lake.png`<br>`SHA-256 03bdea4f5874da360861ade2cc2fd88bb1cbae5d80a7b72cbf680630c74945e5` | `previews/realistic_lake.png`<br>`SHA-256 1baad159a102e169d8a35de0dfbf82d448cdaf915af8f2f9517f3748fb09a0ea` | 双层法线、Fresnel、深度吸收、湿润粗糙度、反射探针 |
@@ -92,6 +92,11 @@ env DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake g
 1280×720 单镜头日志不再出现 ObjectDB 警告，只保留 7 个 Texture RID。4K 湖面当前截图为
 `after_lake_4k.png`/`after_lake_splash_4k.png`，仍需将 4K SubViewport 的偶发通用 RefCounted
 警告与 Godot 渲染器资源释放进一步区分。
+
+本轮又将地面旧版 PBR fallback 改为按需加载，并把 Echo Ruins 材质解绑接入 WorldStreamer 卸载；
+最新 `CAPTURE_ONLY=ground` 真实 Vulkan 记录仍为 `Vulkan 1.3.255 - Forward+ - AMD RADV RENOIR`、
+截图成功且无 ObjectDB，但退出仍有 7 个 Texture RID。该结果已保留在
+`/tmp/luminous-grove-ground-after-cleanup-vulkan.log`，所以当前报告继续把零泄漏列为未完成验收。
 
 在加入 `Main._release_runtime_references()` 后重新执行同一 4K 湖面离屏捕获：
 `previews/postteardown_lake_4k.png`，尺寸 3840×2160，SHA-256 为

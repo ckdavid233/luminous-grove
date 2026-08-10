@@ -52,6 +52,9 @@
   射线、交互查询和恢复落点复用查询参数，水花根节点由湖体统一拥有并在退出时释放 GPU 资源。
 - 全流程：`gameplay_test.gd` 已从风铃、三记忆、神龛、双时相档案、Jolt 配重、城市回路、雨眼
   试炼走到潮汐结局并验证完成态恢复；新增真实附近交互提示检查，避免只靠测试直接调用机关。
+- 退出与流送：旧版地面 PBR 兜底贴图改为按需加载；WorldStreamer 在关卡卸载前调用关卡级
+  `shutdown()`，Echo Ruins 会解绑生成 Mesh 的 PBR 贴图与材质；Vulkan 捕获脚本会预热并释放
+  临时相机/Viewport 引用，避免验证工具本身扩大退出告警。
 
 ## 自动化与实机证据
 
@@ -90,9 +93,9 @@ WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮安全脚本回调断开修复后已重新导出 PCK，SHA-256 为
-  `8aa83c3fc1c7e2f416299d69dd75ee2e6a11ebb93ace7e58ac639746357245ab`（527,432,224 bytes）。
-  ZIP SHA-256 为 `3864d96afb0e86dec159fdfa20399c26f3d940c05ff02171811b19e7f290e400`
-  （564,766,333 bytes）。
+  `8d82be120ea240797ff1cffde6289a7eb1f964c781a8a794e03c6585dfb19e7f`（527,432,720 bytes）。
+  ZIP SHA-256 为 `5da0b91f42905d1fd233b37cf0617ceab105f1d5e62e8342924b59f454da9429`
+  （564,952,852 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、
