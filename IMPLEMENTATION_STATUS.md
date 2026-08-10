@@ -141,8 +141,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `bb734dc96755cfb8faa794ddc85328c0df75bc0ce88b8ebc5b8d2e6c086a764e`（527,453,036 bytes）；
-- ZIP SHA-256 为 `17b3ba3627626b4bd6e41cf87c3876dad3df6dba179a707e5680eed254b2dad2`（564,787,147 bytes）；
+- 当前 PCK SHA-256 为 `57c16eba7f0ada57a1c973a2a081a1878b40dbc2af1394df07737c18d5013435`（527,453,132 bytes）；
+- ZIP SHA-256 为 `235edee257dd4a8647b1723724ca468af0265582b883b110682e62914ea2056a`（564,787,194 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

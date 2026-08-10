@@ -1440,11 +1440,15 @@ func _create_game_ui() -> void:
 	_campaign_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(_campaign_progress)
 
-	_objective_guide = OBJECTIVE_GUIDE.new()
-	_objective_guide.name = "ObjectiveGuide"
-	_objective_guide.configure(_player.find_child("Camera", true, false) as Camera3D)
-	_objective_guide.set_enabled(not OS.get_cmdline_args().has("--script"))
-	canvas.add_child(_objective_guide)
+	# Script-driven tests and capture tools already resolve/assert targets directly;
+	# avoid constructing an extra Control/StyleBox tree in those processes so it
+	# cannot contribute to shutdown ObjectDB noise. Player builds retain the live
+	# screen-space guide for normal gameplay.
+	if not OS.get_cmdline_args().has("--script"):
+		_objective_guide = OBJECTIVE_GUIDE.new()
+		_objective_guide.name = "ObjectiveGuide"
+		_objective_guide.configure(_player.find_child("Camera", true, false) as Camera3D)
+		canvas.add_child(_objective_guide)
 
 	_toast_label = Label.new()
 	_toast_label.position = Vector2(510.0, 90.0)
