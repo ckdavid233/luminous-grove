@@ -136,6 +136,20 @@ SHA-256：`f2b6348d80f1106784a3f4eda3a4686654c921fc7fee87656553f74858aeb997`。
 该次捕获仍出现 7 个 Texture RID 与 1 个通用 ObjectDB 清理提示，因此新增截图证明
 当前源码的湖面、反射、水花与 4K 材质路径没有回退，但不改变零泄漏未通过的结论。
 
+### 2026-08-10 门户同步释放后的 4K 复验
+
+在门户预览 SubViewport、环形子树和测试相机增加同步/显式释放后，重新运行同一真实 Vulkan
+湖面捕获。两张 PNG 仍为 3840×2160、8-bit RGB，画面路径没有回退：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面 | `previews/portalshutdown4k_lake_4k.png` | `ab8cd1503dca0f0069fb8e42419f2c2628f31d3aaa0c3f86609f241559039430` |
+| 湖面水花 | `previews/portalshutdown4k_lake_splash_4k.png` | `92e3e61d77c9f570c4839ea17c65da84ce6314e2554a6d4b94ae0664c019d563` |
+
+该版本在 `runtime_teardown_test` 与 `portal_preview_test` 中确认门户子树会被释放，但 4K
+SubViewport 退出仍报告 7 个 Texture RID 与 1 个通用 ObjectDB；这部分仍需实体 Windows/4K
+设备与 Godot 内存检查进一步区分引擎 transient buffer 和项目引用，不能宣称零泄漏。
+
 ### Profile 映射后的湖面复验
 
 在显式 `MaterialProfile` 接入地表 Shader 后，重新用真实 Vulkan `SubViewport` 单独捕获地面、湿泥、

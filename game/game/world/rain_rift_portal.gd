@@ -32,7 +32,10 @@ func shutdown() -> void:
 		_preview_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		_preview_viewport.world_3d = null
 		if not _tearing_down:
-			_preview_viewport.queue_free()
+			# Main.shutdown() runs while the portal is still in the live tree. Free
+			# the preview viewport synchronously here so its RefCounted render
+			# target cannot survive until the parent begins child traversal.
+			_preview_viewport.free()
 	var surface := get_node_or_null("RiftSurface") as MeshInstance3D
 	if surface != null:
 		surface.material_override = null
@@ -49,6 +52,17 @@ func shutdown() -> void:
 			if shard_mesh.mesh is PrimitiveMesh:
 				(shard_mesh.mesh as PrimitiveMesh).material = null
 			shard_mesh.mesh = null
+		if not _tearing_down:
+			# The ring is generated at runtime and owns 28 shard nodes. Free the
+			# generated subtree while Main is still live instead of leaving its
+			# RefCounted mesh/material handles to parent traversal.
+			_ring.free()
+	if not _tearing_down:
+		# Surface/light are also runtime-only children. Free the remaining portal
+		# subtree synchronously after detaching its GPU resources.
+		for child in get_children():
+			if is_instance_valid(child):
+				child.free()
 	_preview_camera = null
 	_source_camera = null
 	_preview_viewport = null

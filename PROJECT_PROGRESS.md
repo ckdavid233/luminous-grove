@@ -94,9 +94,9 @@ RID 警告仍未达到零泄漏验收。
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮目标引导与流程断言接入后已重新导出 PCK，SHA-256 为
-  `57c16eba7f0ada57a1c973a2a081a1878b40dbc2af1394df07737c18d5013435`（527,453,132 bytes）。
-  ZIP SHA-256 为 `235edee257dd4a8647b1723724ca468af0265582b883b110682e62914ea2056a`
-  （564,787,194 bytes）。
+  `be29c06957c16c4adc6d3fc8c2cf9bbbd6215171619229a5310e1b12df6db725`（527,453,084 bytes）。
+  ZIP SHA-256 为 `b8fc5b7c3003f6cab0a0bf45b403a3304cbab29246112565fb38f6166435d953`
+  （564,787,178 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

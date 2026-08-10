@@ -91,6 +91,9 @@ func _initialize() -> void:
 	await physics_frame
 	await process_frame
 	streamer.clear_inactive_levels()
+	preview_source_camera.clear_current(false)
+	preview_source_camera.current = false
+	preview_source_camera.queue_free()
 	if streamer.has_method("shutdown"):
 		streamer.shutdown()
 	if main.has_method("shutdown"):

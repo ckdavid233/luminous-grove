@@ -65,6 +65,9 @@
 - Windows/PCK release smoke 改为允许冷启动材质与 threaded PCK 最多 3600 帧；探针忽略开发者存档，
   固定从林地基线确认 Echo Ruins 异步加载，并在成功标志后直接退出；本轮导出包已通过 Linux 同版本
   自检和 ZIP 完整性检查。源目录 headless 仍可能出现 1 个通用 ObjectDB 清理警告，未宣称零泄漏。
+- RainRiftPortal 退出时同步释放预览 SubViewport、环形子树和测试相机，避免门户运行时资源依赖
+  parent traversal；24 项回归和 4K 湖面复验通过，但 7 个 Texture RID/通用 ObjectDB 告警仍需实体
+  Windows/4K 内存检查区分 transient buffer 与项目引用。
 - 回归套件从 21 项扩展为 23 项，新增材质完整性和表面交互测试；真实 Vulkan 性能基线保留，
   当前容器仅能运行 64×64 headless CPU 冒烟。
 

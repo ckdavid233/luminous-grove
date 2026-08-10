@@ -112,6 +112,9 @@
   Callable，PhaseShift/Cinematic 也有显式 shutdown。相机默认“自动选下一个”时序已修正为
   `clear_current(false)`，但退出告警仍会随测试时序、4K SubViewport 和渲染器变化，需继续用 Godot
   内存检查定位剩余资源，当前不能宣称零泄漏。
+- RainRiftPortal 现在在 Main 仍处于活动树时同步释放预览 SubViewport 和运行时环形子树，门户
+  回归相机也会先清除 current 并显式 queue_free；这收紧了退出所有权，但 4K 捕获的 7 Texture RID
+  与通用 ObjectDB 告警仍会随渲染器/退出时序出现，零泄漏继续保持未通过。
 - 本轮继续把 `EchoRuins.shutdown()` 接入 WorldStreamer 的运行时卸载路径，并将地面旧版 PBR
   fallback 改为按需加载；相机清理后普通 1280×720 Vulkan 捕获的 7 个 Texture RID 不再稳定复现，
   但 `--verbose`、4K SubViewport 或不同退出时序仍可能报告 Texture RID/通用 RefCounted，说明剩余
@@ -141,8 +144,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `57c16eba7f0ada57a1c973a2a081a1878b40dbc2af1394df07737c18d5013435`（527,453,132 bytes）；
-- ZIP SHA-256 为 `235edee257dd4a8647b1723724ca468af0265582b883b110682e62914ea2056a`（564,787,194 bytes）；
+- 当前 PCK SHA-256 为 `be29c06957c16c4adc6d3fc8c2cf9bbbd6215171619229a5310e1b12df6db725`（527,453,084 bytes）；
+- ZIP SHA-256 为 `b8fc5b7c3003f6cab0a0bf45b403a3304cbab29246112565fb38f6166435d953`（564,787,178 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

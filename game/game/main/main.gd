@@ -194,6 +194,11 @@ func shutdown() -> void:
 	if _phase_portal != null and is_instance_valid(_phase_portal):
 		if _phase_portal.has_method("shutdown"):
 			_phase_portal.shutdown()
+		# The portal owns a generated SubViewport/ring subtree. Mark the portal
+		# itself for removal while Main is still in the tree so Godot does not
+		# leave a zero-reference preview object for parent traversal.
+		if _phase_portal.get_parent() == self:
+			_phase_portal.queue_free()
 	_phase_portal = null
 	if _phase_shift != null and is_instance_valid(_phase_shift):
 		if _phase_shift.has_method("shutdown"):
