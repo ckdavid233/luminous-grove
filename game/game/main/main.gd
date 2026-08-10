@@ -168,6 +168,7 @@ func shutdown() -> void:
 	for tween in get_tree().get_processed_tweens():
 		if tween != null and tween.is_valid():
 			tween.kill()
+	_disconnect_runtime_signals()
 	# Detach physics materials before the Jolt server releases static/rigid
 	# collision bodies. CharacterBody3D intentionally has no override property,
 	# so it is excluded from this explicit release pass.
@@ -215,6 +216,34 @@ func shutdown() -> void:
 	_narrative = null
 	_player = null
 	_rng = null
+
+
+func _disconnect_runtime_signals() -> void:
+	# Main owns all dynamically wired gameplay signals. Disconnect both direct
+	# children and streamed descendants before freeing them so test callables,
+	# UI closures and cross-phase callbacks do not keep RefCounted objects alive.
+	var nodes: Array[Node] = [self]
+	nodes.append_array(find_children("*", "Node", true, false))
+	for node in nodes:
+		if not is_instance_valid(node):
+			continue
+		for signal_info in node.get_signal_list():
+			var signal_name: StringName = signal_info.get("name", &"")
+			if signal_name.is_empty():
+				continue
+			for connection in node.get_signal_connection_list(signal_name):
+				var callback: Callable = connection.get("callable", Callable())
+				if not callback.is_valid():
+					continue
+				# Keep native engine connections intact.  The teardown pass only
+				# owns callbacks targeting scripted objects; disconnecting Control,
+				# Viewport or Skeleton3D internals produces nonexistent-connection
+				# errors while the scene tree is already unwinding.
+				var target: Object = callback.get_object()
+				if target == null or target.get_script() == null:
+					continue
+				if node.is_connected(signal_name, callback):
+					node.disconnect(signal_name, callback)
 
 
 func _release_runtime_references() -> void:

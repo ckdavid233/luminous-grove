@@ -89,9 +89,10 @@ WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但
 - 官方 Godot 4.7.1 release 模板导出；
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
-- ZIP `unzip -t` 通过，加入固定 FSR 和发布自检修复后的 SHA-256 为
-  `07800ebc595548cc308eda0a892f5b90dfaed4807919ce128da2d75f3bf1a12e`（564,765,201 bytes）；PCK
-  SHA-256 为 `aea69205b25bc56dfc8d076b14146578fd118f019c8b1ccbbae2e840a6a53f80`（527,430,720 bytes）。
+- ZIP `unzip -t` 通过；本轮安全脚本回调断开修复后已重新导出 PCK，SHA-256 为
+  `be17b698286e6ebc880125319e4b2809045961d92e4c6338fd02133cadd3d9c1`（527,431,424 bytes）。
+  ZIP SHA-256 为 `ed4d2f2ddecff35a6c02e800fb557ed3c95a02ee325ed7eb0ea35e1f1c6e0f4b`
+  （564,765,825 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

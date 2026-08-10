@@ -120,7 +120,15 @@ func _disconnect_instance_signals(instance: Node) -> void:
 				continue
 			for connection in node.get_signal_connection_list(signal_name):
 				var callback: Callable = connection.get("callable", Callable())
-				if callback.is_valid() and node.is_connected(signal_name, callback):
+				if not callback.is_valid():
+					continue
+				# Stream teardown owns scripted level callbacks only.  Native
+				# engine connections are released by the scene tree and must not be
+				# disconnected here while the parent is unwinding.
+				var target: Object = callback.get_object()
+				if target == null or target.get_script() == null:
+					continue
+				if node.is_connected(signal_name, callback):
 					node.disconnect(signal_name, callback)
 
 
