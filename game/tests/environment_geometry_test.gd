@@ -113,17 +113,21 @@ func _initialize() -> void:
 	var mid_trunks := main.get_node("Forest/MidTreeTrunks") as MultiMeshInstance3D
 	var mid_canopies := main.get_node("Forest/MidTreeCanopies") as MultiMeshInstance3D
 	assert(mid_trunks.multimesh.instance_count > 0)
-	assert(mid_canopies.multimesh.instance_count == mid_trunks.multimesh.instance_count * 2)
+	assert(mid_canopies.multimesh.instance_count == mid_trunks.multimesh.instance_count * 5)
 	assert(mid_trunks.multimesh.mesh.get_faces().size() / 3 <= 96)
 	assert(mid_canopies.multimesh.mesh.get_faces().size() / 3 <= 256)
-	assert(mid_trunks.visibility_range_begin == 0.0)
+	var mid_branches := main.get_node("Forest/MidTreeBranches") as MultiMeshInstance3D
+	assert(mid_branches.multimesh.instance_count == mid_trunks.multimesh.instance_count * 3)
+	assert(mid_trunks.visibility_range_begin > 0.0)
 	var far_trunks := main.get_node("Forest/FarTreeTrunks") as MultiMeshInstance3D
 	var far_canopies := main.get_node("Forest/FarTreeCanopies") as MultiMeshInstance3D
 	assert(far_trunks.multimesh.instance_count > 0)
-	assert(far_canopies.multimesh.instance_count == far_trunks.multimesh.instance_count)
+	assert(far_canopies.multimesh.instance_count == far_trunks.multimesh.instance_count * 4)
 	assert(far_trunks.multimesh.mesh.get_faces().size() / 3 <= 48)
 	assert(far_canopies.multimesh.mesh.get_faces().size() / 3 <= 128)
-	assert(far_trunks.visibility_range_begin == 0.0)
+	var far_branches := main.get_node("Forest/FarTreeBranches") as MultiMeshInstance3D
+	assert(far_branches.multimesh.instance_count == far_trunks.multimesh.instance_count * 2)
+	assert(far_trunks.visibility_range_begin > mid_trunks.visibility_range_begin)
 	assert(detailed_tree_total + mid_trunks.multimesh.instance_count + far_trunks.multimesh.instance_count == 54)
 
 	var shore_colliders := main.get_node("LakeShore/ShoreColliders") as StaticBody3D

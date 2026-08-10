@@ -14,7 +14,7 @@ NavMesh、战斗或联网系统不再写进“当前架构”；它们如有需�
 ```mermaid
 flowchart TD
     Main["Main Node3D\n场景编排、UI、环境"] --> Player["PlayerController\n移动/相机/交互/体力"]
-    Main --> Narrative["NarrativeDirector\ncampaign v6 状态机"]
+    Main --> Narrative["NarrativeDirector\ncampaign v7 状态机"]
     Main --> Streamer["WorldStreamer\n异步加载 + LRU"]
     Main --> Phase["PhaseShiftController\n双时相激活与隔离"]
     Main --> Portal["RainRiftPortal\n反相 SubViewport"]

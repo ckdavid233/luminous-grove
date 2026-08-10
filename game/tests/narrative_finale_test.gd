@@ -6,6 +6,19 @@ const NARRATIVE_DIRECTOR := preload(
 
 
 func _initialize() -> void:
+	var archive_puzzle = NARRATIVE_DIRECTOR.new()
+	root.add_child(archive_puzzle)
+	archive_puzzle.alignment_id = &"carry_the_light"
+	archive_puzzle.stage = archive_puzzle.ARCHIVE_SEARCH
+	assert(archive_puzzle.get_next_archive_anchor() == &"archive_voice")
+	assert(not archive_puzzle.activate_archive_anchor(&"archive_shape"))
+	assert(archive_puzzle.activated_archive_anchors.is_empty())
+	for anchor_id in archive_puzzle.get_archive_anchor_order():
+		assert(archive_puzzle.activate_archive_anchor(anchor_id))
+	assert(archive_puzzle.stage == archive_puzzle.ARCHIVE_MECHANISMS)
+	assert(archive_puzzle.get_next_archive_mechanism() == &"archive_counterweight")
+	archive_puzzle.queue_free()
+	await process_frame
 	for ending_id in [&"merge_worlds", &"guard_boundary", &"tidal_order"]:
 		var narrative = NARRATIVE_DIRECTOR.new()
 		root.add_child(narrative)
@@ -27,7 +40,7 @@ func _initialize() -> void:
 		assert(narrative.stage == narrative.COMPLETE)
 		assert(narrative.ending_id == ending_id)
 		var state: Dictionary = narrative.capture_state()
-		assert(state.campaign_version == 6)
+		assert(state.campaign_version == 7)
 		assert(state.rain_eye_seal_ids.size() == 3)
 		assert(state.rain_eye_trial_ids.size() == 3)
 		var restored = NARRATIVE_DIRECTOR.new()

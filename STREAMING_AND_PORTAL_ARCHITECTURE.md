@@ -27,7 +27,7 @@
 ```text
 Main                         # 常驻协调器
 ├── Player                   # 跨章节保留
-├── NarrativeDirector        # campaign v6 唯一剧情真相源
+├── NarrativeDirector        # campaign v7 唯一剧情真相源
 ├── CinematicDirector
 ├── UI / PauseOverlay
 ├── WorldHost
@@ -123,7 +123,7 @@ final_speed=1.448 counterweight=solved
 
 ## 8. 章节与剧情状态
 
-流送由剧情阶段驱动，但不拥有剧情判断。campaign v6 的 17 个稳定阶段为：
+流送由剧情阶段驱动，但不拥有剧情判断。campaign v7 的 17 个稳定阶段为：
 
 ```text
 intro → find_bell → gather_memories → awaken_shrine → memory_alignment

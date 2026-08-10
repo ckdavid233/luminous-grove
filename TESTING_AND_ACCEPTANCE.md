@@ -83,7 +83,7 @@ Godot 编辑器级解析检查：
 | `portal_preview_test.gd` | 640×360 反相门户、更新节流 |
 | `lantern_city_level_test.gd` | 双时相桥、列车、16 刚体、3 残响、4 回路、2 证词 |
 | `rain_eye_level_test.gd` | 7 段道路、14 刚体、3 印记、3 试炼、3 结局 |
-| `narrative_finale_test.gd` | 三结局、潮汐门槛、campaign v6 与旧档迁移 |
+| `narrative_finale_test.gd` | 三结局、潮汐门槛、campaign v7、锚点顺序密码与旧档迁移 |
 | `gameplay_test.gd` | 从真实附近风铃交互到潮汐结局、章节流送、保存和完成态恢复；逐阶段校验目标提示与可交互合同 |
 
 ## 关键通过结果
@@ -166,7 +166,7 @@ Windows ZIP 发布前必须满足：
 - 使用 Godot 4.7.1 官方 `windows_release_x86_64.exe` 模板。
 - `file` 识别为 PE32+ x86-64 GUI executable。
 - EXE 与 PCK 都存在，PCK 不是旧开发包。
-- PCK 在 Linux 同版本 Godot 中通过 `--release-smoke`，确认版本、campaign v6、默认高画质
+- PCK 在 Linux 同版本 Godot 中通过 `--release-smoke`，确认版本、campaign v7、默认高画质
   和 Echo Ruins 异步加载；24 项完整回归在未过滤的工程目录单独执行。
 - ZIP 可无错误列出与解压。
 - 生成 SHA-256 清单和构建清单。

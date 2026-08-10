@@ -81,8 +81,21 @@ func _initialize() -> void:
 	var echo = streamer.get_level("res://content/levels/echo_ruins/echo_ruins.tscn")
 	var archive_anchors: Array = echo.get_archive_anchors()
 	assert(archive_anchors.size() == 3)
+	var first_anchor_id: StringName = narrative.get_next_archive_anchor()
+	var wrong_anchor: Node = archive_anchors.filter(
+		func(node: Node) -> bool:
+			return node.anchor_id != first_anchor_id
+	)[0]
+	assert(wrong_anchor.can_interact(player))
+	await _request_target_interaction(player, wrong_anchor, "archive wrong-order probe")
+	assert(narrative.activated_archive_anchors.is_empty(), "Wrong anchor order must not advance the cipher")
+	assert(not wrong_anchor.is_activated, "A rejected anchor must remain retryable")
 	for index in archive_anchors.size():
-		var anchor: Node = archive_anchors[index]
+		var next_anchor_id: StringName = narrative.get_next_archive_anchor()
+		var anchor: Node = archive_anchors.filter(
+			func(node: Node) -> bool:
+				return node.anchor_id == next_anchor_id
+		)[0]
 		assert(anchor.can_interact(player))
 		await _request_target_interaction(player, anchor, "archive_anchor_%d" % index)
 	assert(

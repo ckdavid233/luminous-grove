@@ -8,7 +8,7 @@
 ## 当前可交付状态
 
 这是一个可从开场走到三种结局的第三人称 3D 叙事冒险 alpha。当前代码、测试和设计文档已
-统一到 campaign v6；本快照首次把之前只存在于工作目录的实现与文档纳入 Git 版本历史。
+统一到 campaign v7；本快照首次把之前只存在于工作目录的实现与文档纳入 Git 版本历史。
 
 已完成并验证的本轮问题修复：
 
@@ -57,6 +57,12 @@
   试炼走到潮汐结局并验证完成态恢复；所有叙事交互均走玩家 `request_interaction()`，配重通过
   实际推动刚体触发踏板；同时保留真实附近交互提示、15 个目标引导存在性断言，以及每阶段
   `get_prompt()` 非空/`can_interact()` 合同校验，避免只靠测试直接调用机关或让玩家在跨时相关卡中迷路。
+- 本轮玩家反馈修复：跨时相返回此岸时强制重同步透镜可用状态并刷新玩家交互目标；失效目标不会
+  再拦截下一次 E。档案锚点改为按 alignment 分支的顺序密码，错误顺序不会消耗锚点且会保留重试；
+  配重→透镜路径加入真实回归断言。
+- 角色与森林视觉补强：玩家新增呼吸、步态重心、起停惯性和转身侧倾的二级运动，服装/鞋材质恢复
+  authored normal map；中远景树木改为分层枝条与 5/4 簇状树冠，切换距离与近景 GLB 分离，减少
+  截图中重复“圆球树冠”的假感。
 - 退出与流送：旧版地面 PBR 兜底贴图改为按需加载；WorldStreamer 在关卡卸载前调用关卡级
   `shutdown()`，Echo Ruins 会解绑生成 Mesh 的 PBR 贴图与材质；Vulkan 捕获脚本会预热并释放
   临时相机/Viewport 引用；GPUParticles3D 在解除 draw pass 前也会清理 PrimitiveMesh 材质，避免
@@ -69,7 +75,7 @@
 
 ```text
 REGRESSION_OK tests=24
-RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
+RELEASE_SMOKE_OK build=0.6.2-alpha campaign=7 quality=high echo_async=ready
 ```
 
 最新全流程复验把所有叙事节点统一改为 `PlayerController.request_interaction()` 路径，档案配重由
@@ -153,9 +159,9 @@ Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能�
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮粒子 draw pass 材质解绑接入后已重新导出 PCK，SHA-256 为
-  `891e1f83c39acbd5ba5e322f938acd2497f582d133d7a18ad11f836c7f10dec7`（538,714,592 bytes）。
-  ZIP SHA-256 为 `36985076051d4c716593632b58f3d9998e1c651b98b205b67b254bab25b4a249`
-  （576,041,177 bytes）。
+  `edb35607f5a9ee72a910fb00d8646c67b1ef1da2b2711e98bdc6b9a1157d097e`（538,721,376 bytes）。
+  ZIP SHA-256 为 `fbe117662dbdccf3e4d3ffd25a6825b75f24deb89488e3e3cd6cb50da287573f`
+  （576,234,357 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、
@@ -188,6 +194,15 @@ WorldStreamer、InteractiveLake、4K SubViewport 和 Jolt 交互的 ObjectDB/Tex
 合批/LOD、输入重映射、字幕/色盲、音频、签名、图标和安装器，重新导出并校验 Windows 包后提交
 Git。当前 3840×2160 Vulkan 离屏与 X11 原生窗口截图已通过，但实体 Windows 实机、多 GPU、性能
 目标和零泄漏仍是明确未解决项。
+
+## Goal：本次试玩反馈后的下一轮目标
+
+下一轮要把“工程上可运行”推进到“美术与谜题可定稿”：为主角补充专业的起步、急停、转身、坡面
+重心和面部表演资产，并评估更高精度身体/头发网格；继续用树皮与叶片扫描材质、真实叶片卡、枝条
+风场和近中远 LOD 做树木 A/B 截图，清理草簇重复与中景穿帮；围绕档案馆顺序密码做至少一次外部
+玩家盲测，记录错误尝试、提示可读性、推石头后透镜可达率和迷路点，再调整线索强度；在 Windows
+实机和多 GPU 上复测透镜、Jolt 刚体、水纹、IK、湿泥减速及高质量 P95 ≤41.7ms，继续定位
+ObjectDB/Texture RID 警告，并在完成性能、输入重映射、字幕/无障碍、音频和签名验收前不要宣称最终发行。
 
 ## 主要入口
 

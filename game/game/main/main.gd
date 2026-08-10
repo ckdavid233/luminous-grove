@@ -509,12 +509,12 @@ func _run_release_smoke() -> void:
 		echo_ready
 		and _player != null
 		and _narrative != null
-		and _narrative.CAMPAIGN_VERSION == 6
+		and _narrative.CAMPAIGN_VERSION == 7
 		and _quality_profile == &"high"
 	)
 	if success:
 		print(
-			"RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high "
+			"RELEASE_SMOKE_OK build=0.6.2-alpha campaign=7 quality=high "
 			+ "echo_async=ready"
 		)
 		shutdown()
@@ -1048,8 +1048,10 @@ func _create_mid_tree_proxies(
 ) -> void:
 	if transforms.is_empty():
 		return
-	# Mid-distance trees keep a readable trunk and two overlapping canopy lobes,
-	# but drop the thousands of branch/leaf triangles used by the near GLB.
+	# Mid-distance trees keep a readable trunk, a few tapered branch tiers and a
+	# clustered canopy.  A single sphere was cheap but read as a repeated
+	# lollipop in the playable camera; five irregular lobes preserve the tree
+	# silhouette without bringing the full scanned leaf card count back.
 	var trunk_mesh := CylinderMesh.new()
 	trunk_mesh.top_radius = 0.18
 	trunk_mesh.bottom_radius = 0.31
@@ -1065,28 +1067,49 @@ func _create_mid_tree_proxies(
 	trunks.name = "MidTreeTrunks"
 	trunks.multimesh = trunk_multimesh
 	trunks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	trunks.visibility_range_begin = 0.0
-	trunks.visibility_range_end = 72.0
+	trunks.visibility_range_begin = 12.0
+	trunks.visibility_range_end = 36.0
 	trunks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	parent.add_child(trunks)
 	_forest_proxy_instances.append(trunks)
 
+	var branch_mesh := CylinderMesh.new()
+	branch_mesh.top_radius = 0.035
+	branch_mesh.bottom_radius = 0.12
+	branch_mesh.height = 1.72
+	branch_mesh.radial_segments = 6
+	branch_mesh.rings = 2
+	branch_mesh.material = bark_material
+	var branch_multimesh := MultiMesh.new()
+	branch_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	branch_multimesh.instance_count = transforms.size() * 3
+	branch_multimesh.mesh = branch_mesh
+	var branches := MultiMeshInstance3D.new()
+	branches.name = "MidTreeBranches"
+	branches.multimesh = branch_multimesh
+	branches.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	branches.visibility_range_begin = 12.0
+	branches.visibility_range_end = 36.0
+	branches.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	parent.add_child(branches)
+	_forest_proxy_instances.append(branches)
+
 	var canopy_mesh := SphereMesh.new()
-	canopy_mesh.radius = 1.16
-	canopy_mesh.height = 2.25
-	canopy_mesh.radial_segments = 12
-	canopy_mesh.rings = 6
+	canopy_mesh.radius = 1.0
+	canopy_mesh.height = 2.0
+	canopy_mesh.radial_segments = 10
+	canopy_mesh.rings = 5
 	canopy_mesh.material = leaf_material
 	var canopy_multimesh := MultiMesh.new()
 	canopy_multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	canopy_multimesh.instance_count = transforms.size() * 2
+	canopy_multimesh.instance_count = transforms.size() * 5
 	canopy_multimesh.mesh = canopy_mesh
 	var canopies := MultiMeshInstance3D.new()
 	canopies.name = "MidTreeCanopies"
 	canopies.multimesh = canopy_multimesh
 	canopies.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	canopies.visibility_range_begin = 0.0
-	canopies.visibility_range_end = 72.0
+	canopies.visibility_range_begin = 12.0
+	canopies.visibility_range_end = 36.0
 	canopies.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	parent.add_child(canopies)
 	_forest_proxy_instances.append(canopies)
@@ -1102,28 +1125,54 @@ func _create_mid_tree_proxies(
 				source.origin + Vector3.UP * (2.2 * scale.y),
 			),
 		)
-		var canopy_basis := rotation_basis.scaled(
-			Vector3(scale.x * 1.32, scale.y * 1.52, scale.z * 1.32)
-		)
-		canopy_multimesh.set_instance_transform(
-			index * 2,
-			Transform3D(
-				canopy_basis,
-				source.origin + Vector3.UP * (4.45 * scale.y),
-			),
-		)
-		canopy_multimesh.set_instance_transform(
-			index * 2 + 1,
-			Transform3D(
-				canopy_basis.scaled(Vector3(0.78, 0.76, 0.78)),
-				source.origin
-					+ Vector3(
-						0.54 * scale.x,
-						4.95 * scale.y,
-						-0.32 * scale.z,
+		var branch_angles := [0.32, 2.42, 4.55]
+		for branch_index in branch_angles.size():
+			var branch_angle: float = branch_angles[branch_index] + float(index) * 0.19
+			var branch_basis := rotation_basis * Basis.from_euler(
+				Vector3(0.0, branch_angle, deg_to_rad(-58.0 + branch_index * 7.0))
+			)
+			branch_multimesh.set_instance_transform(
+				index * 3 + branch_index,
+				Transform3D(
+					branch_basis.scaled(Vector3(scale.x, scale.y, scale.z)),
+					source.origin + rotation_basis * Vector3(
+						0.0,
+						(2.35 + branch_index * 0.58) * scale.y,
+						0.0,
 					),
-			),
-		)
+				),
+			)
+		var lobe_offsets := [
+			Vector3(0.0, 4.45, 0.0),
+			Vector3(-0.74, 4.62, 0.18),
+			Vector3(0.68, 4.74, -0.2),
+			Vector3(-0.24, 5.18, -0.52),
+			Vector3(0.3, 5.22, 0.46),
+		]
+		var lobe_scales := [
+			Vector3(1.18, 1.22, 1.12),
+			Vector3(0.86, 0.92, 0.82),
+			Vector3(0.9, 0.98, 0.86),
+			Vector3(0.68, 0.72, 0.64),
+			Vector3(0.72, 0.76, 0.7),
+		]
+		for lobe_index in lobe_offsets.size():
+			var lobe_offset: Vector3 = lobe_offsets[lobe_index]
+			var lobe_scale: Vector3 = lobe_scales[lobe_index]
+			var lobe_basis := rotation_basis.scaled(
+				Vector3(scale.x * 1.08, scale.y * 1.12, scale.z * 1.08) * lobe_scale
+			)
+			canopy_multimesh.set_instance_transform(
+				index * 5 + lobe_index,
+				Transform3D(
+					lobe_basis,
+					source.origin + rotation_basis * Vector3(
+						lobe_offset.x * scale.x,
+						lobe_offset.y * scale.y,
+						lobe_offset.z * scale.z,
+					),
+				),
+			)
 
 
 func _create_far_tree_proxies(
@@ -1135,10 +1184,9 @@ func _create_far_tree_proxies(
 	if transforms.is_empty():
 		return
 	# The detailed GLB batches remain available for near shots. At the farthest
-	# range, replace their thousands of leaf triangles with two shared low-poly
-	# batches: one trunk and one canopy. This is an actual geometry LOD, not
-	# merely a visibility distance hint, and keeps the silhouette/colour language
-	# while reducing repeated GLB triangles.
+	# range, replace their thousands of leaf triangles with clustered low-poly
+	# batches.  Four lobes keep a broken canopy silhouette instead of a perfect
+	# sphere while remaining a very small geometry LOD.
 	var trunk_mesh := CylinderMesh.new()
 	trunk_mesh.top_radius = 0.16
 	trunk_mesh.bottom_radius = 0.28
@@ -1154,27 +1202,48 @@ func _create_far_tree_proxies(
 	trunks.name = "FarTreeTrunks"
 	trunks.multimesh = trunk_multimesh
 	trunks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	trunks.visibility_range_begin = 0.0
+	trunks.visibility_range_begin = 30.0
 	trunks.visibility_range_end = 72.0
 	trunks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	parent.add_child(trunks)
 	_forest_proxy_instances.append(trunks)
 
+	var branch_mesh := CylinderMesh.new()
+	branch_mesh.top_radius = 0.025
+	branch_mesh.bottom_radius = 0.08
+	branch_mesh.height = 1.35
+	branch_mesh.radial_segments = 5
+	branch_mesh.rings = 1
+	branch_mesh.material = bark_material
+	var branch_multimesh := MultiMesh.new()
+	branch_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	branch_multimesh.instance_count = transforms.size() * 2
+	branch_multimesh.mesh = branch_mesh
+	var branches := MultiMeshInstance3D.new()
+	branches.name = "FarTreeBranches"
+	branches.multimesh = branch_multimesh
+	branches.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	branches.visibility_range_begin = 30.0
+	branches.visibility_range_end = 72.0
+	branches.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	parent.add_child(branches)
+	_forest_proxy_instances.append(branches)
+
 	var canopy_mesh := SphereMesh.new()
-	canopy_mesh.radius = 1.22
-	canopy_mesh.height = 2.45
+	canopy_mesh.radius = 1.0
+	canopy_mesh.height = 2.0
 	canopy_mesh.radial_segments = 8
 	canopy_mesh.rings = 4
 	canopy_mesh.material = leaf_material
 	var canopy_multimesh := MultiMesh.new()
 	canopy_multimesh.transform_format = MultiMesh.TRANSFORM_3D
-	canopy_multimesh.instance_count = transforms.size()
+	canopy_multimesh.instance_count = transforms.size() * 4
 	canopy_multimesh.mesh = canopy_mesh
 	var canopies := MultiMeshInstance3D.new()
 	canopies.name = "FarTreeCanopies"
 	canopies.multimesh = canopy_multimesh
 	canopies.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	canopies.visibility_range_begin = 0.0
+	canopies.visibility_range_begin = 30.0
 	canopies.visibility_range_end = 72.0
 	canopies.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	parent.add_child(canopies)
@@ -1191,13 +1260,46 @@ func _create_far_tree_proxies(
 				source.origin + Vector3.UP * (2.15 * scale.y),
 			),
 		)
-		canopy_multimesh.set_instance_transform(
-			index,
-			Transform3D(
-				rotation_basis.scaled(Vector3(scale.x * 1.55, scale.y * 1.75, scale.z * 1.55)),
-				source.origin + Vector3.UP * (4.75 * scale.y),
-			),
-		)
+		for branch_index in 2:
+			var branch_angle := float(index) * 0.23 + float(branch_index) * PI
+			var branch_basis := rotation_basis * Basis.from_euler(
+				Vector3(0.0, branch_angle, deg_to_rad(-62.0))
+			)
+			branch_multimesh.set_instance_transform(
+				index * 2 + branch_index,
+				Transform3D(
+					branch_basis.scaled(Vector3(scale.x, scale.y, scale.z)),
+					source.origin + rotation_basis * Vector3(0.0, 3.05 * scale.y, 0.0),
+				),
+			)
+		var lobe_offsets := [
+			Vector3(0.0, 4.72, 0.0),
+			Vector3(-0.58, 4.86, 0.12),
+			Vector3(0.5, 4.98, -0.16),
+			Vector3(0.0, 5.25, 0.3),
+		]
+		var lobe_scales := [
+			Vector3(1.26, 1.42, 1.18),
+			Vector3(0.82, 0.94, 0.78),
+			Vector3(0.88, 1.0, 0.82),
+			Vector3(0.7, 0.78, 0.66),
+		]
+		for lobe_index in lobe_offsets.size():
+			var lobe_offset: Vector3 = lobe_offsets[lobe_index]
+			var lobe_scale: Vector3 = lobe_scales[lobe_index]
+			canopy_multimesh.set_instance_transform(
+				index * 4 + lobe_index,
+				Transform3D(
+					rotation_basis.scaled(
+						Vector3(scale.x * 1.05, scale.y * 1.1, scale.z * 1.05) * lobe_scale
+					),
+					source.origin + rotation_basis * Vector3(
+						lobe_offset.x * scale.x,
+						lobe_offset.y * scale.y,
+						lobe_offset.z * scale.z,
+					),
+				),
+			)
 
 
 func _extract_tree_mesh(
@@ -1480,6 +1582,7 @@ func _create_narrative() -> void:
 	_narrative.alignment_chosen.connect(_on_alignment_chosen)
 	_narrative.archive_anchor_added.connect(_on_archive_anchor_added)
 	_narrative.archive_anchors_completed.connect(_on_archive_anchors_completed)
+	_narrative.archive_sequence_rejected.connect(_on_archive_sequence_rejected)
 	_narrative.archive_mechanism_added.connect(_on_archive_mechanism_added)
 	_narrative.archive_restored.connect(_on_archive_restored)
 	_narrative.city_trace_added.connect(_on_city_trace_added)
@@ -2075,17 +2178,23 @@ func _apply_grass_quality() -> void:
 
 
 func _apply_forest_quality() -> void:
-	var detailed_end := 72.0
-	var proxy_begin := 0.0
-	var proxy_end := 72.0
+	var detailed_end := 18.0
+	var mid_begin := 12.0
+	var mid_end := 36.0
+	var far_begin := 30.0
+	var far_end := 72.0
 	if _quality_profile == &"balanced":
-		detailed_end = 60.0
-		proxy_begin = 0.0
-		proxy_end = 60.0
+		detailed_end = 16.0
+		mid_begin = 11.0
+		mid_end = 32.0
+		far_begin = 27.0
+		far_end = 60.0
 	elif _quality_profile == &"performance":
-		detailed_end = 46.0
-		proxy_begin = 0.0
-		proxy_end = 46.0
+		detailed_end = 13.0
+		mid_begin = 9.0
+		mid_end = 27.0
+		far_begin = 23.0
+		far_end = 46.0
 	for tree_instances in _forest_tree_instances:
 		tree_instances.cast_shadow = (
 			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -2097,8 +2206,12 @@ func _apply_forest_quality() -> void:
 		tree_instances.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	for proxy in _forest_proxy_instances:
 		proxy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		proxy.visibility_range_begin = proxy_begin
-		proxy.visibility_range_end = proxy_end
+		if str(proxy.name).begins_with("MidTree"):
+			proxy.visibility_range_begin = mid_begin
+			proxy.visibility_range_end = mid_end
+		else:
+			proxy.visibility_range_begin = far_begin
+			proxy.visibility_range_end = far_end
 		proxy.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 
 
@@ -2215,6 +2328,21 @@ func _on_phase_shift_completed(phase: StringName) -> void:
 		_save_current_game()
 		if not OS.get_cmdline_args().has("--script"):
 			call_deferred("_play_archive_intro_cinematic")
+	# Re-apply narrative availability after both directions of a phase swap.
+	# Present interactables are deliberately removed from collision while the
+	# player is in Echo; without this refresh a just-solved counterweight can
+	# leave the name lens visually lit but still unreachable by the interaction
+	# ray on the first frame after returning.  Do not recompute the controller's
+	# global unlock flag. Tooling/tests can intentionally unlock phase shifting
+	# before the narrative reaches the archive; a full world sync here would
+	# overwrite that explicit capability on the return leg.
+	_sync_echo_narrative()
+	_sync_archive_present_mechanisms()
+	_sync_city_narrative()
+	_sync_rain_eye_narrative()
+	if _player != null and is_instance_valid(_player):
+		if _player.has_method("refresh_interaction_target"):
+			_player.call_deferred("refresh_interaction_target")
 	if _player != null and _player.has_method("set_checkpoint"):
 		_player.set_checkpoint(_player.global_transform)
 	_show_toast("雨忆时相" if phase == &"echo" else "此岸时相")
@@ -2257,7 +2385,7 @@ func _on_cinematic_finished(sequence_id: StringName, _skipped: bool) -> void:
 	if sequence_id == &"shrine_awaken":
 		_show_toast("神龛正在等待你决定如何携带这段记忆")
 	elif sequence_id == &"archive_intro":
-		_show_toast("档案馆存在于两段时间之间；三个锚点正在等待")
+		_show_toast("档案馆存在于两段时间之间；记住残句：无形不能发声，无声不能命名")
 	elif sequence_id == &"city_arrival":
 		_show_toast("城市的桥只在雨忆中完整；从门户观察，再决定何时切换")
 	elif sequence_id == &"rain_eye_entry":
@@ -2365,6 +2493,14 @@ func _on_archive_anchor_added(
 
 func _on_archive_anchors_completed() -> void:
 	_show_toast("锚点已经复原轮廓；真正的档案机关横跨两个时相")
+
+
+func _on_archive_sequence_rejected(
+	_anchor_id: StringName,
+	_expected_id: StringName,
+	clue: String,
+) -> void:
+	_show_toast("锚点拒绝共振：" + clue)
 
 
 func _on_archive_mechanism_activated(mechanism_id: StringName) -> void:
@@ -2994,7 +3130,11 @@ func _resolve_objective_target() -> Node3D:
 		_narrative.ARCHIVE_SEARCH:
 			var echo = _streamed_level(ECHO_LEVEL_PATH)
 			if echo != null and echo.has_method("get_archive_anchors"):
-				var anchor := _first_pending_node(echo.get_archive_anchors(), &"anchor_id", _narrative.activated_archive_anchors)
+				var anchor := _first_node_with_id(
+					echo.get_archive_anchors(),
+					&"anchor_id",
+					_narrative.get_next_archive_anchor(),
+				)
 				if anchor != null:
 					return anchor
 			return _phase_portal

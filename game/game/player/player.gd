@@ -28,6 +28,9 @@ const SURFACE_PROBE := preload("res://game/world/surface_probe.gd")
 @export var coyote_time := 0.13
 @export var jump_buffer_time := 0.14
 @export var landing_animation_min_speed := 1.75
+@export var visual_breathing_strength := 0.012
+@export var visual_sway_strength := 0.028
+@export var visual_stride_response := 0.06
 
 @onready var model: Node3D = %Model
 @onready var camera_pivot: Node3D = %CameraPivot
@@ -51,6 +54,10 @@ var _checkpoint_transform := Transform3D.IDENTITY
 var _has_checkpoint := false
 var _camera_bob_time := 0.0
 var _camera_base_height := 1.5
+var _visual_time := 0.0
+var _visual_previous_speed := 0.0
+var _visual_base_position := Vector3.ZERO
+var _visual_base_scale := Vector3.ONE
 var _interaction_requested := false
 var _coyote_time_left := 0.0
 var _jump_buffer_left := 0.0
@@ -82,6 +89,8 @@ func _ready() -> void:
 	stamina_bar.max_value = maximum_stamina
 	stamina_bar.value = _stamina
 	_camera_base_height = camera_pivot.position.y
+	_visual_base_position = model.position
+	_visual_base_scale = model.scale
 	_render_quality_stats = CHARACTER_VISUAL_QUALITY.apply_to(model)
 	_setup_animation_tree()
 	_setup_foot_ik()
@@ -147,6 +156,7 @@ func _physics_process(delta: float) -> void:
 	_emit_surface_footstep()
 	_update_interaction_target()
 	_update_animation()
+	_update_visual_motion(delta)
 
 
 func _update_movement(delta: float) -> void:
@@ -291,6 +301,57 @@ func _update_camera_motion(delta: float, horizontal_speed: float) -> void:
 		minf(1.0, delta * 9.0),
 	)
 	camera.fov = lerpf(camera.fov, 64.0 if _is_sprinting else 58.0, minf(1.0, delta * 5.5))
+
+
+func _update_visual_motion(delta: float) -> void:
+	# The imported locomotion clips provide the primary pose.  This secondary
+	# pass adds weight shift, breathing and a small delayed torso response so
+	# starts/stops/turns do not read as a rigid mannequin even when the same
+	# source animation is used on different terrain.
+	_visual_time += delta
+	var horizontal_velocity := Vector3(velocity.x, 0.0, velocity.z)
+	var horizontal_speed := horizontal_velocity.length()
+	var speed_ratio := clampf(horizontal_speed / maxf(move_speed, 0.01), 0.0, 1.5)
+	var acceleration_ratio := clampf(
+		(horizontal_speed - _visual_previous_speed) / maxf(delta, 0.001),
+		-2.5,
+		2.5,
+	) / 2.5
+	_visual_previous_speed = lerpf(_visual_previous_speed, horizontal_speed, minf(1.0, delta * 10.0))
+	var gait_rate := 5.4 + horizontal_speed * 1.25
+	var gait := sin(_visual_time * gait_rate)
+	var counter_gait := cos(_visual_time * gait_rate * 0.5)
+	var grounded_weight := 1.0 if is_on_floor() else 0.35
+	var breath := sin(_visual_time * 2.15) * visual_breathing_strength
+	var sway := gait * visual_sway_strength * speed_ratio * grounded_weight
+	var step_lift := absf(gait) * visual_stride_response * speed_ratio * grounded_weight
+	var target_position := _visual_base_position + Vector3(
+		-sway * 0.32,
+		breath + step_lift,
+		counter_gait * visual_sway_strength * 0.18 * speed_ratio,
+	)
+	model.position = model.position.lerp(
+		target_position,
+		minf(1.0, delta * 9.0),
+	)
+	var locomotion_pitch := clampf(-acceleration_ratio * 0.045, -0.045, 0.045)
+	var locomotion_roll := sway * 0.72
+	model.rotation.x = lerpf(model.rotation.x, locomotion_pitch, minf(1.0, delta * 8.0))
+	# _update_movement owns the intentional turn lean. Add the secondary roll
+	# after it rather than replacing that signal.
+	var turn_lean := clampf(model.rotation.z, -0.11, 0.11)
+	model.rotation.z = lerpf(
+		model.rotation.z,
+		turn_lean + locomotion_roll,
+		minf(1.0, delta * 8.0),
+	)
+	var compression := clampf(step_lift * 0.18 - acceleration_ratio * 0.012, -0.018, 0.018)
+	var target_scale := _visual_base_scale * Vector3(
+		1.0 - compression,
+		1.0 + compression * 0.72,
+		1.0 - compression,
+	)
+	model.scale = model.scale.lerp(target_scale, minf(1.0, delta * 7.0))
 
 
 func _setup_animation_tree() -> void:
@@ -509,12 +570,28 @@ func _travel_animation(next_state: StringName) -> void:
 func request_interaction() -> bool:
 	if not _control_enabled or _interaction_time_left > 0.0:
 		return false
-	if _interaction_target == null or not is_instance_valid(_interaction_target):
+	if (
+		_interaction_target == null
+		or not is_instance_valid(_interaction_target)
+		or (
+			_interaction_target.has_method("can_interact")
+			and not _interaction_target.can_interact(self)
+		)
+	):
+		_interaction_target = null
 		_update_interaction_target()
 	if _interaction_target == null:
 		return false
 	_begin_interaction()
 	return true
+
+
+func refresh_interaction_target() -> void:
+	# Phase transitions and streamed-level swaps can change collision layers
+	# between two physics ticks. Expose an explicit refresh so the next input
+	# cannot use a stale, now-disabled interactable.
+	_interaction_target = null
+	_update_interaction_target()
 
 
 func set_visual_quality_profile(profile: StringName) -> void:

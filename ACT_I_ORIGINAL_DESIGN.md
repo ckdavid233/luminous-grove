@@ -8,7 +8,7 @@
 
 > **历史文档，不是当前实现说明。** 本稿记录最早的单幕短篇，当时只有 6 个阶段和
 > `return_to_lake`／`carry_the_light` 两种林地选择。当前 0.6.1-alpha 已扩为四幕、
-> campaign v6 的 17 个阶段、跨时相机关、行灯证词、雨眼试炼以及
+> campaign v7 的 17 个阶段、跨时相机关、锚点顺序密码、行灯证词、雨眼试炼以及
 > `merge_memories`／`guard_boundary`／`tidal_order` 三个终局。当前事实请以
 > `NARRATIVE_DESIGN.md`、`GAMEPLAY_AND_CONTROLS.md` 和自动测试为准。本页只读保留，
 > 不应据此修改运行时代码或验收 Windows 包。

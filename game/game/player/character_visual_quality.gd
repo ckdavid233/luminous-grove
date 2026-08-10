@@ -52,6 +52,7 @@ static func apply_to(character_root: Node) -> Dictionary:
 				result.teeth += 1
 			elif "tongue" in identity:
 				_configure_tongue(material)
+			_apply_imported_normal_map(material, identity)
 			mesh_instance.set_surface_override_material(
 				surface_index,
 				material,
@@ -127,6 +128,29 @@ static func _configure_tongue(material: StandardMaterial3D) -> void:
 	material.subsurf_scatter_enabled = true
 	material.subsurf_scatter_strength = 0.08
 	material.roughness = 0.44
+
+
+static func _apply_imported_normal_map(
+	material: StandardMaterial3D,
+	identity: String,
+) -> void:
+	# The generated character already ships with authored suit/shoe normal
+	# maps.  Imported GLB materials do not always preserve those links, so
+	# restore them on the runtime HQ copies instead of inventing detail from
+	# albedo luminance.  Skin intentionally keeps its subtle SSS-only surface.
+	var normal_path := ""
+	if "casualsuit" in identity or "clothes" in identity:
+		normal_path = "res://content/characters/realistic_player/ji_realistic_female_casualsuit01_normal.png"
+	elif "shoes" in identity:
+		normal_path = "res://content/characters/realistic_player/ji_realistic_shoes01_normal.png"
+	if normal_path.is_empty():
+		return
+	var texture := load(normal_path) as Texture2D
+	if texture == null:
+		return
+	material.normal_enabled = true
+	material.normal_texture = texture
+	material.normal_scale = 0.72
 
 
 static func _mesh_has_tangents(mesh: Mesh, surface_index: int) -> bool:

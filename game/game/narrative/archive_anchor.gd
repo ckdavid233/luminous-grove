@@ -43,7 +43,9 @@ func get_prompt(_actor: Node) -> String:
 func interact(_actor: Node) -> void:
 	if not is_available or is_activated:
 		return
-	set_activated(true)
+	# NarrativeDirector validates the cross-anchor cipher synchronously.  Do not
+	# mark the visual as solved before that validation, otherwise a wrong-order
+	# attempt would permanently disable the anchor and soft-lock the sequence.
 	activated.emit(anchor_id)
 
 

@@ -115,7 +115,7 @@ HUD 会在屏幕边缘显示当前目标与距离，跨时相目标会随关卡�
 成功标志：
 
 ```text
-RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
+RELEASE_SMOKE_OK build=0.6.2-alpha campaign=7 quality=high echo_async=ready
 ```
 
 ## 本机林地基准

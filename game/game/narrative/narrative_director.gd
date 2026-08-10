@@ -8,6 +8,7 @@ signal all_memories_collected
 signal alignment_chosen(alignment_id: StringName, text: String)
 signal archive_anchor_added(anchor_id: StringName, text: String, count: int)
 signal archive_anchors_completed
+signal archive_sequence_rejected(anchor_id: StringName, expected_id: StringName, clue: String)
 signal archive_mechanism_added(mechanism_id: StringName, text: String, count: int)
 signal archive_restored
 signal city_trace_added(trace_id: StringName, text: String, count: int)
@@ -23,7 +24,7 @@ signal rain_eye_trial_added(trial_id: StringName, text: String, count: int)
 signal final_decision_ready
 signal ending_chosen(ending_id: StringName, text: String)
 
-const CAMPAIGN_VERSION := 6
+const CAMPAIGN_VERSION := 7
 
 const INTRO := &"intro"
 const FIND_BELL := &"find_bell"
@@ -57,6 +58,17 @@ const ARCHIVE_ANCHOR_TEXT := {
 	&"archive_shape": "断裂的回廊重新想起自己的形状。",
 	&"archive_name": "最后一枚锚点刻下了通往行灯之城的名字。",
 }
+const ARCHIVE_ANCHOR_ORDER_RETURN: Array[StringName] = [
+	&"archive_shape",
+	&"archive_voice",
+	&"archive_name",
+]
+const ARCHIVE_ANCHOR_ORDER_CARRY: Array[StringName] = [
+	&"archive_voice",
+	&"archive_name",
+	&"archive_shape",
+]
+const ARCHIVE_SEQUENCE_CLUE := "无形不能发声，无声不能命名。"
 const ARCHIVE_MECHANISM_ORDER: Array[StringName] = [
 	&"archive_reflection",
 	&"archive_counterweight",
@@ -186,13 +198,21 @@ func activate_archive_anchor(anchor_id: StringName) -> bool:
 		return false
 	if not ARCHIVE_ANCHOR_TEXT.has(anchor_id) or activated_archive_anchors.has(anchor_id):
 		return false
+	var expected_anchor := get_next_archive_anchor()
+	if anchor_id != expected_anchor:
+		archive_sequence_rejected.emit(
+			anchor_id,
+			expected_anchor,
+			ARCHIVE_SEQUENCE_CLUE,
+		)
+		return false
 	activated_archive_anchors.append(anchor_id)
 	archive_anchor_added.emit(
 		anchor_id,
 		ARCHIVE_ANCHOR_TEXT[anchor_id],
 		activated_archive_anchors.size(),
 	)
-	if activated_archive_anchors.size() == ARCHIVE_ANCHOR_TEXT.size():
+	if activated_archive_anchors.size() == get_archive_anchor_order().size():
 		_set_stage(ARCHIVE_MECHANISMS)
 		archive_anchors_completed.emit()
 	else:
@@ -209,7 +229,7 @@ func activate_archive_mechanism(mechanism_id: StringName) -> bool:
 		ARCHIVE_MECHANISM_TEXT[mechanism_id],
 		activated_archive_mechanisms.size(),
 	)
-	if activated_archive_mechanisms.size() == ARCHIVE_MECHANISM_ORDER.size():
+	if activated_archive_mechanisms.size() == get_archive_mechanism_order().size():
 		_set_stage(ARCHIVE_RESTORED)
 		archive_restored.emit()
 	else:
@@ -218,7 +238,28 @@ func activate_archive_mechanism(mechanism_id: StringName) -> bool:
 
 
 func get_next_archive_mechanism() -> StringName:
-	return _next_ordered_id(ARCHIVE_MECHANISM_ORDER, activated_archive_mechanisms)
+	return _next_ordered_id(get_archive_mechanism_order(), activated_archive_mechanisms)
+
+
+func get_archive_anchor_order() -> Array[StringName]:
+	return (
+		ARCHIVE_ANCHOR_ORDER_CARRY.duplicate()
+		if alignment_id == &"carry_the_light"
+		else ARCHIVE_ANCHOR_ORDER_RETURN.duplicate()
+	)
+
+
+func get_next_archive_anchor() -> StringName:
+	return _next_ordered_id(get_archive_anchor_order(), activated_archive_anchors)
+
+
+func get_archive_mechanism_order() -> Array[StringName]:
+	# Carrying the light reverses the first two physical operations.  The
+	# player must read the alignment consequence and choose the matching phase
+	# before the same final name lens can be focused.
+	if alignment_id == &"carry_the_light":
+		return [&"archive_counterweight", &"archive_reflection", &"archive_name_lens"]
+	return ARCHIVE_MECHANISM_ORDER.duplicate()
 
 
 func handle_city_gate_entered() -> bool:
@@ -359,7 +400,7 @@ func get_objective() -> String:
 		RIFT_READY:
 			return "走近雨隙，按 Q 跨入另一时相"
 		ARCHIVE_SEARCH:
-			return "唤醒沉雨档案锚点（%d / %d）" % [activated_archive_anchors.size(), ARCHIVE_ANCHOR_TEXT.size()]
+			return "依残句解开沉雨档案锚点（%d / %d）" % [activated_archive_anchors.size(), get_archive_anchor_order().size()]
 		ARCHIVE_MECHANISMS:
 			var next_archive := get_next_archive_mechanism()
 			match next_archive:
@@ -369,7 +410,7 @@ func get_objective() -> String:
 					return "进入雨忆，用记忆石压住档案配重板"
 				&"archive_name_lens":
 					return "回到此岸，聚焦神龛后的铭名透镜"
-			return "完成档案馆机关（%d / %d）" % [activated_archive_mechanisms.size(), ARCHIVE_MECHANISM_ORDER.size()]
+			return "完成档案馆机关（%d / %d）" % [activated_archive_mechanisms.size(), get_archive_mechanism_order().size()]
 		ARCHIVE_RESTORED:
 			return "档案馆已复原：穿过通往行灯之城的门"
 		CITY_GATE:
@@ -416,9 +457,9 @@ func get_campaign_progress() -> float:
 		GATHER_MEMORIES:
 			fraction = float(collected_memories.size()) / float(MEMORY_TEXT.size())
 		ARCHIVE_SEARCH:
-			fraction = float(activated_archive_anchors.size()) / float(ARCHIVE_ANCHOR_TEXT.size())
+			fraction = float(activated_archive_anchors.size()) / float(get_archive_anchor_order().size())
 		ARCHIVE_MECHANISMS:
-			fraction = float(activated_archive_mechanisms.size()) / float(ARCHIVE_MECHANISM_ORDER.size())
+			fraction = float(activated_archive_mechanisms.size()) / float(get_archive_mechanism_order().size())
 		LANTERN_CITY:
 			fraction = float(activated_city_traces.size()) / float(CITY_TRACE_TEXT.size())
 		CITY_RELAYS:
@@ -486,9 +527,18 @@ func restore_state(state_data: Dictionary) -> void:
 func _migrate_expanded_campaign(campaign_version: int) -> void:
 	if campaign_version >= CAMPAIGN_VERSION:
 		return
+	if campaign_version < 7 and stage == ARCHIVE_SEARCH:
+		# Anchor progress was previously order-independent.  Do not carry an
+		# invalid partial sequence into the stricter cipher puzzle.
+		activated_archive_anchors.clear()
+	if campaign_version < 7 and stage == ARCHIVE_MECHANISMS:
+		# The old build exposed a single mechanism order. Restart a partial
+		# mechanism sequence so a carry-the-light save cannot point at a step it
+		# already completed under the old order.
+		activated_archive_mechanisms.clear()
 	var stage_index := _campaign_stage_index(stage)
 	if stage_index >= _campaign_stage_index(ARCHIVE_RESTORED):
-		activated_archive_mechanisms.assign(ARCHIVE_MECHANISM_ORDER)
+		activated_archive_mechanisms.assign(get_archive_mechanism_order())
 	if stage_index >= _campaign_stage_index(RAIN_EYE):
 		activated_city_relays.assign(CITY_RELAY_ORDER)
 		if city_testimony_id.is_empty():

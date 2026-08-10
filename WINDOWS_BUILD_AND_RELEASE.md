@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 576,041,177 bytes
-SHA256: 36985076051d4c716593632b58f3d9998e1c651b98b205b67b254bab25b4a249
+size: 576,234,357 bytes
+SHA256: fbe117662dbdccf3e4d3ffd25a6825b75f24deb89488e3e3cd6cb50da287573f
 integrity: unzip -t passed, 4 entries, no errors
 ```
 
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 4 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 538,714,592 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 538,721,376 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 
@@ -58,15 +58,16 @@ Godot 官方当前要求与平台说明可查阅
 - Linux 上用相同版本 Godot 直接加载导出的 PCK，得到：
 
 ```text
-RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
+RELEASE_SMOKE_OK build=0.6.2-alpha campaign=7 quality=high echo_async=ready
 ```
 
-- 自检覆盖主场景启动、campaign v6、默认高画质和 Echo Ruins 异步加载。
+- 自检覆盖主场景启动、campaign v7、默认高画质和 Echo Ruins 异步加载。
 - 工程侧 24 项回归还覆盖真实输入、移动状态、水体边界、环境几何与碰撞。
 - 本次 PCK 包含 ObjectiveGuide 目标距离提示；脚本回归会隐藏 HUD 引导并验证每个主线阶段都有可解析目标。
 - ZIP 已通过 `unzip -t` 完整性检查，4 个条目无错误；SHA256 已写入同名 `.sha256` 文件。
-- 本轮 teardown 清理逻辑更新后重新导出的 PCK 为 538,714,592 bytes，SHA-256 为
-  `891e1f83c39acbd5ba5e322f938acd2497f582d133d7a18ad11f836c7f10dec7`。
+- 本轮透镜交互、campaign v7、角色与树木改动后重新导出的 PCK 为 538,721,376 bytes，SHA-256 为
+  `edb35607f5a9ee72a910fb00d8646c67b1ef1da2b2711e98bdc6b9a1157d097e`；ZIP SHA-256 为
+  `fbe117662dbdccf3e4d3ffd25a6825b75f24deb89488e3e3cd6cb50da287573f`。
 
 PCK 自检证明导出的游戏数据与脚本可由 4.7.1 运行时读取；它不等于执行 Windows EXE。
 release smoke 会忽略开发者用户存档，从林地基线验证 Echo Ruins 异步加载，并在成功标志后直接
@@ -171,7 +172,7 @@ PCK 等价自检：
 
 - 对外提供 ZIP 时同时提供 SHA256，用户应校验完整包而不是只校验 EXE。
 - 未签名 alpha 只适合受控测试；公开商用前应购买代码签名证书或使用可信发行平台。
-- 存档 schema 为 2、campaign 为 6；改动稳定 ID 时必须提供迁移测试。
+- 存档 schema 为 2、campaign 为 7；改动稳定 ID 时必须提供迁移测试。
 - `0.6.2-alpha` 的版本号、文件说明和产品名已经写入 Windows 导出预设。
 - 新素材只有在来源、条款和运行时导入全部通过后才能进入下一包。
 - 发布包不应包含 `tests/`、构建脚本、Blend 源文件、提示词原图或用户私有素材记录。
