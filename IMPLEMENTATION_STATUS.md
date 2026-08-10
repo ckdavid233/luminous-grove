@@ -68,6 +68,9 @@
 - `content/materials/profiles/` 的六个资源是运行时唯一表面映射；地表 Shader、湖岸石和树皮
   PBR 创建函数直接从 profile 读取贴图，避免视觉材质与物理表面标签分叉。
 - 林地地表使用独立高密度渲染网格与低密度 HeightMap 碰撞，避免视觉高度和物理高度混淆。
+- 森林树木已接入实际近/中/远几何 LOD：半径 15m 内保留扫描 GLB，中景使用双冠低面数代理，远景
+  使用共享低面数树干和树冠 MultiMesh；`environment_geometry_test.gd` 校验 54 棵树总数、各级
+  代理面数和画质档可见距离。
 - 湖面使用 Fresnel、双层法线、深度吸收、岸线泡沫、湿度粗糙度和反射探针；雨滴、脚步、入水、
   出水、落水和刚体落水统一进入 `emit_surface_event`，最多保留 32 个事件。
 - 土、泥、苔藓、石、木、水具备表面采样和物理参数；湿泥减速、石面坡滑、浅水阻力、落地冲击、
@@ -104,7 +107,8 @@
 ### 技术债
 
 - `game/main/main.gd` 超过 2,000 行，下一阶段必须拆编排、HUD 和画质控制。
-- 程序化关卡的单对象数量偏多，城市需要 MultiMesh/合批和灯光 LOD。
+- 程序化关卡的单对象数量偏多，城市需要 MultiMesh/合批和灯光 LOD；林地目前已完成近/中/远树
+  几何 LOD，但仍需在独立 GPU 上确认中远景切换的视觉连续性。
 - Main/Player 退出前现在会停止 process/physics/input，清空脚部 IK、交互查询与 SurfaceProbe；
   WorldStreamer/EchoRuins 也会先清理 surface override。普通 smoke/动画测试的告警不再稳定复现，
   但完整回归和 4K 捕获仍偶发 ObjectDB/Texture RID，尚未达到零泄漏。
@@ -150,6 +154,10 @@
 - `performance_runtime_4k_matrix.json` 记录了同一真实 Vulkan Renoir 设备的 4K 画质/FSR 诊断矩阵；
   即使性能档 0.59 缩放也只有 7.3 FPS（P95 143.789 ms），因此高质量 P95 目标必须在更强实体
   GPU/原生桌面上重测，并继续做场景 LOD、合批和光照成本优化。
+- 当前近/中/远几何 LOD 版本的独立诊断保存在 `performance_runtime_4k_lod_matrix.json`：高画质 30 帧
+  P95 460.946 ms、均衡 60 帧 P95 262.851 ms、性能 60 帧 P95 130.228 ms；LOD 已通过几何、质量
+  档和 teardown 回归，但仍只是短样本诊断。`VISUAL_VALIDATION_REPORT.md` 新增的 `lodsplit4k_*`
+  哈希覆盖当前代码版本的 4K 地面、湿泥、树皮、湖面、水花、脚印前后与角色动作证据。
 
 ## 设备与性能
 
@@ -165,8 +173,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `27cfd2e15f13f27a61c2765d0041ef296cd5755a09c7ea07894690dc77eda4f1`（538,707,600 bytes）；
-- ZIP SHA-256 为 `fcffabc410b1e39e4c22181ab41223e2e1e0c233d5818f33ef3a53045e74af8c`（576,034,606 bytes）；
+- 当前 PCK SHA-256 为 `1ab7baa7dafea4e422f298182d1d079aa5ee94af1d71bbf7da19e6a8e07e6ce8`（538,711,616 bytes）；
+- ZIP SHA-256 为 `895b65d7247a9c6a9c95d9cc7c972e6b1fd5d66e2cc33ae05787f922774018e5`（576,224,620 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

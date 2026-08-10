@@ -140,6 +140,8 @@ DISPLAY=:1 PERFORMANCE_RESOLUTION=3840x2160 \
 使用 `PERFORMANCE_OUTPUT=/absolute/path/result.json` 另存，不能覆盖默认高画质 4K 证据。诊断矩阵
 可用 `PERFORMANCE_SAMPLE_FRAMES=90` 缩短样本（脚本默认仍为 600，最少 30），该结果只能定位
 瓶颈，不能替代正式 P95 验收；当前 4K 矩阵见 `performance_runtime_4k_matrix.json`。
+近/远几何 LOD 后的最新短样本见 `performance_runtime_4k_lod_matrix.json`；该文件按配置记录各自
+样本帧数（高画质 30、均衡/性能 60），同样只能作为诊断证据，正式验收仍需 600 帧。
 
 ## Windows 包验收
 

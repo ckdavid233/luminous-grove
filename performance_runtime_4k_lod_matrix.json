@@ -1,0 +1,51 @@
+{
+	"schema": 1,
+	"measurement_date": "2026-08-10",
+	"device": "AMD Ryzen 5 PRO 4650U Renoir / RADV Vulkan 1.3.255",
+	"display_surface": "X11 :1 VNC-0 temporary 3840x2160 mode",
+	"renderer": "forward_plus",
+	"measurement_mode": "real_vulkan",
+	"diagnostic_only": true,
+	"lod": "near_detailed_glb_mid_double_canopy_far_shared_proxy",
+	"cases": [
+		{
+			"label": "high_native",
+			"quality_profile": "high",
+			"render_scale": 1.0,
+			"sample_frames": 30,
+			"average_fps": 2.2,
+			"average_frame_ms": 454.451,
+			"p95_frame_ms": 460.946,
+			"p99_frame_ms": 461.971,
+			"draw_calls": 401,
+			"primitives": 6124698,
+			"video_memory_bytes": 4029093808
+		},
+		{
+			"label": "balanced_fsr077",
+			"quality_profile": "balanced",
+			"render_scale": 0.77,
+			"sample_frames": 60,
+			"average_fps": 3.8,
+			"average_frame_ms": 260.42,
+			"p95_frame_ms": 262.851,
+			"p99_frame_ms": 266.111,
+			"draw_calls": 371,
+			"primitives": 1501760,
+			"video_memory_bytes": 3138668768
+		},
+		{
+			"label": "performance_fsr059",
+			"quality_profile": "performance",
+			"render_scale": 0.59,
+			"sample_frames": 60,
+			"average_fps": 7.9,
+			"average_frame_ms": 126.891,
+			"p95_frame_ms": 130.228,
+			"p99_frame_ms": 132.942,
+			"draw_calls": 251,
+			"primitives": 900694,
+			"video_memory_bytes": 2844139296
+		}
+	]
+}

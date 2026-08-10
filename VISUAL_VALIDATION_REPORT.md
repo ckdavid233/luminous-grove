@@ -280,6 +280,48 @@ DISPLAY=:1 CAPTURE_PREFIX=particlefix4k CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONL
 | 脚印反馈 | `previews/particlefix4k_footprints_after_4k.png` | `106cfe5250fb49c7d62f6f2d8aa5bfe3cf8282ac6a80dfcac63c46a8ae753907` |
 | 角色动作 | `previews/particlefix4k_character_clean_4k.png` | `44a63799c3b7920481488dd906d6f7a9f786a8e73d3ba0a48e0ff08666a16d6d` |
 
+### 2026-08-10 近/远几何 LOD 后的完整 4K 复验
+
+当前工作树把 54 棵树拆成近景扫描 GLB 和远景共享低面数树干/树冠后，重新逐镜头运行同一
+真实 Vulkan `SubViewport` 捕获。每个进程都确认 `Vulkan 1.3.255 - Forward+ - AMD RADV
+RENOIR`，并通过 `SURFACE_VALIDATION_CAPTURE_OK` 与 `file` 的 `3840×2160`、8-bit RGB
+检查。截图目录仍被 Git 忽略；以下哈希对应本次 LOD 改动，避免把旧版素材证据当成当前工作树：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 地面 | `previews/lodsplit4k_ground_4k.png` | `497915f3ad39305faf64f578224ddbd14bd3a56730667b5afe17ab162ab6428a` |
+| 湿泥/湖岸 | `previews/lodsplit4k_wet_mud_4k.png` | `de3cc1443429c0d608482f14c70508704c3765ab72b885451114c9c81be54007` |
+| 树皮/树冠 | `previews/lodsplit4k_tree_detail_4k.png` | `e32a3d845d44a68d13c100e83634e8c1342314026634754514c837fea69ad2f4` |
+| 湖面 | `previews/lodsplit4k_lake_4k.png` | `bea8c7b5e0bff14a259ca33b43e98e8baceec9c886d26483934bb4d75a2bbaad` |
+| 湖面水花 | `previews/lodsplit4k_lake_splash_4k.png` | `78b8a5d2245326d8803a6d43d41214f1403d94dc36c44778a617c0445bef510e` |
+| 脚印空场 | `previews/lodsplit4k_footprints_before_4k.png` | `100555f13d803de9df194742f6584afedf700951e57d38ba4f1f6b86229e560c` |
+| 脚印反馈 | `previews/lodsplit4k_footprints_after_4k.png` | `0123ff77a952227fa1e91a523283c1cf8bf8cbf9eae740dc512051566c01bd67` |
+| 角色动作 | `previews/lodsplit4k_character_clean_4k.png` | `e8ba7f18117361e701948150f4576a55fad14f9fb2ba3088738578380380cecd` |
+
+该批次每次退出仍可能报告 7 个 Texture RID，湿泥、树木、湖面和部分脚印/角色进程还出现过
+1 个通用 ObjectDB；这与之前的 A/B 探针一致，说明截图验证通过不等于零泄漏通过。性能诊断
+对应 `performance_runtime_4k_lod_matrix.json`，高画质仍远超 P95 目标，不能把 LOD 变化误报为
+高质量性能验收。
+
+### 2026-08-10 三级 LOD 后的最新 4K 复验
+
+将中景双冠代理加入近/远 LOD 后再次逐镜头捕获；以下是当前工作树的最终 4K 证据索引：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 地面 | `previews/lod3tier4k_ground_4k.png` | `575af876e770a68aaaa8d10558b9dd9092f61fd2cc85219be9a1fe218dbca2ed` |
+| 湿泥/湖岸 | `previews/lod3tier4k_wet_mud_4k.png` | `56d029e540e42e1bf23588cc56641fae17e5c77e788265175b86bd5025a9b2d1` |
+| 树皮/树冠 | `previews/lod3tier4k_tree_detail_4k.png` | `5ef76fc5d7a52564e0b7dff598da7293e867aec8f7e0d9243c46e5d5031c15fe` |
+| 湖面 | `previews/lod3tier4k_lake_4k.png` | `3786d635fa6e29a4c3ee852003ca92f2693033e5bba6d22e9d73ba480c8f40f6` |
+| 湖面水花 | `previews/lod3tier4k_lake_splash_4k.png` | `0d1de67ef1eac2160daacc724c0b87a99c83f97f1f74b971c1b546350737d45e` |
+| 脚印空场 | `previews/lod3tier4k_footprints_before_4k.png` | `e9d1de5ca93ab14fe75e862ce7bab14a2596a3df58ac8990691b1f7fd544e1db` |
+| 脚印反馈 | `previews/lod3tier4k_footprints_after_4k.png` | `be006dd1583080cd7bb1365e3de8f6164daa684da6d2960ad04f9429eaee3720` |
+| 角色动作 | `previews/lod3tier4k_character_clean_4k.png` | `a1ba9bb9f8eaa4d9a4fea50ec115214db71ea75762544206c2e244a1660a22fe` |
+
+所有 PNG 均为 `3840×2160`、8-bit RGB，并由 `Vulkan 1.3.255 - Forward+ - AMD RADV RENOIR`
+输出。捕获退出仍有 7 个 Texture RID，说明三级 LOD 没有改变之前的 transient target/退出时序
+技术债；这组截图只作为材质与视觉回归证据。
+
 ### Texture RID 定向 A/B 探针
 
 为区分项目生成资源和渲染器退出目标，使用临时 1280×720 Vulkan 进程分别关闭反射探针、环境、

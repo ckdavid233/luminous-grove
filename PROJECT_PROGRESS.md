@@ -38,6 +38,9 @@
   登记见 `MATERIAL_LIBRARY_SOURCES.md`、`MATERIAL_LIBRARY_SHA256.txt`。
 - 地形与着色：渲染网格提升到 129×129，碰撞仍为独立 65×65 HeightMap；地表加入坡度、岸线、
   噪声分层、视差、AO/Cavity、细节法线和雨后湿润联动。
+- 森林几何：54 棵树按空间半径拆为近景扫描 GLB、中景双冠低面数代理和远景共享低面数树干/树冠
+  MultiMesh；近景材质仍保留完整树皮/叶片扫描 PBR，中远景代理关闭阴影并随画质档调整可见距离，
+  避免把远景 GLB 三角形全部压到 4K 像素预算中。
 - 湖面与植被：水面改为 32 槽有界事件池，加入双层法线、Fresnel、深度吸收、岸线泡沫、反射
   探针和湿度粗糙度；飞溅和脚印采用池化；草、叶片响应雨势和角色局部弯曲。
 - 光照：增加湖面与神龛反射探针、湖面反射补光和湿润联动；保留 Forward+、SDFGI、SSAO、
@@ -69,7 +72,7 @@ REGRESSION_OK tests=24
 RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 ```
 
-本轮新增 `runtime_teardown_test.gd`，验证退出时 76 个 Mesh、8 个 MultiMesh、6 组粒子、3 个
+本轮新增 `runtime_teardown_test.gd`，验证退出时 76 个 Mesh、12 个 MultiMesh、6 组粒子、3 个
 Camera3D 和 WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但剩余 ObjectDB/Texture
 RID 警告仍未达到零泄漏验收。
 
@@ -104,6 +107,12 @@ RID；这为“根窗口/渲染器 transient target”假设提供了更强证�
 高画质 FSR 0.59 P95 257.868 ms，均衡 P95 295.162 ms，性能档 P95 143.789 ms；这确认当前
 Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能用单一缩放开关宣称达标。
 
+近/远树几何 LOD 改动后又保留了独立的 `performance_runtime_4k_lod_matrix.json` 诊断：高画质
+30 帧 P95 460.946 ms、均衡 60 帧 P95 262.851 ms、性能 60 帧 P95 130.228 ms。该改动已通过
+环境几何、三档质量和 teardown 回归，并重新生成 `lodsplit4k_*` 全套地面、湿泥、树皮、湖面、
+水花、脚印前后和角色动作截图；截图哈希见 `VISUAL_VALIDATION_REPORT.md`，但性能仍未达到高质量
+41.7 ms 目标，不能把短样本当正式验收。
+
 当前已保存的视觉证据位于 `previews/`（该目录被 Git 忽略，避免提交大量生成截图）；重新
 生成方式和验收标准见 `TESTING_AND_ACCEPTANCE.md` 与 `PERFORMANCE_REPORT.md`。
 
@@ -122,9 +131,9 @@ Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能�
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮粒子 draw pass 材质解绑接入后已重新导出 PCK，SHA-256 为
-  `27cfd2e15f13f27a61c2765d0041ef296cd5755a09c7ea07894690dc77eda4f1`（538,707,600 bytes）。
-  ZIP SHA-256 为 `fcffabc410b1e39e4c22181ab41223e2e1e0c233d5818f33ef3a53045e74af8c`
-  （576,034,606 bytes）。
+  `1ab7baa7dafea4e422f298182d1d079aa5ee94af1d71bbf7da19e6a8e07e6ce8`（538,711,616 bytes）。
+  ZIP SHA-256 为 `895b65d7247a9c6a9c95d9cc7c972e6b1fd5d66e2cc33ae05787f922774018e5`
+  （576,224,620 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

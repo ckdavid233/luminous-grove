@@ -98,16 +98,33 @@ func _initialize() -> void:
 	assert(trunk_shapes.size() == 54, "Every detailed tree needs a trunk collider")
 	for trunk in trunk_shapes:
 		assert((trunk as CollisionShape3D).shape is CylinderShape3D)
+	var detailed_tree_total := 0
 	for variant_index in range(1, 4):
 		var trees := main.get_node(
 			"Forest/DetailedTrees_%d" % variant_index
 		) as MultiMeshInstance3D
-		assert(trees.multimesh.instance_count == 18)
+		assert(trees.multimesh.instance_count >= 1 and trees.multimesh.instance_count <= 18)
+		detailed_tree_total += trees.multimesh.instance_count
 		assert(trees.multimesh.mesh.get_surface_count() == 2)
 		assert(
 			trees.multimesh.mesh.get_faces().size() / 3 >= 4800,
 			"Tree mesh must include roots, branch tiers and thousands of curved leaves",
 		)
+	var mid_trunks := main.get_node("Forest/MidTreeTrunks") as MultiMeshInstance3D
+	var mid_canopies := main.get_node("Forest/MidTreeCanopies") as MultiMeshInstance3D
+	assert(mid_trunks.multimesh.instance_count > 0)
+	assert(mid_canopies.multimesh.instance_count == mid_trunks.multimesh.instance_count * 2)
+	assert(mid_trunks.multimesh.mesh.get_faces().size() / 3 <= 96)
+	assert(mid_canopies.multimesh.mesh.get_faces().size() / 3 <= 256)
+	assert(mid_trunks.visibility_range_begin == 0.0)
+	var far_trunks := main.get_node("Forest/FarTreeTrunks") as MultiMeshInstance3D
+	var far_canopies := main.get_node("Forest/FarTreeCanopies") as MultiMeshInstance3D
+	assert(far_trunks.multimesh.instance_count > 0)
+	assert(far_canopies.multimesh.instance_count == far_trunks.multimesh.instance_count)
+	assert(far_trunks.multimesh.mesh.get_faces().size() / 3 <= 48)
+	assert(far_canopies.multimesh.mesh.get_faces().size() / 3 <= 128)
+	assert(far_trunks.visibility_range_begin == 0.0)
+	assert(detailed_tree_total + mid_trunks.multimesh.instance_count + far_trunks.multimesh.instance_count == 54)
 
 	var shore_colliders := main.get_node("LakeShore/ShoreColliders") as StaticBody3D
 	var shore_shapes := shore_colliders.find_children("*", "CollisionShape3D", false, false)

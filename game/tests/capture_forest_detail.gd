@@ -18,6 +18,10 @@ func _initialize() -> void:
 	trees.multimesh.visible_instance_count = 1
 	main.get_node("Forest/DetailedTrees_2").visible = false
 	main.get_node("Forest/DetailedTrees_3").visible = false
+	main.get_node("Forest/MidTreeTrunks").visible = false
+	main.get_node("Forest/MidTreeCanopies").visible = false
+	main.get_node("Forest/FarTreeTrunks").visible = false
+	main.get_node("Forest/FarTreeCanopies").visible = false
 	var tree_transform := trees.multimesh.get_instance_transform(0)
 	var target := tree_transform.origin + Vector3.UP * 3.6 * tree_transform.basis.get_scale().y
 	var camera := Camera3D.new()

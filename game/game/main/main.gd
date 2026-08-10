@@ -64,6 +64,7 @@ var _grass_instance: MultiMeshInstance3D
 var _grass_material: ShaderMaterial
 var _footprint_pool
 var _forest_tree_instances: Array[MultiMeshInstance3D] = []
+var _forest_proxy_instances: Array[MultiMeshInstance3D] = []
 var _world_streamer
 var _phase_shift
 var _phase_portal: Node3D
@@ -207,6 +208,7 @@ func shutdown() -> void:
 	_ending_choices.clear()
 	_archive_present_mechanisms.clear()
 	_forest_tree_instances.clear()
+	_forest_proxy_instances.clear()
 	_grass_material = null
 	_surface_library = null
 	_wetness_controller = null
@@ -904,6 +906,10 @@ func _create_forest() -> void:
 	tree_colliders.set_meta("surface_type", &"wood")
 	forest.add_child(tree_colliders)
 	var occupied_positions: Array[Vector3] = []
+	var mid_tree_transforms: Array[Transform3D] = []
+	var far_tree_transforms: Array[Transform3D] = []
+	const NEAR_TREE_RADIUS := 15.0
+	const MID_TREE_RADIUS := 24.0
 	const TREES_PER_VARIANT := 18
 	for variant_index in FOREST_TREE_SCENES.size():
 		var tree_mesh := _extract_tree_mesh(
@@ -911,17 +917,7 @@ func _create_forest() -> void:
 			bark_material,
 			leaf_material,
 		)
-		var tree_instances := MultiMeshInstance3D.new()
-		tree_instances.name = "DetailedTrees_%d" % (variant_index + 1)
-		tree_instances.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		tree_instances.visibility_range_end = 72.0
-		var multimesh := MultiMesh.new()
-		multimesh.transform_format = MultiMesh.TRANSFORM_3D
-		multimesh.instance_count = TREES_PER_VARIANT
-		multimesh.mesh = tree_mesh
-		tree_instances.multimesh = multimesh
-		forest.add_child(tree_instances)
-		_forest_tree_instances.append(tree_instances)
+		var near_tree_transforms: Array[Transform3D] = []
 		for tree_index in TREES_PER_VARIANT:
 			var position_2d := Vector2.ZERO
 			var found_position := false
@@ -944,7 +940,16 @@ func _create_forest() -> void:
 			var basis := Basis.from_euler(
 				Vector3(0.0, _rng.randf_range(0.0, TAU), 0.0)
 			).scaled(Vector3.ONE * scale_factor)
-			multimesh.set_instance_transform(tree_index, Transform3D(basis, position))
+			var tree_transform := Transform3D(basis, position)
+			# Keep at least one detailed tree per variant for close-up material
+			# validation; mid and far transforms use progressively simpler shared
+			# geometry batches instead of repeating the full scanned GLB.
+			if tree_index == 0 or position_2d.length() <= NEAR_TREE_RADIUS:
+				near_tree_transforms.append(tree_transform)
+			elif position_2d.length() <= MID_TREE_RADIUS:
+				mid_tree_transforms.append(tree_transform)
+			else:
+				far_tree_transforms.append(tree_transform)
 			var collision := CollisionShape3D.new()
 			var shape := CylinderShape3D.new()
 			shape.radius = 0.37 * scale_factor
@@ -952,6 +957,183 @@ func _create_forest() -> void:
 			collision.shape = shape
 			collision.position = position + Vector3.UP * shape.height * 0.5
 			tree_colliders.add_child(collision)
+		var tree_instances := MultiMeshInstance3D.new()
+		tree_instances.name = "DetailedTrees_%d" % (variant_index + 1)
+		tree_instances.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		tree_instances.visibility_range_begin = 0.0
+		tree_instances.visibility_range_end = 72.0
+		tree_instances.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+		var multimesh := MultiMesh.new()
+		multimesh.transform_format = MultiMesh.TRANSFORM_3D
+		multimesh.instance_count = near_tree_transforms.size()
+		multimesh.mesh = tree_mesh
+		for near_index in near_tree_transforms.size():
+			multimesh.set_instance_transform(near_index, near_tree_transforms[near_index])
+		tree_instances.multimesh = multimesh
+		forest.add_child(tree_instances)
+		_forest_tree_instances.append(tree_instances)
+	_create_mid_tree_proxies(forest, mid_tree_transforms, bark_material, leaf_material)
+	_create_far_tree_proxies(forest, far_tree_transforms, bark_material, leaf_material)
+
+
+func _create_mid_tree_proxies(
+	parent: Node3D,
+	transforms: Array[Transform3D],
+	bark_material: Material,
+	leaf_material: Material,
+) -> void:
+	if transforms.is_empty():
+		return
+	# Mid-distance trees keep a readable trunk and two overlapping canopy lobes,
+	# but drop the thousands of branch/leaf triangles used by the near GLB.
+	var trunk_mesh := CylinderMesh.new()
+	trunk_mesh.top_radius = 0.18
+	trunk_mesh.bottom_radius = 0.31
+	trunk_mesh.height = 4.55
+	trunk_mesh.radial_segments = 8
+	trunk_mesh.rings = 3
+	trunk_mesh.material = bark_material
+	var trunk_multimesh := MultiMesh.new()
+	trunk_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	trunk_multimesh.instance_count = transforms.size()
+	trunk_multimesh.mesh = trunk_mesh
+	var trunks := MultiMeshInstance3D.new()
+	trunks.name = "MidTreeTrunks"
+	trunks.multimesh = trunk_multimesh
+	trunks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	trunks.visibility_range_begin = 0.0
+	trunks.visibility_range_end = 72.0
+	trunks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	parent.add_child(trunks)
+	_forest_proxy_instances.append(trunks)
+
+	var canopy_mesh := SphereMesh.new()
+	canopy_mesh.radius = 1.16
+	canopy_mesh.height = 2.25
+	canopy_mesh.radial_segments = 12
+	canopy_mesh.rings = 6
+	canopy_mesh.material = leaf_material
+	var canopy_multimesh := MultiMesh.new()
+	canopy_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	canopy_multimesh.instance_count = transforms.size() * 2
+	canopy_multimesh.mesh = canopy_mesh
+	var canopies := MultiMeshInstance3D.new()
+	canopies.name = "MidTreeCanopies"
+	canopies.multimesh = canopy_multimesh
+	canopies.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	canopies.visibility_range_begin = 0.0
+	canopies.visibility_range_end = 72.0
+	canopies.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	parent.add_child(canopies)
+	_forest_proxy_instances.append(canopies)
+
+	for index in transforms.size():
+		var source := transforms[index]
+		var scale := source.basis.get_scale()
+		var rotation_basis := source.basis.orthonormalized()
+		trunk_multimesh.set_instance_transform(
+			index,
+			Transform3D(
+				rotation_basis.scaled(Vector3(scale.x * 0.9, scale.y, scale.z * 0.9)),
+				source.origin + Vector3.UP * (2.2 * scale.y),
+			),
+		)
+		var canopy_basis := rotation_basis.scaled(
+			Vector3(scale.x * 1.32, scale.y * 1.52, scale.z * 1.32)
+		)
+		canopy_multimesh.set_instance_transform(
+			index * 2,
+			Transform3D(
+				canopy_basis,
+				source.origin + Vector3.UP * (4.45 * scale.y),
+			),
+		)
+		canopy_multimesh.set_instance_transform(
+			index * 2 + 1,
+			Transform3D(
+				canopy_basis.scaled(Vector3(0.78, 0.76, 0.78)),
+				source.origin
+					+ Vector3(
+						0.54 * scale.x,
+						4.95 * scale.y,
+						-0.32 * scale.z,
+					),
+			),
+		)
+
+
+func _create_far_tree_proxies(
+	parent: Node3D,
+	transforms: Array[Transform3D],
+	bark_material: Material,
+	leaf_material: Material,
+) -> void:
+	if transforms.is_empty():
+		return
+	# The detailed GLB batches remain available for near shots. At the farthest
+	# range, replace their thousands of leaf triangles with two shared low-poly
+	# batches: one trunk and one canopy. This is an actual geometry LOD, not
+	# merely a visibility distance hint, and keeps the silhouette/colour language
+	# while reducing repeated GLB triangles.
+	var trunk_mesh := CylinderMesh.new()
+	trunk_mesh.top_radius = 0.16
+	trunk_mesh.bottom_radius = 0.28
+	trunk_mesh.height = 4.4
+	trunk_mesh.radial_segments = 6
+	trunk_mesh.rings = 2
+	trunk_mesh.material = bark_material
+	var trunk_multimesh := MultiMesh.new()
+	trunk_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	trunk_multimesh.instance_count = transforms.size()
+	trunk_multimesh.mesh = trunk_mesh
+	var trunks := MultiMeshInstance3D.new()
+	trunks.name = "FarTreeTrunks"
+	trunks.multimesh = trunk_multimesh
+	trunks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	trunks.visibility_range_begin = 0.0
+	trunks.visibility_range_end = 72.0
+	trunks.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	parent.add_child(trunks)
+	_forest_proxy_instances.append(trunks)
+
+	var canopy_mesh := SphereMesh.new()
+	canopy_mesh.radius = 1.22
+	canopy_mesh.height = 2.45
+	canopy_mesh.radial_segments = 8
+	canopy_mesh.rings = 4
+	canopy_mesh.material = leaf_material
+	var canopy_multimesh := MultiMesh.new()
+	canopy_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	canopy_multimesh.instance_count = transforms.size()
+	canopy_multimesh.mesh = canopy_mesh
+	var canopies := MultiMeshInstance3D.new()
+	canopies.name = "FarTreeCanopies"
+	canopies.multimesh = canopy_multimesh
+	canopies.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	canopies.visibility_range_begin = 0.0
+	canopies.visibility_range_end = 72.0
+	canopies.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	parent.add_child(canopies)
+	_forest_proxy_instances.append(canopies)
+
+	for index in transforms.size():
+		var source := transforms[index]
+		var scale := source.basis.get_scale()
+		var rotation_basis := source.basis.orthonormalized()
+		trunk_multimesh.set_instance_transform(
+			index,
+			Transform3D(
+				rotation_basis.scaled(Vector3(scale.x * 0.92, scale.y, scale.z * 0.92)),
+				source.origin + Vector3.UP * (2.15 * scale.y),
+			),
+		)
+		canopy_multimesh.set_instance_transform(
+			index,
+			Transform3D(
+				rotation_basis.scaled(Vector3(scale.x * 1.55, scale.y * 1.75, scale.z * 1.55)),
+				source.origin + Vector3.UP * (4.75 * scale.y),
+			),
+		)
 
 
 func _extract_tree_mesh(
@@ -1761,19 +1943,31 @@ func _apply_grass_quality() -> void:
 
 
 func _apply_forest_quality() -> void:
+	var detailed_end := 72.0
+	var proxy_begin := 0.0
+	var proxy_end := 72.0
+	if _quality_profile == &"balanced":
+		detailed_end = 60.0
+		proxy_begin = 0.0
+		proxy_end = 60.0
+	elif _quality_profile == &"performance":
+		detailed_end = 46.0
+		proxy_begin = 0.0
+		proxy_end = 46.0
 	for tree_instances in _forest_tree_instances:
 		tree_instances.cast_shadow = (
 			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			if _quality_profile == &"performance"
 			else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 		)
-		var visibility_end := 72.0
-		if _quality_profile == &"balanced":
-			visibility_end = 60.0
-		elif _quality_profile == &"performance":
-			visibility_end = 46.0
-		tree_instances.visibility_range_end = visibility_end
+		tree_instances.visibility_range_begin = 0.0
+		tree_instances.visibility_range_end = detailed_end
 		tree_instances.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	for proxy in _forest_proxy_instances:
+		proxy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		proxy.visibility_range_begin = proxy_begin
+		proxy.visibility_range_end = proxy_end
+		proxy.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 
 
 func _load_quality_settings() -> void:
