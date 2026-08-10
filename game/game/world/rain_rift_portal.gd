@@ -28,16 +28,12 @@ func shutdown() -> void:
 		return
 	_shutdown_requested = true
 	set_process(false)
-	if _preview_viewport != null and is_instance_valid(_preview_viewport):
-		_preview_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
-		_preview_viewport.world_3d = null
-		if not _tearing_down:
-			# Main.shutdown() runs while the portal is still in the live tree. Free
-			# the preview viewport synchronously here so its RefCounted render
-			# target cannot survive until the parent begins child traversal.
-			_preview_viewport.free()
+	# Drop the ViewportTexture from the surface material before releasing the
+	# SubViewport. Releasing the viewport first can leave a zero-reference
+	# ViewportTexture in ObjectDB during parent teardown.
 	var surface := get_node_or_null("RiftSurface") as MeshInstance3D
 	if surface != null:
+		surface.visible = false
 		surface.material_override = null
 		if surface.mesh is PrimitiveMesh:
 			(surface.mesh as PrimitiveMesh).material = null
@@ -46,6 +42,17 @@ func shutdown() -> void:
 		_surface_material.set_shader_parameter("alternate_texture", null)
 		_surface_material.shader = null
 		_surface_material = null
+	if _preview_viewport != null and is_instance_valid(_preview_viewport):
+		_preview_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		if _preview_camera != null and is_instance_valid(_preview_camera):
+			_preview_camera.clear_current(false)
+			_preview_camera.current = false
+		_preview_viewport.world_3d = null
+		if not _tearing_down:
+			# Main.shutdown() runs while the portal is still in the live tree. Free
+			# the preview viewport synchronously after releasing its ViewportTexture
+			# so the render target cannot survive parent traversal.
+			_preview_viewport.free()
 	if _ring != null and is_instance_valid(_ring):
 		for shard in _ring.find_children("*", "MeshInstance3D", true, false):
 			var shard_mesh := shard as MeshInstance3D

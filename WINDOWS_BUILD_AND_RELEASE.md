@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 564,787,178 bytes
-SHA256: b8fc5b7c3003f6cab0a0bf45b403a3304cbab29246112565fb38f6166435d953
+size: 564,787,166 bytes
+SHA256: 325e41c0611d12c028b76def18ff23b18927f6006273319fa5c2dbda5c508cce
 integrity: unzip -t passed, 4 entries, no errors
 ```
 

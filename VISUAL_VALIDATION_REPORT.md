@@ -150,6 +150,26 @@ SHA-256：`f2b6348d80f1106784a3f4eda3a4686654c921fc7fee87656553f74858aeb997`。
 SubViewport 退出仍报告 7 个 Texture RID 与 1 个通用 ObjectDB；这部分仍需实体 Windows/4K
 设备与 Godot 内存检查进一步区分引擎 transient buffer 和项目引用，不能宣称零泄漏。
 
+### 2026-08-10 门户 ViewportTexture 解绑顺序修复后的 4K 复验
+
+本轮把 `RainRiftPortal.shutdown()` 的顺序调整为先清空 `alternate_texture`、QuadMesh 材质和
+预览相机，再释放 SubViewport，并在 `portal_preview_test.gd` 增加解绑断言。使用同一台真实
+Vulkan Renoir Forward+ 设备执行：
+
+```text
+DISPLAY=:1 CAPTURE_PREFIX=portalfix4k CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake \
+  Godot_v4.7.1-stable_linux.x86_64 --path game --script res://tests/capture_surface_validation.gd
+```
+
+两张图通过 3840×2160、8-bit RGB 校验；本次捕获日志只剩 7 个 Texture RID，没有再出现通用
+ObjectDB 行，说明项目门户引用解绑得到改善，但可见门户/其他退出时序仍需实体 Windows/4K
+内存检查，不能据此宣称零泄漏：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面 | `previews/portalfix4k_lake_4k.png` | `1007cb8284bcd81b54056cefc32c2ba126c83f10c2245144bb8233fcb1150fd3` |
+| 湖面水花 | `previews/portalfix4k_lake_splash_4k.png` | `50d237fa0c9b8252ba32f450f2ea9e95846ee59757ad5d36e7baa540c27c7686` |
+
 ### Profile 映射后的湖面复验
 
 在显式 `MaterialProfile` 接入地表 Shader 后，重新用真实 Vulkan `SubViewport` 单独捕获地面、湿泥、

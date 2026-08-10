@@ -98,6 +98,11 @@ func _initialize() -> void:
 		streamer.shutdown()
 	if main.has_method("shutdown"):
 		main.shutdown()
+	assert(
+		portal.get_preview_viewport() == null
+			and portal.get("_surface_material") == null,
+		"Portal shutdown must release the ViewportTexture before SubViewport teardown",
+	)
 	main.queue_free()
 	for _frame in 120:
 		await process_frame

@@ -4,6 +4,9 @@
 
 ### 林地湖区材质、视觉、光照与交互升级
 
+- 调整 RainRiftPortal 退出顺序：先释放 `alternate_texture`、曲面材质和预览相机，再回收
+  SubViewport；新增门户解绑断言。单独 smoke 复验的 ObjectDB 提示曾消失，但完整回归仍会
+  随退出时序出现，4K/可见门户仍保留渲染器 Texture RID 检查项。
 - 复核 Poly Haven Mossy Forest HDRI 导入：当前 Godot 4.7.1 Linux 构建对 `.hdr` 与 `.exr` 均无
   资源加载器，未将未验证天空纹理放进运行包；导入链路、许可与 SHA-256 登记保留为后续目标。
 
