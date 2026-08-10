@@ -106,14 +106,16 @@
 - 程序化关卡的单对象数量偏多，城市需要 MultiMesh/合批和灯光 LOD。
 - 部分大型场景回归仍有少量 Godot ObjectDB RefCounted/Texture RID leak warning（功能与流送结果
   通过）；WorldStreamer/InteractiveLake/4K 捕获视口和 Main 运行时引用解绑已增加退出清理，且
-  `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子和 WorldEnvironment 已脱钩；Player 的
-  控制器、SurfaceProbe、AnimationTree、SkeletonIK 和脚部目标引用也已在 `_exit_tree()` 释放，但
-  WorldStreamer 现在还会收束 pending threaded request、断开流送节点 Callable，PhaseShift/Cinematic
-  也有显式 shutdown；1280×720 Vulkan 单镜头已不再出现 ObjectDB，但 4K SubViewport 与渲染器仍
-  偶发 Texture RID/通用 RefCounted 警告，需继续用 Godot 内存检查定位剩余资源，当前不能宣称零泄漏。
+  `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子、3 个 Camera3D 和 WorldEnvironment 已
+  脱钩；Player 的控制器、SurfaceProbe、AnimationTree、SkeletonIK 和脚部目标引用也已在
+  `_exit_tree()` 释放，但 WorldStreamer 现在还会收束 pending threaded request、断开流送节点
+  Callable，PhaseShift/Cinematic 也有显式 shutdown。相机默认“自动选下一个”时序已修正为
+  `clear_current(false)`，但退出告警仍会随测试时序、4K SubViewport 和渲染器变化，需继续用 Godot
+  内存检查定位剩余资源，当前不能宣称零泄漏。
 - 本轮继续把 `EchoRuins.shutdown()` 接入 WorldStreamer 的运行时卸载路径，并将地面旧版 PBR
-  fallback 改为按需加载；实机 Vulkan 新旅程捕获仍固定出现 7 个 Texture RID，说明剩余告警还需
-  在真实 GPU/Windows 环境用 Godot 内存检查区分渲染器 transient buffer 与项目引用。
+  fallback 改为按需加载；相机清理后普通 1280×720 Vulkan 捕获的 7 个 Texture RID 不再稳定复现，
+  但 `--verbose`、4K SubViewport 或不同退出时序仍可能报告 Texture RID/通用 RefCounted，说明剩余
+  告警还需在真实 GPU/Windows 环境用 Godot 内存检查区分渲染器 transient buffer 与项目引用。
 - 画质档已具备固定 FSR 3D 缩放（高 1.00、均衡 0.77、性能 0.59），但仍没有按帧动态分辨率和逐项高级设置。
 - 没有输入重映射、字幕缩放或色盲设置。
 - 真实 Vulkan X11 捕获已完成；`VISUAL_VALIDATION_REPORT.md` 保存地面、泥滩、树皮、湖面、水花、
@@ -137,8 +139,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `8d82be120ea240797ff1cffde6289a7eb1f964c781a8a794e03c6585dfb19e7f`（527,432,720 bytes）；
-- ZIP SHA-256 为 `5da0b91f42905d1fd233b37cf0617ceab105f1d5e62e8342924b59f454da9429`（564,952,852 bytes）；
+- 当前 PCK SHA-256 为 `5b44648fc17f4a49093d332acd893e00b4a5fc01f452b70946695c9af002f16e`（527,432,784 bytes）；
+- ZIP SHA-256 为 `9347b7d7d35471fa732414a91cbb4b1f0d170fdc85269254a1ada1567173a807`（564,952,710 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

@@ -198,6 +198,10 @@ func shutdown() -> void:
 	if _cinematic_director != null and is_instance_valid(_cinematic_director):
 		if _cinematic_director.has_method("shutdown"):
 			_cinematic_director.shutdown()
+	# Child shutdown handlers may detach a viewport or reselect their fallback
+	# camera after the first release pass. Clear cameras once more after those
+	# handlers have finished so no current camera survives Main.shutdown().
+	_release_runtime_cameras()
 	_world_streamer = null
 	_phase_shift = null
 	_surface_library = null
@@ -247,7 +251,14 @@ func _release_runtime_references() -> void:
 	# sides prevents a streamed or captured scene from retaining Texture RIDs
 	# through a still-referenced mesh after shutdown.
 	for node in find_children("*", "", true, false):
-		if node is GeometryInstance3D:
+		if node is Camera3D:
+			# A current Camera3D keeps the viewport's transient render buffers
+			# active while the scene tree is detaching its meshes. Clear every
+			# gameplay/portal camera before releasing the render resources.
+			var camera := node as Camera3D
+			camera.clear_current(false)
+			camera.current = false
+		elif node is GeometryInstance3D:
 			var visual := node as GeometryInstance3D
 			visual.material_override = null
 			if visual is GPUParticles3D:
@@ -294,6 +305,15 @@ func _release_runtime_references() -> void:
 			(node as SkeletonIK3D).stop()
 		elif node is WorldEnvironment:
 			(node as WorldEnvironment).environment = null
+
+
+func _release_runtime_cameras() -> void:
+	for node in find_children("*", "", true, false):
+		if not node is Camera3D:
+			continue
+		var camera := node as Camera3D
+		camera.clear_current(false)
+		camera.current = false
 
 
 func _process(_delta: float) -> void:

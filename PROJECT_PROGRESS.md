@@ -63,9 +63,9 @@ REGRESSION_OK tests=24
 RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 ```
 
-本轮新增 `runtime_teardown_test.gd`，验证退出时 76 个 Mesh、8 个 MultiMesh、6 组粒子和
-WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但剩余 ObjectDB/Texture RID 警告仍未
-达到零泄漏验收。
+本轮新增 `runtime_teardown_test.gd`，验证退出时 76 个 Mesh、8 个 MultiMesh、6 组粒子、3 个
+Camera3D 和 WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但剩余 ObjectDB/Texture
+RID 警告仍未达到零泄漏验收。
 
 目标设备为 Ryzen 5 PRO 4650U / Renoir 集成显卡。本轮已在 `DISPLAY=:1` 的真实 X11/Vulkan
 表面以 1280×720 重测：
@@ -93,9 +93,9 @@ WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮安全脚本回调断开修复后已重新导出 PCK，SHA-256 为
-  `8d82be120ea240797ff1cffde6289a7eb1f964c781a8a794e03c6585dfb19e7f`（527,432,720 bytes）。
-  ZIP SHA-256 为 `5da0b91f42905d1fd233b37cf0617ceab105f1d5e62e8342924b59f454da9429`
-  （564,952,852 bytes）。
+  `5b44648fc17f4a49093d332acd893e00b4a5fc01f452b70946695c9af002f16e`（527,432,784 bytes）。
+  ZIP SHA-256 为 `9347b7d7d35471fa732414a91cbb4b1f0d170fdc85269254a1ada1567173a807`
+  （564,952,710 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

@@ -42,8 +42,15 @@ func _initialize() -> void:
 	var multimesh_count := 0
 	var particle_count := 0
 	var environment_count := 0
+	var camera_count := 0
 	for node in main.find_children("*", "", true, false):
-		if node is MeshInstance3D:
+		if node is Camera3D:
+			camera_count += 1
+			assert(
+				not (node as Camera3D).current,
+				"Shutdown must clear Camera3D.current: " + node.name,
+			)
+		elif node is MeshInstance3D:
 			mesh_count += 1
 			assert(
 				(node as MeshInstance3D).mesh == null,
@@ -71,8 +78,8 @@ func _initialize() -> void:
 			assert((node as WorldEnvironment).environment == null)
 
 	print(
-		"RUNTIME_TEARDOWN_TEST_OK meshes=%d multimeshes=%d particles=%d environments=%d"
-		% [mesh_count, multimesh_count, particle_count, environment_count]
+		"RUNTIME_TEARDOWN_TEST_OK meshes=%d multimeshes=%d particles=%d cameras=%d environments=%d"
+		% [mesh_count, multimesh_count, particle_count, camera_count, environment_count]
 	)
 	main.queue_free()
 	main = null

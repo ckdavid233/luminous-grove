@@ -42,6 +42,10 @@
   生成 Mesh 的材质贴图和材质引用。捕获脚本也会预热并显式释放验证相机、Viewport 引用；24 项
   回归仍通过，Renoir 新旅程 Vulkan 捕获仍报告 7 个 Texture RID，故继续保留为未完成的零泄漏
   技术债。
+- `Main.shutdown()` 现在在子系统清理前后都用 `Camera3D.clear_current(false)` 清除游戏、过场和
+  门户相机，避免 Godot 默认自动选中下一个相机而重新激活渲染缓冲；`runtime_teardown_test.gd`
+  新增 3 个相机断言。24 项回归仍通过，剩余通用 ObjectDB/Texture RID 告警具有时序与渲染器差异，
+  尚未达到零泄漏验收。
 - 均衡/性能画质接入固定 FSR 3D 缩放（0.77/0.59），并把 `render_scale` 写入 Vulkan 性能 JSON；
   Renoir 1280×720 性能档由 17.6 FPS 提升到 29.3 FPS、P95 由 59.794ms 降至 36.994ms，仍待
   原生桌面和独立 GPU 复测。
