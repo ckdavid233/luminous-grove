@@ -76,14 +76,15 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=6 quality=high echo_async=ready
 玩家实际推动 Jolt 刚体进入踏板；输出 `GAMEPLAY_TEST_OK stage=complete resident=2
 archive_mechanisms=3 city_traces=3 relays=4 rain_eye_seals=3 trials=3 ending=tidal_order
 restore=rain_eye`，随后 24 项回归仍为 `REGRESSION_OK tests=24`。这证明自动化交互合同和完成态恢复
-未回退，但不替代真实玩家人工走查；完整回归退出仍有 2 个通用 ObjectDB 提示。
+未回退，但不替代真实玩家人工走查；完整回归退出的通用 ObjectDB 提示会按退出时序在 1–3 个间变化。
 
 本轮新增 `runtime_teardown_test.gd`，验证退出时 76 个 Mesh、12 个 MultiMesh、6 组粒子、3 个
 Camera3D 和 WorldEnvironment 的运行时引用均已解绑；24 项回归全部通过，但剩余 ObjectDB/Texture
 RID 警告仍未达到零泄漏验收。
 
 随后测试退出路径显式丢弃 `PackedScene` 局部引用，末次 24 项 headless 回归仍为
-`REGRESSION_OK tests=24`，通用 ObjectDB 提示降至 2 个；这只证明测试句柄清理有所改善，不能替代
+`REGRESSION_OK tests=24`，通用 ObjectDB 提示在不同退出时序下为 1–3 个；这只证明测试句柄清理有所改善，
+不能替代
 Godot/Jolt 内存检查或真实 Windows/4K 设备上的零泄漏验收。
 
 门户退出顺序已补强：`alternate_texture`、曲面材质和预览相机在 SubViewport 释放前解绑，门户回归
@@ -99,6 +100,11 @@ WorldStreamer/EchoRuins 释放前解绑 surface override；24 项回归仍通过
 SurfaceProbe 和 PhaseShift 在同一退出窗口释放注册表、物理查询和场景引用；这避免了退出阶段继续产生
 新的查询对象，但 Jolt 独立线程的通用 RefCounted 警告仍会随测试时序出现，需在升级的 Godot/Jolt
 构建或实体 Windows 实机上继续定位，不能把当前回归通过误认为零泄漏。
+
+本轮引用探针又发现风铃、神龛、档案机关以及 AnimationTree playback 的生成 Resource 仍会在 Main
+结束前留在脚本字段；已加入递归 RefCounted 释放边界，并在 `runtime_teardown_test.gd` 增加交互物、
+档案机关和播放状态断言。24 项回归仍通过，但剩余通用 ObjectDB/4K Texture RID 仍需 Godot/Jolt
+内存检查与实体 Windows/4K 设备确认。
 
 追加的临时 1280×720 Vulkan A/B 探针分别关闭反射探针、环境、粒子、水体和门户，仍得到 7 个 Texture
 RID；这为“根窗口/渲染器 transient target”假设提供了更强证据，但不是零泄漏证明，后续仍需 Godot

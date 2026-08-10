@@ -14,6 +14,10 @@ func _initialize() -> void:
 	var streamer = main.get("_world_streamer")
 	var phase_shift = main.get("_phase_shift")
 	var cinematic_director = main.get("_cinematic_director")
+	var wind_bell = main.get("_wind_bell")
+	var shrine = main.get("_shrine")
+	var archive_mechanisms: Array = main.get("_archive_present_mechanisms").duplicate()
+	var player: Node = main.get("_player") as Node
 	for _frame in 600:
 		if streamer.is_level_ready(
 			"res://content/levels/echo_ruins/echo_ruins.tscn"
@@ -36,6 +40,20 @@ func _initialize() -> void:
 			and cinematic_director.get("_player") == null
 			and cinematic_director.get("_gameplay_camera") == null,
 		"CinematicDirector must release Tween and camera references",
+	)
+	assert(
+		wind_bell.get("glow_material") == null
+			and shrine.get("core_material") == null,
+		"Interactables must release generated glow/core materials",
+	)
+	for mechanism in archive_mechanisms:
+		assert(
+			mechanism.get("_core_material") == null,
+			"Archive mechanisms must release generated core materials",
+		)
+	assert(
+		player.get("_animation_playback") == null,
+		"Player must release the AnimationTree playback RefCounted",
 	)
 	var mesh_count := 0
 	var multimesh_count := 0

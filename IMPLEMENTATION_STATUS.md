@@ -113,6 +113,9 @@
 - Main/Player 退出前现在会停止 process/physics/input，清空脚部 IK、交互查询与 SurfaceProbe；
   WorldStreamer/EchoRuins 也会先清理 surface override。普通 smoke/动画测试的告警不再稳定复现，
   但完整回归和 4K 捕获仍偶发 ObjectDB/Texture RID，尚未达到零泄漏。
+- Main 最终 teardown 现在还会扫描脚本字段并清空生成的 Resource/RefCounted 容器，覆盖交互物发光材质、
+  档案机关核心材质和 AnimationTree playback；`runtime_teardown_test.gd` 已增加断言。该改动收紧了
+  项目可控引用，但不能替代 Godot/Jolt 内存检查，当前仍不宣称零泄漏。
 - 最新退出路径再提前停止所有脚本子节点，并显式清理 SurfaceLibrary/WetnessController 注册表；Player、
   SurfaceProbe、PhaseShift 的 Jolt direct-space wrapper 不再使用链式临时引用。该修复避免了项目层面
   可控引用继续增长，但 Jolt 独立物理线程的 RefCounted 告警仍会在 smoke、流送、4K 或多场景顺序中
@@ -135,9 +138,9 @@
   告警还需在真实 GPU/Windows 环境用 Godot 内存检查区分渲染器 transient buffer 与项目引用。
 - GPUParticles3D 退出时会先清理每个 draw pass 的 PrimitiveMesh 材质，再解除 pass 引用；这是降低
   渲染线程残留风险的防御性清理，不能替代完整回归与 4K 捕获的零泄漏验收。
-- 回归脚本退出前显式丢弃 `PackedScene` 局部引用，末次 24 项 headless 回归的通用 ObjectDB 提示
-  从 3 个降为 2 个；剩余提示仍无法在当前 Godot/Jolt 构建中定位到项目对象，真实 Vulkan 捕获的
-  7 个 Texture RID 也仍需实体 Windows/Godot 内存检查确认。
+- 回归脚本退出前显式丢弃 `PackedScene` 局部引用，历史 24 项 headless 回归的通用 ObjectDB 提示曾
+  从 3 个降为 2 个；本轮完整回归按退出时序为 1–3 个，剩余提示仍无法在当前 Godot/Jolt 构建中
+  定位到项目对象，真实 Vulkan 捕获的 7 个 Texture RID 也仍需实体 Windows/Godot 内存检查确认。
 - 临时 1280×720 Vulkan A/B 探针关闭反射探针、环境、粒子、水体和门户后仍固定报告 7 个 Texture RID，
   说明剩余数量更像根窗口/Vulkan transient render target；ObjectDB 仍随退出时序变化，需实体 Windows
  及 Godot 内存检查确认，探针脚本已删除。

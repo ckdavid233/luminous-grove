@@ -75,7 +75,7 @@ Godot 编辑器级解析检查：
 | `interactive_water_test.gd` | 空中移动无脚步波纹、入水／出水状态、扩散环与水滴效果 |
 | `material_library_test.gd` | 6 个 MaterialProfile `.tres` 映射、6 张 PBR 贴图完整性、扫描 CC0 运行资源和表面摩擦关系 |
 | `surface_interaction_test.gd` | SurfaceProbe、PhysicsMaterial、脚印池、坡面法线双脚 IK、32 槽水纹事件接口 |
-| `runtime_teardown_test.gd` | shutdown 后网格、MultiMesh、粒子、3 个 Camera3D、WorldEnvironment、PhaseShift 查询/节点引用、Cinematic Tween 和流送关卡材质引用解绑 |
+| `runtime_teardown_test.gd` | shutdown 后网格、MultiMesh、粒子、3 个 Camera3D、WorldEnvironment、PhaseShift 查询/节点引用、Cinematic Tween、交互物/档案机关生成材质、AnimationTree playback 和流送关卡材质引用解绑 |
 | `presentation_test.gd` | PBR 套装、粒子图集和程序音频 |
 | `quality_settings_test.gd` | 三档画质、默认高画质和暂停菜单 |
 | `input_regression_test.gd` | 真实 Escape、暂停中真实鼠标点击、画质按钮和真实 E 交互 |

@@ -260,6 +260,14 @@ func shutdown() -> void:
 	# camera after the first release pass. Clear cameras once more after those
 	# handlers have finished so no current camera survives Main.shutdown().
 	_release_runtime_cameras()
+	# Some interactable and streamed-level scripts keep generated Resource/
+	# RefCounted handles in their own fields (for example a duplicated glow
+	# material or an AnimationNodeStateMachinePlayback). Those fields are not
+	# visible to the generic GeometryInstance pass above. Clear them while all
+	# children are still addressable; this is the final project-owned release
+	# boundary before Godot removes the scene tree. It also covers newly added
+	# authored interactables without requiring another hand-maintained list here.
+	_release_script_resource_references()
 	_world_streamer = null
 	_phase_shift = null
 	_surface_library = null
@@ -276,6 +284,46 @@ func shutdown() -> void:
 	_objective_guide = null
 	_player = null
 	_rng = null
+
+
+func _release_script_resource_references() -> void:
+	var nodes: Array[Node] = [self]
+	nodes.append_array(find_children("*", "Node", true, false))
+	for node in nodes:
+		if not is_instance_valid(node):
+			continue
+		for property_info in node.get_property_list():
+			var usage := int(property_info.get("usage", 0))
+			if (usage & PROPERTY_USAGE_SCRIPT_VARIABLE) == 0:
+				continue
+			var property_name: StringName = property_info.get("name", &"")
+			if property_name.is_empty():
+				continue
+			var value: Variant = node.get(property_name)
+			if typeof(value) == TYPE_OBJECT:
+				if is_instance_valid(value) and value.is_class("RefCounted"):
+					node.set(property_name, null)
+			elif _contains_refcounted(value):
+				# Typed arrays/dictionaries used by runtime scripts accept an empty
+				# container here and no longer retain their generated resources.
+				if typeof(value) == TYPE_ARRAY:
+					node.set(property_name, [])
+				elif typeof(value) == TYPE_DICTIONARY:
+					node.set(property_name, {})
+
+
+func _contains_refcounted(value: Variant) -> bool:
+	if typeof(value) == TYPE_OBJECT:
+		return is_instance_valid(value) and value.is_class("RefCounted")
+	if typeof(value) == TYPE_ARRAY:
+		for item in value:
+			if _contains_refcounted(item):
+				return true
+	if typeof(value) == TYPE_DICTIONARY:
+		for item in value.values():
+			if _contains_refcounted(item):
+				return true
+	return false
 
 
 func _stop_runtime_processing() -> void:

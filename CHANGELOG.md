@@ -26,6 +26,9 @@
 - 增加可选动态分辨率：默认不改变既有画质档，使用 `--dynamic-resolution` 或
   `LUMINOUS_DYNAMIC_RESOLUTION=1` 后按平滑帧时在 0.35–档位基线之间调节 FSR 3D 缩放；质量回归已覆盖
   启停和慢帧降尺度，Renoir 真实 Vulkan 诊断记录在 `performance_runtime_dynamic_resolution_720.json`。
+- Main 的最终 teardown 新增脚本字段 Resource/RefCounted 递归释放边界，覆盖交互物生成的发光材质、
+  档案机关核心材质和 AnimationTree playback；`runtime_teardown_test.gd` 新增对应断言并复验通过。
+  本轮仍观察到少量通用 ObjectDB/Texture RID，故只记录为项目引用清理加强，不宣称已达到零泄漏。
 - 继续收紧退出顺序：Main 会先停止所有脚本子节点的 process/physics/input 回调，SurfaceLibrary 与
   WetnessController 提前清空运行时注册表；Player、SurfaceProbe、PhaseShift 的 Jolt 查询改为显式
   持有并在同一帧释放 direct-space wrapper。24 项功能回归保持通过，但 Jolt 独立线程、4K SubViewport
