@@ -138,6 +138,8 @@
   脚印和角色动作的前后对比。常规截图为 1280×720，同时已用独立 Vulkan `SubViewport` 输出并
   校验地面、湿泥、树木、湖面、水花和角色的 3840×2160 PNG；另已在临时 3840×2160 X11 mode
   完成湖面原生窗口截图。实体 4K 显示器、Windows 驱动和高质量 P95 仍需复测。
+- `c521730` 后的 `particlefix4k` 复验重新覆盖地面、湿泥、树皮、湖面、水花、脚印前后和角色动作，
+  所有输出均为 3840×2160 RGB；哈希与退出告警记录见 `VISUAL_VALIDATION_REPORT.md`。
 - 4K runtime 已入库；8K 英雄材质仍需按真实 GPU 显存预算启用，Mossy Rock 湖石已完成扫描
   替换。当前 Godot 4.7.1 构建对 `.hdr`/`.exr` 没有资源加载器，运行包已改用同一 CC0
   Mossy Forest 的 4096×2048 tonemapped JPG PanoramaSkyMaterial；原始 HDR/EXR 仍外置，最终

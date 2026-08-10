@@ -102,7 +102,8 @@ SurfaceProbe 和 PhaseShift 在同一退出窗口释放注册表、物理查询�
 真实 Vulkan 截图已覆盖地面、泥滩、树皮、湖面、水花、脚印和角色动作，前后对比与 SHA-256
 见 `VISUAL_VALIDATION_REPORT.md`；同时已用独立 Vulkan `SubViewport` 输出并校验 3840×2160
 材质截图，并用临时 3840×2160 X11 mode 完成湖面原生窗口截图。JSON 原始结果保留在
-`performance_runtime*.json`，实体 4K 显示设备与 Windows 性能仍需复测。
+`performance_runtime*.json`。`c521730` 后又以 `CAPTURE_PREFIX=particlefix4k` 重新输出全部
+地面、湿泥、树皮、湖面、水花、脚印前后和角色动作截图；实体 4K 显示设备与 Windows 性能仍需复测。
 
 ## Windows 发行状态
 

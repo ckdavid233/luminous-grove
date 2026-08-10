@@ -255,6 +255,31 @@ Forward+ 的 1280×720 与 3840×2160 湖面捕获均输出成功，未改变湖
 两次捕获日志均为 `Vulkan 1.3.255 - Forward+ - AMD RADV RENOIR` 与
 `SURFACE_VALIDATION_CAPTURE_OK`；退出时仍可能出现 7 个 Texture RID，零泄漏结论保持未通过。
 
+### 2026-08-10 GPUParticles3D draw pass 清理后的最新 4K 复验
+
+在 `c521730`（退出时先解绑每个 `PrimitiveMesh` draw pass 材质）上重新执行逐镜头捕获：
+
+```text
+DISPLAY=:1 CAPTURE_PREFIX=particlefix4k CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=<shot> \
+  Godot_v4.7.1-stable_linux.x86_64 --path game --script res://tests/capture_surface_validation.gd
+```
+
+六个镜头及脚印前后两帧均由 AMD Renoir 的 Vulkan 1.3.255 Forward+ 输出，`file` 校验为
+`3840×2160`、8-bit RGB。以下哈希对应当前提交，截图目录仍按 `.gitignore` 忽略；捕获退出日志
+仍出现 7 个 Texture RID（部分镜头另有 1 个 ObjectDB），所以这次只证明材质/水面/脚印/角色
+路径未回退，不能当作零泄漏证据：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 地面 | `previews/particlefix4k_ground_4k.png` | `ff06a5db6b5c05dfbbddc525676b895d70443110e93010c633abf616a5df5cee` |
+| 湿泥/湖岸 | `previews/particlefix4k_wet_mud_4k.png` | `4016dd6d8f34c4c51f87f513bf84de5848e0a1c0fa53d45caab6e2ebbc9690da` |
+| 树皮/树冠 | `previews/particlefix4k_tree_detail_4k.png` | `c5ebe601b55a84c0b1d821703f241d94ed5ff55026910f6cd55bc1f1a9914977` |
+| 湖面 | `previews/particlefix4k_lake_4k.png` | `297ac8ab2fcb02fbabebfcafa86ab88b3ffa88b70f16c0a9b4b56ce09553427c` |
+| 湖面水花 | `previews/particlefix4k_lake_splash_4k.png` | `b310a96bd5ca20ff17c350528b65da3a4436e7af7466c01dac5ff08af42ed5a0` |
+| 脚印空场 | `previews/particlefix4k_footprints_before_4k.png` | `25576f291df94e510e21f8ace26830a1611f1242c6e2ee0130c7d0b4da51392d` |
+| 脚印反馈 | `previews/particlefix4k_footprints_after_4k.png` | `106cfe5250fb49c7d62f6f2d8aa5bfe3cf8282ac6a80dfcac63c46a8ae753907` |
+| 角色动作 | `previews/particlefix4k_character_clean_4k.png` | `44a63799c3b7920481488dd906d6f7a9f786a8e73d3ba0a48e0ff08666a16d6d` |
+
 ## 视觉结论与剩余项
 
 - 地面、泥滩、树皮、湖面和角色动作均已在真实 Vulkan 表面完成同机位前后对比。
