@@ -22,6 +22,8 @@ func _initialize() -> void:
 	_prefix = OS.get_environment("CAPTURE_PREFIX").strip_edges()
 	if _prefix.is_empty():
 		_prefix = "after"
+	# Selection and window mode must remain independent from the output prefix;
+	# prefixed validation runs are used to preserve before/after evidence.
 	_only_shot = OS.get_environment("CAPTURE_ONLY").strip_edges().to_lower()
 	_native_window = OS.get_environment("CAPTURE_NATIVE").strip_edges() == "1"
 	var requested_resolution := OS.get_environment("CAPTURE_RESOLUTION").strip_edges().to_lower()
@@ -269,6 +271,7 @@ func _shutdown_and_quit() -> void:
 	for _frame in 4:
 		await process_frame
 	if _camera != null and is_instance_valid(_camera):
+		_camera.clear_current(false)
 		_camera.current = false
 		_camera.queue_free()
 		_camera = null
@@ -279,6 +282,11 @@ func _shutdown_and_quit() -> void:
 			_main.shutdown()
 		if _main.has_method("_exit_tree"):
 			_main.queue_free()
+	# Let Main and its streamed children finish _exit_tree before detaching the
+	# SubViewport world; detaching the world in the same frame can leave render
+	# lists referencing resources that are still being removed.
+	for _frame in 4:
+		await process_frame
 	if _offscreen_viewport != null and is_instance_valid(_offscreen_viewport):
 		_offscreen_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		_offscreen_viewport.world_3d = null

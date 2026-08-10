@@ -66,6 +66,28 @@ env DISPLAY=:1 CAPTURE_NATIVE=1 CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake g
 | 湖面水花 | `previews/after_lake_splash_4k.png` | `fb37eb138e575f3ba9030054365e51fa4f2cf7518fed83138a886f22cb668550` |
 | 角色动作 | `previews/after_character_clean_4k.png` | `5ee50a151722298485ed4398df435a5d671d35b129653d350dffc5cd344bd6b6` |
 
+### 2026-08-10 相机清理后带前缀复验
+
+为验证 `CAPTURE_PREFIX` 不会吞掉 `CAPTURE_ONLY`，本轮使用独立前缀逐镜头运行 4K Vulkan
+SubViewport；每个进程都输出 `SURFACE_VALIDATION_CAPTURE_OK`、`size=(3840, 2160)`，并确认
+设备为 AMD Renoir Forward+。截图目录仍被 Git 忽略，以下哈希作为可复验索引：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 地面 | `previews/goal_ground_ground_4k.png` | `b23aa6ba8108e463d72226592d0a4e2c706bc062e427130ee9e96fb7f30f9c6e` |
+| 湿泥 | `previews/goal4k_wet_mud_wet_mud_4k.png` | `1b3284f9c40b5e07d1ac6fad6515e82bc18fd06da1ca189b59220ad326635549` |
+| 树皮/树冠 | `previews/goal4k_tree_tree_detail_4k.png` | `84c55211a61f32b0d37019f045e136f54f9fb884e95ec356c1f1eeac46ad31f5` |
+| 湖面 | `previews/goal4k_lake_lake_4k.png` | `e6e5b4fe07daba6e2946a5c954601d14ddb0e4108a390640337fcadc3652c3fd` |
+| 湖面水花 | `previews/goal4k_lake_lake_splash_4k.png` | `837b183ebbc3bb7ceb995cfb08f38fd4fa566ee5230613fca4e5f1c65cf99eba` |
+| 脚印空场 | `previews/goal4k_footprints_footprints_before_4k.png` | `e423fd63c6dc133824031f2ea71aa9e72eb4e7024f060e76ec6508a34b995984` |
+| 脚印反馈 | `previews/goal4k_footprints_footprints_after_4k.png` | `2b0df46a588d2dc37b5638c37d2965bb184204b6627cc0c4643c56f713b041b7` |
+| 角色动作 | `previews/goal4k_character_character_clean_4k.png` | `1cf86120300313aa55af7b6d58fdfaf2440b11adb2dc58b02bdc0e32d926cb55` |
+
+这组复验只证明 4K 目标和材质/事件路径确实在真实 Vulkan 设备上渲染，不等同于实体 4K
+桌面性能。随后追加的 `teardown_probe`（同一 Vulkan 设备、1280×720 与 4K 均复测）确认
+退出时序调整可以偶尔消掉 ObjectDB，但不能稳定消除 7 个 Texture RID；1280×720 复测仍出现
+`7 Texture + 1 ObjectDB`，因此零泄漏验收保持未通过。
+
 ### Profile 映射后的湖面复验
 
 在显式 `MaterialProfile` 接入地表 Shader 后，重新用真实 Vulkan `SubViewport` 单独捕获地面、湿泥、
