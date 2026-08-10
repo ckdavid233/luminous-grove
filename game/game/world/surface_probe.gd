@@ -15,6 +15,12 @@ func configure(library) -> void:
 
 
 func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
+	_library = null
+	_last_type = &""
 	if _ray_query != null:
 		_ray_query.exclude.clear()
 		_ray_query = null

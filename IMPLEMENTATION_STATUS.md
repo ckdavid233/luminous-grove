@@ -104,6 +104,9 @@
 
 - `game/main/main.gd` 超过 2,000 行，下一阶段必须拆编排、HUD 和画质控制。
 - 程序化关卡的单对象数量偏多，城市需要 MultiMesh/合批和灯光 LOD。
+- Main/Player 退出前现在会停止 process/physics/input，清空脚部 IK、交互查询与 SurfaceProbe；
+  WorldStreamer/EchoRuins 也会先清理 surface override。普通 smoke/动画测试的告警不再稳定复现，
+  但完整回归和 4K 捕获仍偶发 ObjectDB/Texture RID，尚未达到零泄漏。
 - 部分大型场景回归仍有少量 Godot ObjectDB RefCounted/Texture RID leak warning（功能与流送结果
   通过）；WorldStreamer/InteractiveLake/4K 捕获视口和 Main 运行时引用解绑已增加退出清理，且
   `runtime_teardown_test.gd` 会断言网格、MultiMesh、粒子、3 个 Camera3D 和 WorldEnvironment 已
@@ -146,8 +149,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `337b2a6b8ef8d6247bd655f1fa2403b3ce818490df24ccc4e4f400e2e994b710`（527,453,084 bytes）；
-- ZIP SHA-256 为 `325e41c0611d12c028b76def18ff23b18927f6006273319fa5c2dbda5c508cce`（564,787,166 bytes）；
+- 当前 PCK SHA-256 为 `dd959fea857efa5455587f7d3ff0e9edcbf644ab48feac93145bc0e0bf9f09d4`（527,454,780 bytes）；
+- ZIP SHA-256 为 `8a6dc7589f0953a21ab958891bd843f95b993e4ebdcfbffde796c122511be511`（564,974,697 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

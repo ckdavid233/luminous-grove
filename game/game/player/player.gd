@@ -74,6 +74,7 @@ var _right_foot_query: PhysicsRayQueryParameters3D
 var _interaction_shape: SphereShape3D
 var _interaction_query: PhysicsShapeQueryParameters3D
 var _interaction_ray_query: PhysicsRayQueryParameters3D
+var _shutdown_requested := false
 
 
 func _ready() -> void:
@@ -593,16 +594,38 @@ func _find_best_nearby_interactable() -> Node:
 
 
 func _exit_tree() -> void:
+	shutdown()
+
+
+func shutdown() -> void:
+	if _shutdown_requested:
+		return
+	_shutdown_requested = true
 	_control_enabled = false
+	set_process(false)
+	set_physics_process(false)
+	set_process_input(false)
+	set_process_unhandled_input(false)
 	_interaction_target = null
 	_surface_library = null
+	if _surface_probe != null and is_instance_valid(_surface_probe):
+		if _surface_probe.has_method("shutdown"):
+			_surface_probe.shutdown()
 	_surface_probe = null
 	_surface_sample.clear()
 	_animation_footstep_active = false
 	_animation_playback = null
+	if _animation_tree != null and is_instance_valid(_animation_tree):
+		_animation_tree.active = false
+		_animation_tree.tree_root = null
+		_animation_tree.anim_player = NodePath("")
 	_animation_tree = null
 	_animation_player = null
 	_skeleton = null
+	if _left_foot_ik != null and is_instance_valid(_left_foot_ik):
+		_left_foot_ik.stop()
+	if _right_foot_ik != null and is_instance_valid(_right_foot_ik):
+		_right_foot_ik.stop()
 	_left_foot_ik = null
 	_right_foot_ik = null
 	_left_foot_target = null

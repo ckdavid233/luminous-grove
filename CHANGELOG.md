@@ -4,6 +4,9 @@
 
 ### 林地湖区材质、视觉、光照与交互升级
 
+- 加入 Main/Player 退出前的 process、physics、IK、交互查询与 SurfaceProbe 清理，并在
+  WorldStreamer/EchoRuins 释放前解绑 MeshInstance3D 的 surface override；24 项回归仍全部通过，
+  4K 捕获的 Texture/ObjectDB 警告继续作为未关闭技术债记录。
 - 调整 RainRiftPortal 退出顺序：先释放 `alternate_texture`、曲面材质和预览相机，再回收
   SubViewport；新增门户解绑断言。单独 smoke 复验的 ObjectDB 提示曾消失，但完整回归仍会
   随退出时序出现，4K/可见门户仍保留渲染器 Texture RID 检查项。

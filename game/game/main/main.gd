@@ -98,6 +98,7 @@ var _rain_eye_pair_ready := false
 var _rain_eye_entry_cinematic_pending := false
 var _pending_ending_id: StringName = &""
 var _shutdown_requested := false
+var _tearing_down := false
 var _objective_guide_refresh_left := 0.0
 
 
@@ -144,6 +145,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	_tearing_down = true
 	shutdown()
 
 
@@ -151,6 +153,22 @@ func shutdown() -> void:
 	if _shutdown_requested:
 		return
 	_shutdown_requested = true
+	# Stop gameplay callbacks before releasing physics/render resources. The
+	# player can otherwise run one more physics tick while Main is detaching its
+	# world, creating a JoltPhysicsDirectSpaceState3D that survives teardown.
+	set_process(false)
+	set_process_input(false)
+	set_process_unhandled_input(false)
+	if _player != null and is_instance_valid(_player):
+		if _player.has_method("shutdown"):
+			_player.shutdown()
+		else:
+			_player.set_process(false)
+			_player.set_physics_process(false)
+			_player.set_process_input(false)
+			_player.set_process_unhandled_input(false)
+			if _player.has_method("set_control_enabled"):
+				_player.set_control_enabled(false)
 	if _ending_tween != null and _ending_tween.is_valid():
 		_ending_tween.kill()
 	_ending_tween = null
@@ -196,9 +214,15 @@ func shutdown() -> void:
 			_phase_portal.shutdown()
 		# The portal owns a generated SubViewport/ring subtree. Mark the portal
 		# itself for removal while Main is still in the tree so Godot does not
-		# leave a zero-reference preview object for parent traversal.
+		# leave a zero-reference preview object for parent traversal. A synchronous
+		# free is safe for explicit runtime shutdown and avoids the portal node
+		# retaining renderer state until Main's child traversal; the exit-tree path
+		# falls back to queue_free to avoid re-entering parent teardown.
 		if _phase_portal.get_parent() == self:
-			_phase_portal.queue_free()
+			if not _tearing_down and is_inside_tree() and not is_queued_for_deletion():
+				_phase_portal.free()
+			else:
+				_phase_portal.queue_free()
 	_phase_portal = null
 	if _phase_shift != null and is_instance_valid(_phase_shift):
 		if _phase_shift.has_method("shutdown"):
@@ -286,6 +310,15 @@ func _release_runtime_references() -> void:
 				particles.draw_pass_1 = null
 			elif visual is MeshInstance3D:
 				var mesh_instance := visual as MeshInstance3D
+				# CharacterVisualQuality installs per-surface runtime materials.
+				# Clearing only material_override does not release those duplicated
+				# StandardMaterial3D resources before the mesh leaves the tree.
+				if mesh_instance.mesh != null:
+					var surface_override_count := (
+						mesh_instance.get_surface_override_material_count()
+					)
+					for surface_index in surface_override_count:
+						mesh_instance.set_surface_override_material(surface_index, null)
 				# Only detach the node reference. Mutating a PrimitiveMesh here can
 				# modify a shared PackedScene resource and break the next instance.
 				mesh_instance.mesh = null

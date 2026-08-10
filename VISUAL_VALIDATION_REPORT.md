@@ -170,6 +170,25 @@ ObjectDB 行，说明项目门户引用解绑得到改善，但可见门户/其�
 | 湖面 | `previews/portalfix4k_lake_4k.png` | `1007cb8284bcd81b54056cefc32c2ba126c83f10c2245144bb8233fcb1150fd3` |
 | 湖面水花 | `previews/portalfix4k_lake_splash_4k.png` | `50d237fa0c9b8252ba32f450f2ea9e95846ee59757ad5d36e7baa540c27c7686` |
 
+### 2026-08-10 Main/Player 查询清理后的 4K 复验
+
+本轮新增 Main/Player 退出前的 process、physics、IK、交互查询和 SurfaceProbe 清理，并在
+WorldStreamer/EchoRuins 解绑 MeshInstance3D surface override 后，用同一真实 Vulkan Renoir
+Forward+ 设备重新捕获湖面：
+
+```text
+DISPLAY=:1 CAPTURE_PREFIX=playershutdown4k CAPTURE_RESOLUTION=3840x2160 CAPTURE_ONLY=lake \
+  Godot_v4.7.1-stable_linux.x86_64 --path game --script res://tests/capture_surface_validation.gd
+```
+
+图片均通过 `3840×2160`、8-bit RGB 校验；视觉路径没有回退，但日志仍报告 7 个 Texture RID 与
+1 个 ObjectDB，因此只能证明查询/材质解绑改动未破坏实机渲染，不能宣称零泄漏：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面 | `previews/playershutdown4k_lake_4k.png` | `abdace0eb27bbdc7907b4aa289468e26ae9a43058241afa15b480d7f44cb51c1` |
+| 湖面水花 | `previews/playershutdown4k_lake_splash_4k.png` | `0fa3051744b673de70032d4b42655e91a32178f2cf41f79ea99644a4666ca23a` |
+
 ### Profile 映射后的湖面复验
 
 在显式 `MaterialProfile` 接入地表 Shader 后，重新用真实 Vulkan `SubViewport` 单独捕获地面、湿泥、

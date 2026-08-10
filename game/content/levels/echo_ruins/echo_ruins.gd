@@ -37,6 +37,10 @@ func shutdown() -> void:
 	# until RenderingDevice finalization.
 	for geometry in find_children("*", "MeshInstance3D", true, false):
 		var mesh_instance := geometry as MeshInstance3D
+		if mesh_instance.mesh != null:
+			var surface_override_count := mesh_instance.get_surface_override_material_count()
+			for surface_index in surface_override_count:
+				mesh_instance.set_surface_override_material(surface_index, null)
 		if mesh_instance.mesh is PrimitiveMesh:
 			(mesh_instance.mesh as PrimitiveMesh).material = null
 		mesh_instance.material_override = null

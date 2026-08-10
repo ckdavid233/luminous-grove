@@ -72,6 +72,11 @@ RID 警告仍未达到零泄漏验收。
 增加断言；单独 smoke 复验曾不再出现 ObjectDB，但完整回归仍会随退出时序报告，真实 4K 湖面
 复验仍报告 7 个 Texture RID，因此仍需 Windows/实体 4K 内存检查。
 
+本轮又补充 Main/Player 的退出前 process、physics、IK、交互查询和 SurfaceProbe 清理，并在
+WorldStreamer/EchoRuins 释放前解绑 surface override；24 项回归仍通过。最新真实 Vulkan 4K 湖面
+复验仍为 7 个 Texture RID 与 1 个 ObjectDB，说明项目引用清理已加强但渲染器/Jolt 退出资源仍未
+完成零泄漏验收。
+
 目标设备为 Ryzen 5 PRO 4650U / Renoir 集成显卡。本轮已在 `DISPLAY=:1` 的真实 X11/Vulkan
 表面以 1280×720 重测：
 
@@ -98,9 +103,9 @@ RID 警告仍未达到零泄漏验收。
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮目标引导与流程断言接入后已重新导出 PCK，SHA-256 为
-  `337b2a6b8ef8d6247bd655f1fa2403b3ce818490df24ccc4e4f400e2e994b710`（527,453,084 bytes）。
-  ZIP SHA-256 为 `325e41c0611d12c028b76def18ff23b18927f6006273319fa5c2dbda5c508cce`
-  （564,787,166 bytes）。
+  `dd959fea857efa5455587f7d3ff0e9edcbf644ab48feac93145bc0e0bf9f09d4`（527,454,780 bytes）。
+  ZIP SHA-256 为 `8a6dc7589f0953a21ab958891bd843f95b993e4ebdcfbffde796c122511be511`
+  （564,974,697 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

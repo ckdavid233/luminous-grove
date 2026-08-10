@@ -94,15 +94,20 @@ func _release_instance_resources(instance: Node) -> void:
 	# Detach those references before queue_free so CACHE_MODE_IGNORE loads do not
 	# leave a zero-reference RefCounted alive until process shutdown.
 	_disconnect_instance_signals(instance)
-	if instance.has_method("shutdown"):
-		instance.shutdown()
 	for geometry in instance.find_children("*", "GeometryInstance3D", true, false):
 		var visual := geometry as GeometryInstance3D
 		visual.material_override = null
 		if visual is MeshInstance3D:
-			(visual as MeshInstance3D).mesh = null
+			var mesh_instance := visual as MeshInstance3D
+			if mesh_instance.mesh != null:
+				var surface_override_count := mesh_instance.get_surface_override_material_count()
+				for surface_index in surface_override_count:
+					mesh_instance.set_surface_override_material(surface_index, null)
+			mesh_instance.mesh = null
 		elif visual is MultiMeshInstance3D:
 			(visual as MultiMeshInstance3D).multimesh = null
+	if instance.has_method("shutdown"):
+		instance.shutdown()
 	for node in instance.find_children("*", "CollisionObject3D", true, false):
 		if node is StaticBody3D or node is RigidBody3D:
 			var collision_object := node as CollisionObject3D

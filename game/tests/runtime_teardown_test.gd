@@ -20,7 +20,6 @@ func _initialize() -> void:
 		):
 			break
 		await process_frame
-
 	main.shutdown()
 	assert(
 		phase_shift.get("_restore_query") == null,
@@ -52,8 +51,14 @@ func _initialize() -> void:
 			)
 		elif node is MeshInstance3D:
 			mesh_count += 1
+			var mesh_instance := node as MeshInstance3D
+			for surface_index in mesh_instance.get_surface_override_material_count():
+				assert(
+					mesh_instance.get_surface_override_material(surface_index) == null,
+					"Shutdown must clear MeshInstance3D surface overrides: " + node.name,
+				)
 			assert(
-				(node as MeshInstance3D).mesh == null,
+				mesh_instance.mesh == null,
 				"Shutdown must detach MeshInstance3D.mesh: " + node.name,
 			)
 		elif node is MultiMeshInstance3D:
