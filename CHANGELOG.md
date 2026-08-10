@@ -4,6 +4,9 @@
 
 ### 林地湖区材质、视觉、光照与交互升级
 
+- 复核 Poly Haven Mossy Forest HDRI 导入：当前 Godot 4.7.1 Linux 构建对 `.hdr` 与 `.exr` 均无
+  资源加载器，未将未验证天空纹理放进运行包；导入链路、许可与 SHA-256 登记保留为后续目标。
+
 - 将 `build_user_pbr.gd` 改为扫描 PBR 导入/校验工具，停止依据 Albedo 亮度伪造 Normal 和
   Roughness；新增 `SurfaceProfile`、`SurfaceLibrary`、`SurfaceProbe` 和材质来源/校验和清单。
 - 接入 Poly Haven CC0 Forest Ground 01、Mud Forest、Forest Leaves 02、Pine Bark、Mossy Rock

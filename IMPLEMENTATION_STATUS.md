@@ -128,7 +128,8 @@
   校验地面、湿泥、树木、湖面、水花和角色的 3840×2160 PNG；另已在临时 3840×2160 X11 mode
   完成湖面原生窗口截图。实体 4K 显示器、Windows 驱动和高质量 P95 仍需复测。
 - 4K runtime 已入库；8K 英雄材质仍需按真实 GPU 显存预算启用，Mossy Rock 湖石已完成扫描
-  替换但 HDRI 仍待下载。
+  替换但 HDRI 尚未进入运行包：当前 Godot 4.7.1 构建对 Poly Haven 的 `.hdr`/`.exr` 没有资源
+  加载器，具体阻塞和后续导入要求见 `MATERIAL_LIBRARY_SOURCES.md`。
 
 ## 设备与性能
 
