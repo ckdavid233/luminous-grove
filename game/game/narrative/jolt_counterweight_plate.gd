@@ -64,6 +64,17 @@ func _check_overlaps() -> void:
 		if body.is_in_group("archive_counterweight"):
 			_complete()
 			return
+	# A pushed rigid body can settle with its AABB just outside the Area3D
+	# boundary after Jolt resolves a corner contact.  The plate is a physical
+	# puzzle, so accept the same bounded footprint that the visible plate
+	# occupies instead of requiring an exact body-entered edge crossing.
+	for body in get_tree().get_nodes_in_group("archive_counterweight"):
+		if not body is Node3D or not is_instance_valid(body):
+			continue
+		var offset := (body as Node3D).global_position - global_position
+		if Vector2(offset.x, offset.z).length() <= 1.52 and absf(offset.y) <= 1.25:
+			_complete()
+			return
 
 
 func _complete() -> void:

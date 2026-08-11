@@ -1,13 +1,26 @@
 # 实现状态
 
 版本：0.6.2-alpha
-更新：2026-08-10
-总体状态：可完整通关的高画质 Windows/Linux alpha
+更新：2026-08-11
+总体状态：可完整通关的高画质 Windows/Linux alpha（Windows 实机启动仍待目标设备验收）
 
 ## 当前结论
 
 项目已经从单幕原型扩展为四幕可完成流程。运行时代码、剧情文档和测试都以 campaign v8 为准；
 旧文档中不存在的 QuestService、组件化 Player 和“计划中的扩充玩法”不再被描述为现状。
+
+## 2026-08-11 本轮最终状态
+
+- 角色：AnimationPlayer 物理时钟继续播放 7 套 GLB 动作，`player.gd` 追加可逆程序骨骼层（脊柱、肩臂、
+  前臂、腿、头颈），交互动作加入前伸/回收阶段；`PLAYER_ANIMATION_TEST_OK` 与动作捕获已验证姿态差异。
+- 防卡关：`void_fall_threshold=-1.75` 的检查点恢复会清空速度、交互与落地计时；配重踏板接受刚体回位
+  角接触，跨时相切回时重同步铭名透镜和交互射线。
+- 解谜：三锚点顺序 + 五刻度符号 + alignment 第一环偏移 + 三环和的五进制封印组成连续推理链；错误
+  顺序/错误封印都会重置并保留语义线索，`ARCHIVE_CIPHER_TEST_OK` 和完整玩法回归通过。
+- 画质：自定义蓝金天空、电影级颜色分级、暖/冷局部补光、八片弯曲草叶、近景 alpha 叶片图集、PBR 树皮、
+  双层法线水面、屏幕折射/反射、焦散、泡沫、水纹事件池和细雨条均已接入高画质档。
+- 回归：`./tools/run_regression.sh` 当前输出 `REGRESSION_OK tests=25`；Linux Vulkan PCK smoke 已通过，
+  Windows EXE 需用新提交重新导出后再进行真实 Windows 驱动/输入/全屏走查。
 
 ## 完成矩阵
 
@@ -35,6 +48,21 @@
 | Linux 运行 | 已验证 | Godot 4.7.1 本机完整回归 |
 | Windows x86_64 | 已导出 | 官方 release 模板、PE32+、独立 PCK |
 | 自动化 | 已验证 | 25/25 回归通过 |
+
+## 2026-08-11 画质与玩法反馈增量
+
+- 角色动作：AnimationPlayer 继续负责 GLB 的 Walk/Run/Jump/Fall/Land/Interact，`PlayerController`
+  现在在每个物理帧追加可逆的骨骼偏移层（spine、upper/lower arm、neck/head），包括反向摆臂、重心、
+  呼吸、起停前倾和交互伸手；测试新增了程序运动层存在性断言。
+- 虚空恢复：`void_fall_threshold=-1.75`，安全检查点过滤无效 y 值，回收时清空速度、交互和落地状态，
+  触发 `void_recovered` 后恢复输入，避免掉出地形后软锁。
+- 档案谜题：三环符文确认后进入内层封印轮，目标为三环步数和的五进制余数；错误确认会重置并保留线索。
+  配重踏板使用 Jolt 重叠扫描容忍角接触，跨时相返回此岸时重新同步铭名透镜和交互射线。
+- 森林与湖面：中/远景树冠代理提升为 30/20 张分层叶片卡；湖面改为低幅波浪、克制反射/闪光与
+  软泡沫接触层，雨滴和闪烁粒子降低尺寸与发光，避免粒子噪声压过材质细节。
+- 本轮已在真实 Vulkan 上通过 `PLAYER_ANIMATION_TEST_OK`、`PRESENTATION_TEST_OK`、
+  `INTERACTIVE_WATER_TEST_OK` 与完整 `REGRESSION_OK tests=25`；Windows 新包、实体 Windows/多 GPU 和零
+  泄漏仍待目标环境复验。
 
 ## 主线规模
 
@@ -194,8 +222,8 @@
 - EXE + PCK 结构已导出；
 - v0.6.2-alpha 发布目录已包含玩家 README 与构建清单；重新导出清理逻辑后的 ZIP 已通过
   `unzip -t`，PCK 通过同版本 `--release-smoke`；
-- 当前 PCK SHA-256 为 `6416d46ee5592b91c50cfeb5f28fa9e831bd6c8bdfebc34dfc54f8b986f97357`（538,736,844 bytes）；
-- ZIP SHA-256 为 `4891a22f474825072cedd0fe7bd81274948dd4cc596466954f7c2974bf245fee`（576,248,808 bytes）；
+- 当前 PCK SHA-256 为 `4aaf8dc676880e9c973da5949953e3ee97ae2e59d0434c0b22d1425b93f230cb`（538,754,764 bytes）；
+- ZIP SHA-256 为 `59267b3a5635270dac2f82c2767021ad0b6daa39f16c4d8b887f5742bd2edf53`（576,263,857 bytes）；
 - 不含签名、安装器、自动更新和崩溃上报；
 - 本机没有 Windows 运行环境，仍需真实 Windows 10/11 人工启动验收。
 

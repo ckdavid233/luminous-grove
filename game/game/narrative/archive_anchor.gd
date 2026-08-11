@@ -11,6 +11,7 @@ const ECHO_VISUAL_LAYER := 1 << 1
 var is_available := false
 var is_activated := false
 var _ring: MeshInstance3D
+var _glyph_label: Label3D
 var _core_material: StandardMaterial3D
 var _light: OmniLight3D
 var _time := 0.0
@@ -30,6 +31,8 @@ func _process(delta: float) -> void:
 	if _ring != null:
 		_ring.rotation.y += delta * (0.65 if is_activated else 0.35)
 		_ring.position.y = 1.22 + sin(_time * 1.7) * 0.06
+	if _glyph_label != null:
+		_glyph_label.modulate = Color("ffd083") if is_activated else Color("62f5e8")
 
 
 func can_interact(_actor: Node) -> bool:
@@ -112,6 +115,17 @@ func _create_visuals() -> void:
 	_ring.layers = ECHO_VISUAL_LAYER
 	add_child(_ring)
 
+	_glyph_label = Label3D.new()
+	_glyph_label.name = "ArchiveGlyph"
+	_glyph_label.text = _glyph_for_anchor()
+	_glyph_label.font_size = 42
+	_glyph_label.outline_size = 8
+	_glyph_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_glyph_label.position = Vector3(0.0, 1.37, 0.0)
+	_glyph_label.modulate = Color("62f5e8")
+	_glyph_label.layers = ECHO_VISUAL_LAYER
+	add_child(_glyph_label)
+
 	_light = OmniLight3D.new()
 	_light.light_color = Color("55fff1")
 	_light.light_energy = 1.6
@@ -153,3 +167,16 @@ func _apply_state() -> void:
 		_core_material.emission_energy_multiplier = 0.45
 		_light.light_color = Color("427f80")
 		_light.light_energy = 0.28
+	if _glyph_label != null:
+		_glyph_label.modulate = Color("ffd083") if is_activated else Color("62f5e8")
+
+
+func _glyph_for_anchor() -> String:
+	match anchor_id:
+		&"archive_voice":
+			return "△"
+		&"archive_shape":
+			return "◈"
+		&"archive_name":
+			return "≈"
+	return "◒"

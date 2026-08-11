@@ -146,8 +146,8 @@ func _initialize() -> void:
 	var grass := main.get_node("Grass") as MultiMeshInstance3D
 	assert(grass.multimesh.instance_count == 16000)
 	assert(
-		grass.multimesh.mesh.get_faces().size() / 3 == 20,
-		"Every grass clump must use five curved four-triangle blades",
+		grass.multimesh.mesh.get_faces().size() / 3 >= 32,
+		"Every grass clump must use eight curved four-triangle blades",
 	)
 	var water := main.get_node("Water") as MeshInstance3D
 	assert(

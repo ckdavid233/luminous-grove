@@ -61,6 +61,8 @@ func _initialize() -> void:
 	_camera.fov = 52.0
 	_camera.cull_mask = 5
 	_main.add_child(_camera)
+	if _main.has_method("_create_camera_sky_backdrop"):
+		_main.call("_create_camera_sky_backdrop", _camera)
 	_camera.make_current()
 
 	if _should_capture("ground"):

@@ -91,6 +91,7 @@ var _toast_label: Label
 var _ending_overlay: ColorRect
 var _ending_label: Label
 var _ending_tween: Tween
+var _cinematic_grade_layer: CanvasLayer
 var _pause_overlay: Control
 var _quality_button: Button
 var _quality_profile := &"high"
@@ -129,6 +130,7 @@ func _ready() -> void:
 	)
 	_create_narrative()
 	_create_environment()
+	_create_cinematic_grade()
 	_create_surface_system()
 	_create_ground()
 	_create_forest_path()
@@ -558,48 +560,112 @@ func _create_environment() -> void:
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	# The Godot 4.7.1 build used for development has no HDR/EXR resource
-	# loader. Use Poly Haven's CC0 tonemapped equirectangular runtime map so the
-	# forest reflection/ambient path is still authored from the scanned sky,
-	# while the original unclipped HDR/EXR remains an external source asset.
-	var panorama_sky := PanoramaSkyMaterial.new()
-	panorama_sky.panorama = FOREST_SKY_TEXTURE
-	panorama_sky.filter = true
-	panorama_sky.energy_multiplier = 0.72
-	sky.sky_material = panorama_sky
+	# The old panorama is a bright, flat midday plate.  Use a dedicated sky
+	# shader instead: it gives a controlled cinematic gradient, moving cloud
+	# bands and a compact sun halo while keeping the same lighting direction as
+	# the scene.  This avoids the grey horizon that swallowed the treeline.
+	var sky_shader := Shader.new()
+	sky_shader.code = """
+shader_type sky;
+
+uniform vec3 top_color : source_color = vec3(0.035, 0.10, 0.16);
+uniform vec3 horizon_color : source_color = vec3(0.39, 0.58, 0.57);
+uniform vec3 cloud_color : source_color = vec3(0.67, 0.78, 0.73);
+uniform vec3 sun_color : source_color = vec3(1.0, 0.56, 0.28);
+uniform vec3 sun_direction = vec3(-0.24, 0.76, 0.57);
+uniform float cloud_strength : hint_range(0.0, 1.0) = 0.22;
+uniform float sun_intensity : hint_range(0.0, 8.0) = 1.6;
+uniform float exposure : hint_range(0.0, 4.0) = 1.0;
+
+float hash21(vec2 point) {
+	return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 point) {
+	vec2 cell = floor(point);
+	vec2 local = fract(point);
+	local = local * local * (3.0 - 2.0 * local);
+	float a = hash21(cell);
+	float b = hash21(cell + vec2(1.0, 0.0));
+	float c = hash21(cell + vec2(0.0, 1.0));
+	float d = hash21(cell + vec2(1.0, 1.0));
+	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
+}
+
+void sky() {
+	vec3 direction = normalize(EYEDIR);
+	// Radeon Forward+ builds have shipped with opposite EYEDIR conventions in
+	// different minor versions.  The absolute elevation keeps the gradient
+	// stable on both Linux validation and the Windows export: the horizon is
+	// bright while the upper sky falls into a deep blue band.
+	float horizon_mix = 1.0 - smoothstep(0.02, 0.42, abs(direction.y));
+	vec3 color = mix(top_color, horizon_color, horizon_mix);
+	float cloud_band = noise(
+		vec2(atan(direction.z, direction.x) * 0.5 + TIME * 0.003, direction.y * 2.0)
+		* vec2(4.6, 2.25)
+	);
+	cloud_band = smoothstep(0.5, 0.78, cloud_band)
+		* smoothstep(0.02, 0.64, abs(direction.y));
+	color = mix(color, cloud_color, cloud_band * cloud_strength);
+	float warm_horizon = pow(1.0 - abs(direction.y), 6.0);
+	color += vec3(0.22, 0.09, 0.035) * warm_horizon;
+	vec3 sun_dir = normalize(sun_direction);
+	float sun_dot = max(dot(direction, sun_dir), 0.0);
+	float halo = pow(sun_dot, 18.0) * 0.28 + pow(sun_dot, 96.0) * sun_intensity;
+	color += sun_color * halo;
+	COLOR = max(color * exposure, vec3(0.0));
+}
+"""
+	var sky_material := ShaderMaterial.new()
+	sky_material.shader = sky_shader
+	sky_material.set_shader_parameter("top_color", Color("06152d"))
+	sky_material.set_shader_parameter("horizon_color", Color("5f8c96"))
+	sky_material.set_shader_parameter("cloud_color", Color("9bb9b2"))
+	sky_material.set_shader_parameter("sun_color", Color("ffd09c"))
+	sky_material.set_shader_parameter("sun_direction", Vector3(-0.24, 0.76, 0.57))
+	sky_material.set_shader_parameter("cloud_strength", 0.28)
+	sky_material.set_shader_parameter("sun_intensity", 1.15)
+	sky_material.set_shader_parameter("exposure", 0.92)
+	sky.sky_material = sky_material
 	environment.sky = sky
-	environment.background_energy_multiplier = 0.52
+	environment.background_energy_multiplier = 0.72
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.7
+	environment.ambient_light_energy = 0.64
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	environment.tonemap_exposure = 0.94
+	environment.tonemap_exposure = 0.91
 	environment.adjustment_enabled = true
-	environment.adjustment_brightness = 0.97
-	environment.adjustment_contrast = 1.08
-	environment.adjustment_saturation = 0.94
+	environment.adjustment_brightness = 0.98
+	environment.adjustment_contrast = 1.16
+	environment.adjustment_saturation = 1.06
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.55
+	environment.glow_intensity = 0.72
+	environment.glow_bloom = 0.18
+	environment.glow_hdr_threshold = 0.72
 	environment.fog_enabled = true
-	environment.fog_light_color = Color("8fb7ac")
-	environment.fog_light_energy = 0.78
-	environment.fog_density = 0.0042
+	environment.fog_light_color = Color("739a9e")
+	environment.fog_light_energy = 0.58
+	environment.fog_density = 0.0024
 	environment.fog_height = 0.0
-	environment.fog_height_density = 0.08
+	environment.fog_height_density = 0.055
+	environment.fog_aerial_perspective = 0.0
+	environment.fog_sky_affect = 0.12
+	environment.fog_sun_scatter = 0.18
 	environment.ssr_enabled = true
 	environment.ssao_enabled = true
-	environment.ssao_radius = 1.7
-	environment.ssao_intensity = 2.1
+	environment.ssao_radius = 2.2
+	environment.ssao_intensity = 2.35
 	environment.ssil_enabled = true
-	environment.ssil_radius = 4.0
-	environment.ssil_intensity = 1.25
+	environment.ssil_radius = 5.5
+	environment.ssil_intensity = 1.42
 	environment.sdfgi_enabled = true
 	environment.sdfgi_use_occlusion = true
 	environment.volumetric_fog_enabled = true
-	environment.volumetric_fog_density = 0.0075
-	environment.volumetric_fog_albedo = Color("a9c8bf")
-	environment.volumetric_fog_emission = Color("243936")
-	environment.volumetric_fog_emission_energy = 0.12
-	environment.volumetric_fog_length = 56.0
+	environment.volumetric_fog_density = 0.0046
+	environment.volumetric_fog_albedo = Color("789d9b")
+	environment.volumetric_fog_emission = Color("1e3333")
+	environment.volumetric_fog_emission_energy = 0.075
+	environment.volumetric_fog_length = 72.0
+	environment.volumetric_fog_sky_affect = 0.06
 	world_environment.environment = environment
 	add_child(world_environment)
 	_world_environment = world_environment
@@ -610,9 +676,11 @@ func _create_environment() -> void:
 	sun.light_color = Color("ffd9a3")
 	sun.light_energy = 1.32
 	sun.shadow_enabled = true
-	sun.shadow_opacity = 0.76
-	sun.light_angular_distance = 0.34
-	sun.directional_shadow_max_distance = 45.0
+	sun.shadow_opacity = 0.84
+	sun.light_angular_distance = 0.22
+	sun.directional_shadow_max_distance = 72.0
+	sun.shadow_bias = 0.035
+	sun.shadow_normal_bias = 1.4
 	add_child(sun)
 	_sun = sun
 	var sky_fill := DirectionalLight3D.new()
@@ -622,6 +690,29 @@ func _create_environment() -> void:
 	sky_fill.light_energy = 0.46
 	sky_fill.shadow_enabled = false
 	add_child(sky_fill)
+	# A narrow warm bounce beside the shrine gives wet bark, stones and the
+	# character a contact highlight that the broad sun cannot provide.
+	var shrine_bounce := OmniLight3D.new()
+	shrine_bounce.name = "ShrineBounce"
+	shrine_bounce.position = Vector3(0.0, 2.4, -6.4)
+	shrine_bounce.light_color = Color("f4b77c")
+	shrine_bounce.light_energy = 2.6
+	shrine_bounce.omni_range = 7.5
+	shrine_bounce.shadow_enabled = true
+	shrine_bounce.shadow_bias = 0.035
+	add_child(shrine_bounce)
+	var lake_rim := SpotLight3D.new()
+	lake_rim.name = "LakeRimLight"
+	lake_rim.position = Vector3(-8.0, 3.8, -8.0)
+	lake_rim.rotation_degrees = Vector3(-70.0, 0.0, 0.0)
+	lake_rim.light_color = Color("6edbd5")
+	lake_rim.light_energy = 1.55
+	lake_rim.spot_range = 11.0
+	lake_rim.spot_angle = 58.0
+	lake_rim.spot_angle_attenuation = 1.35
+	lake_rim.shadow_enabled = true
+	lake_rim.shadow_bias = 0.04
+	add_child(lake_rim)
 	_apply_quality_profile()
 
 
@@ -727,12 +818,12 @@ func _create_water() -> void:
 	var plane := _create_elliptical_lake_mesh()
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/realistic_lake.gdshader")
-	material.set_shader_parameter("wetness", 0.72)
-	material.set_shader_parameter("rain_intensity", 0.82)
-	material.set_shader_parameter("reflection_strength", 1.35)
-	material.set_shader_parameter("sparkle_intensity", 2.4)
-	material.set_shader_parameter("foam_intensity", 1.65)
-	material.set_shader_parameter("caustic_intensity", 0.82)
+	material.set_shader_parameter("wetness", 0.62)
+	material.set_shader_parameter("rain_intensity", 0.78)
+	material.set_shader_parameter("reflection_strength", 0.78)
+	material.set_shader_parameter("sparkle_intensity", 0.92)
+	material.set_shader_parameter("foam_intensity", 1.1)
+	material.set_shader_parameter("caustic_intensity", 0.38)
 	plane.surface_set_material(0, material)
 	_water.mesh = plane
 	_water.position = Vector3(-8.0, 0.04, -8.0)
@@ -836,13 +927,13 @@ func _create_water_droplets() -> void:
 	mesh.radial_segments = 5
 	mesh.rings = 3
 	var droplet_material := StandardMaterial3D.new()
-	droplet_material.albedo_color = Color(0.55, 0.9, 0.98, 0.82)
+	droplet_material.albedo_color = Color(0.55, 0.9, 0.98, 0.46)
 	droplet_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	droplet_material.roughness = 0.08
 	droplet_material.metallic_specular = 0.95
 	droplet_material.emission_enabled = true
 	droplet_material.emission = Color(0.22, 0.72, 0.82)
-	droplet_material.emission_energy_multiplier = 0.65
+	droplet_material.emission_energy_multiplier = 0.34
 	mesh.material = droplet_material
 	droplets.draw_pass_1 = mesh
 	add_child(droplets)
@@ -869,20 +960,57 @@ func _create_water_droplets() -> void:
 	sparkle_process.anim_speed_max = 1.5
 	sparkles.process_material = sparkle_process
 	var sparkle_mesh := SphereMesh.new()
-	sparkle_mesh.radius = 0.024
-	sparkle_mesh.height = 0.048
+	sparkle_mesh.radius = 0.015
+	sparkle_mesh.height = 0.03
 	sparkle_mesh.radial_segments = 8
 	sparkle_mesh.rings = 4
 	var sparkle_material := StandardMaterial3D.new()
-	sparkle_material.albedo_color = Color(0.62, 1.0, 0.97, 0.82)
+	sparkle_material.albedo_color = Color(0.62, 1.0, 0.97, 0.52)
 	sparkle_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sparkle_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	sparkle_material.emission_enabled = true
 	sparkle_material.emission = Color(0.2, 0.96, 0.9)
-	sparkle_material.emission_energy_multiplier = 2.6
+	sparkle_material.emission_energy_multiplier = 1.35
 	sparkle_mesh.material = sparkle_material
 	sparkles.draw_pass_1 = sparkle_mesh
 	add_child(sparkles)
+
+	# A second, camera-readable rain layer makes the weather legible against the
+	# pale sky.  The old droplets were tiny spheres and disappeared at gameplay
+	# distance; these elongated particles catch the lake rim light and leave a
+	# deliberate diagonal streak instead of a noisy white speckle field.
+	var rain_streaks := GPUParticles3D.new()
+	rain_streaks.name = "RainStreaks"
+	rain_streaks.amount = 420
+	rain_streaks.lifetime = 0.92
+	rain_streaks.preprocess = 0.92
+	rain_streaks.position = Vector3(-2.0, 7.8, -5.0)
+	var rain_process := ParticleProcessMaterial.new()
+	rain_process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	rain_process.emission_box_extents = Vector3(17.0, 0.18, 15.0)
+	rain_process.direction = Vector3(0.12, -1.0, 0.08)
+	rain_process.spread = 6.0
+	rain_process.gravity = Vector3(0.0, -2.2, 0.0)
+	rain_process.initial_velocity_min = 6.4
+	rain_process.initial_velocity_max = 10.2
+	rain_process.scale_min = 0.72
+	rain_process.scale_max = 1.35
+	rain_process.color = Color(0.58, 0.84, 0.88, 0.2)
+	rain_streaks.process_material = rain_process
+	var streak_mesh := QuadMesh.new()
+	streak_mesh.size = Vector2(0.009, 0.46)
+	var streak_material := StandardMaterial3D.new()
+	streak_material.albedo_color = Color(0.66, 0.9, 0.94, 0.12)
+	streak_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	streak_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	streak_material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	streak_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	streak_material.emission_enabled = true
+	streak_material.emission = Color(0.24, 0.62, 0.68)
+	streak_material.emission_energy_multiplier = 0.22
+	streak_mesh.material = streak_material
+	rain_streaks.draw_pass_1 = streak_mesh
+	add_child(rain_streaks)
 
 
 func _create_lake_shore() -> void:
@@ -1009,6 +1137,14 @@ func _create_forest() -> void:
 	)
 	var leaf_material := ShaderMaterial.new()
 	leaf_material.shader = load("res://shaders/forest_leaves.gdshader")
+	# The atlas is a cutout atlas rather than a blended decal.  Keeping the
+	# alpha test in the leaf shader preserves depth/shadow behaviour while
+	# replacing the old diamond-card silhouette with authored leaf contours.
+	leaf_material.set_shader_parameter(
+		"leaf_atlas",
+		load("res://content/vfx/leaf_petals_atlas.png"),
+	)
+	leaf_material.set_shader_parameter("leaf_atlas_enabled", true)
 	var tree_colliders := StaticBody3D.new()
 	tree_colliders.name = "TreeColliders"
 	tree_colliders.collision_layer = 1
@@ -1076,10 +1212,20 @@ func _create_forest() -> void:
 		tree_instances.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		var multimesh := MultiMesh.new()
 		multimesh.transform_format = MultiMesh.TRANSFORM_3D
+		multimesh.use_custom_data = true
 		multimesh.instance_count = near_tree_transforms.size()
 		multimesh.mesh = tree_mesh
 		for near_index in near_tree_transforms.size():
 			multimesh.set_instance_transform(near_index, near_tree_transforms[near_index])
+			multimesh.set_instance_custom_data(
+				near_index,
+				Color(
+					_rng.randf_range(0.18, 0.92),
+					_rng.randf_range(0.2, 0.96),
+					_rng.randf(),
+					1.0,
+				),
+			)
 		tree_instances.multimesh = multimesh
 		forest.add_child(tree_instances)
 		_forest_tree_instances.append(tree_instances)
@@ -1141,14 +1287,10 @@ func _create_mid_tree_proxies(
 	parent.add_child(branches)
 	_forest_proxy_instances.append(branches)
 
-	var canopy_mesh := SphereMesh.new()
-	canopy_mesh.radius = 1.0
-	canopy_mesh.height = 2.0
-	canopy_mesh.radial_segments = 10
-	canopy_mesh.rings = 5
-	canopy_mesh.material = leaf_material
+	var canopy_mesh := _create_canopy_cluster_mesh(leaf_material, 30)
 	var canopy_multimesh := MultiMesh.new()
 	canopy_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	canopy_multimesh.use_custom_data = true
 	canopy_multimesh.instance_count = transforms.size() * 5
 	canopy_multimesh.mesh = canopy_mesh
 	var canopies := MultiMeshInstance3D.new()
@@ -1220,6 +1362,15 @@ func _create_mid_tree_proxies(
 					),
 				),
 			)
+			canopy_multimesh.set_instance_custom_data(
+				index * 5 + lobe_index,
+				Color(
+					_rng.randf_range(0.16, 0.9),
+					_rng.randf_range(0.22, 0.98),
+					_rng.randf(),
+					1.0,
+				),
+			)
 
 
 func _create_far_tree_proxies(
@@ -1276,14 +1427,10 @@ func _create_far_tree_proxies(
 	parent.add_child(branches)
 	_forest_proxy_instances.append(branches)
 
-	var canopy_mesh := SphereMesh.new()
-	canopy_mesh.radius = 1.0
-	canopy_mesh.height = 2.0
-	canopy_mesh.radial_segments = 8
-	canopy_mesh.rings = 4
-	canopy_mesh.material = leaf_material
+	var canopy_mesh := _create_canopy_cluster_mesh(leaf_material, 20)
 	var canopy_multimesh := MultiMesh.new()
 	canopy_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	canopy_multimesh.use_custom_data = true
 	canopy_multimesh.instance_count = transforms.size() * 4
 	canopy_multimesh.mesh = canopy_mesh
 	var canopies := MultiMeshInstance3D.new()
@@ -1347,6 +1494,87 @@ func _create_far_tree_proxies(
 					),
 				),
 			)
+			canopy_multimesh.set_instance_custom_data(
+				index * 4 + lobe_index,
+				Color(
+					_rng.randf_range(0.16, 0.86),
+					_rng.randf_range(0.2, 0.94),
+					_rng.randf(),
+					1.0,
+				),
+			)
+
+
+func _create_canopy_cluster_mesh(material: Material, leaf_count: int) -> ArrayMesh:
+	# Proxy canopies use layered leaf cards instead of smooth SphereMesh lobes.
+	# This keeps the silhouette broken and directional when the detailed GLB is
+	# outside the near range, so the forest does not collapse into lollipops.
+	var vertices := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var indices := PackedInt32Array()
+	for leaf_index in leaf_count:
+		var fraction := float(leaf_index) / float(maxi(leaf_count, 1))
+		var azimuth := fraction * TAU * 1.618 + float(leaf_index % 3) * 0.21
+		var elevation := -0.12 + float((leaf_index * 7) % 9) / 8.0 * 0.88
+		var direction := Vector3(
+			cos(azimuth) * cos(elevation),
+			sin(elevation),
+			sin(azimuth) * cos(elevation),
+		).normalized()
+		var center := direction * (0.42 + float(leaf_index % 4) * 0.13)
+		var axis := Vector3.UP.cross(direction)
+		if axis.length_squared() < 0.01:
+			axis = Vector3.RIGHT
+		axis = axis.normalized()
+		var width := 0.22 + float(leaf_index % 4) * 0.035
+		var length := 0.52 + float((leaf_index * 5) % 5) * 0.075
+		var base := vertices.size()
+		var left := center - axis * width
+		var right := center + axis * width
+		var mid := center + direction * length * 0.54 + axis * 0.035
+		var tip := center + direction * length
+		vertices.append_array(
+			PackedVector3Array([
+				left,
+				right,
+				mid - axis * width * 0.72,
+				mid + axis * width * 0.72,
+				tip - axis * 0.025,
+				tip + axis * 0.025,
+			])
+		)
+		var normal := axis.cross(direction).normalized()
+		for _vertex in 6:
+			normals.append(normal)
+		uvs.append_array(
+			PackedVector2Array([
+				Vector2(0.0, 0.0),
+				Vector2(1.0, 0.0),
+				Vector2(0.0, 0.56),
+				Vector2(1.0, 0.56),
+				Vector2(0.0, 1.0),
+				Vector2(1.0, 1.0),
+			])
+		)
+		indices.append_array(
+			PackedInt32Array([
+				base, base + 2, base + 1,
+				base + 1, base + 2, base + 3,
+				base + 2, base + 4, base + 3,
+				base + 3, base + 4, base + 5,
+			])
+		)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.surface_set_material(0, material)
+	return mesh
 
 
 func _extract_tree_mesh(
@@ -1449,15 +1677,19 @@ func _create_grass_clump_mesh() -> ArrayMesh:
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	var indices := PackedInt32Array()
-	const BLADE_COUNT := 5
+	# Eight crossed, slightly curved blades read as clumps of wet sedge rather
+	# than the previous five thin rods.  The extra silhouette breaks are
+	# especially important in the mid-ground where the camera resolves the
+	# grass against the lake shore.
+	const BLADE_COUNT := 8
 	for blade_index in BLADE_COUNT:
-		var angle := float(blade_index) * 2.399963 + float(blade_index % 2) * 0.17
-		var blade_width := 0.012 + float(blade_index % 4) * 0.0035
+		var angle := float(blade_index) * 2.399963 + float(blade_index % 3) * 0.17
+		var blade_width := 0.016 + float(blade_index % 4) * 0.0045
 		var right := Vector3(cos(angle), 0.0, sin(angle)) * blade_width
 		var normal := Vector3(-sin(angle), 0.0, cos(angle))
-		var spread := 0.025 + float(blade_index % 5) * 0.024
+		var spread := 0.028 + float(blade_index % 5) * 0.028
 		var center := Vector3(cos(angle * 1.37), 0.0, sin(angle * 1.37)) * spread
-		var height := 0.62 + float((blade_index * 7) % 6) * 0.052
+		var height := 0.64 + float((blade_index * 7) % 7) * 0.058
 		var mid_center := center + normal * (0.018 + float(blade_index % 2) * 0.012) + Vector3.UP * height * 0.56
 		var tip_center := center + normal * (0.065 + float(blade_index % 3) * 0.018) + Vector3.UP * height
 		var base := vertices.size()
@@ -1702,6 +1934,7 @@ func _create_ending_choices() -> void:
 func _create_archive_present_mechanisms() -> void:
 	_archive_cipher_console = ARCHIVE_CIPHER_CONSOLE.new()
 	_archive_cipher_console.name = "ArchiveCipherConsole"
+	_archive_cipher_console.require_final_lock = true
 	_archive_cipher_console.position = Vector3(-4.2, 0.0, -8.9)
 	_archive_cipher_console.visual_layer = PHASE_SHIFT_CONTROLLER.PRESENT_VISUAL_LAYER
 	_archive_cipher_console.cipher_solved.connect(_on_archive_cipher_solved)
@@ -1739,12 +1972,76 @@ func _create_player() -> void:
 	_player = PLAYER_SCENE.instantiate()
 	_player.position = Vector3(0.0, 1.0, 6.0)
 	add_child(_player)
+	var player_camera := _player.get_node("CameraPivot/SpringArm3D/Camera") as Camera3D
+	_create_camera_sky_backdrop(player_camera)
 	_player.set_surface_library(_surface_library)
 	_set_visual_layer(_player, PHASE_SHIFT_CONTROLLER.SHARED_VISUAL_LAYER)
 	_water.set_actor(_player)
 	_player.landed.connect(_on_player_landed)
 	_player.footstep_surface.connect(_on_player_footstep)
 	_player.void_recovered.connect(_on_player_void_recovered)
+
+
+func _create_camera_sky_backdrop(camera: Camera3D) -> void:
+	# Camera-local background card: unlike a far sphere it remains inside the
+	# camera frustum even when the player looks up/down, and depth testing keeps
+	# every forest mesh in front of it.  The gradient is authored in screen space
+	# so a Windows GPU cannot flatten it through sky fog.
+	var backdrop := MeshInstance3D.new()
+	backdrop.name = "CameraSkyBackdrop"
+	var quad := QuadMesh.new()
+	# Oversize the camera-local card so its projected edges never enter the
+	# gameplay viewport at wide Windows aspect ratios (the previous 140×82 card
+	# left a visible vertical seam on the 16:9 validation surface).
+	quad.size = Vector2(260.0, 160.0)
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never, fog_disabled;
+
+float hash21(vec2 point) {
+	return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+float noise(vec2 point) {
+	vec2 cell = floor(point);
+	vec2 local = fract(point);
+	local = local * local * (3.0 - 2.0 * local);
+	float a = hash21(cell);
+	float b = hash21(cell + vec2(1.0, 0.0));
+	float c = hash21(cell + vec2(0.0, 1.0));
+	float d = hash21(cell + vec2(1.0, 1.0));
+	return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
+}
+
+void fragment() {
+	// SCREEN_UV remains stable when the camera spring arm changes; using the
+	// mesh UV here made the backdrop collapse to one flat sample on some
+	// Forward+ drivers.
+	vec2 screen_uv = SCREEN_UV;
+	float vertical = 1.0 - clamp(screen_uv.y, 0.0, 1.0);
+	vec3 horizon = vec3(0.23, 0.40, 0.44);
+	vec3 zenith = vec3(0.012, 0.055, 0.11);
+	vec3 color = mix(horizon, zenith, smoothstep(0.24, 0.92, vertical));
+	float cloud = noise(screen_uv * vec2(5.0, 2.0) + vec2(TIME * 0.012, 0.0));
+	cloud = smoothstep(0.56, 0.82, cloud) * smoothstep(0.12, 0.78, vertical);
+	color = mix(color, vec3(0.42, 0.52, 0.53), cloud * 0.17);
+	vec2 sun_uv = vec2(0.72, 0.34);
+	float sun_distance = distance(screen_uv, sun_uv);
+	float sun_halo = exp(-sun_distance * sun_distance * 42.0);
+	color += vec3(1.0, 0.43, 0.18) * sun_halo * 0.28;
+	ALBEDO = color;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	quad.material = material
+	backdrop.mesh = quad
+	backdrop.position = Vector3(0.0, 0.0, -62.0)
+	backdrop.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	backdrop.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+	backdrop.sorting_offset = -100.0
+	camera.add_child(backdrop)
 
 
 func _register_wetness_materials() -> void:
@@ -1959,6 +2256,56 @@ func _create_game_ui() -> void:
 	if not OS.get_cmdline_args().has("--script"):
 		_play_opening_fade(canvas)
 	_update_quest_ui()
+
+
+func _create_cinematic_grade() -> void:
+	# A restrained screen-space grade gives the forest a consistent filmic
+	# response across the Linux validation GPU and the Windows export.  It is
+	# deliberately below the gameplay HUD and uses no temporal accumulation, so
+	# it cannot smear motion or interfere with the interactive puzzle text.
+	_cinematic_grade_layer = CanvasLayer.new()
+	_cinematic_grade_layer.name = "CinematicGrade"
+	_cinematic_grade_layer.layer = 0
+	_cinematic_grade_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_cinematic_grade_layer)
+	var grade := ColorRect.new()
+	grade.name = "Grade"
+	grade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	grade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shader := Shader.new()
+	shader.code = """
+shader_type canvas_item;
+
+uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_linear;
+uniform float vignette_strength : hint_range(0.0, 1.0) = 0.12;
+uniform float grain_strength : hint_range(0.0, 0.08) = 0.012;
+
+float hash21(vec2 point) {
+	return fract(sin(dot(point, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+void fragment() {
+	vec2 uv = SCREEN_UV;
+	vec3 scene = texture(screen_texture, uv).rgb;
+	float luminance = dot(scene, vec3(0.2126, 0.7152, 0.0722));
+	float shadow_weight = 1.0 - smoothstep(0.08, 0.62, luminance);
+	float highlight_weight = smoothstep(0.52, 0.96, luminance);
+	// Teal shadows and a slight warm highlight bias echo the wet forest palette
+	// without replacing the authored albedo or pushing the shrine into clip.
+	scene *= mix(vec3(0.965, 1.015, 1.025), vec3(1.035, 0.985, 0.935), highlight_weight * 0.22);
+	scene = mix(scene, scene * vec3(0.95, 1.025, 1.035), shadow_weight * 0.12);
+	float edge_distance = distance(uv * vec2(1.0, 0.88), vec2(0.5));
+	float vignette = smoothstep(0.32, 0.82, edge_distance);
+	scene *= 1.0 - vignette * vignette_strength;
+	float grain = hash21(floor(uv * vec2(1280.0, 720.0)) + floor(TIME * 24.0)) - 0.5;
+	scene += grain * grain_strength * (0.35 + luminance * 0.65);
+	COLOR = vec4(max(scene, vec3(0.0)), 1.0);
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	grade.material = material
+	_cinematic_grade_layer.add_child(grade)
 
 
 func _create_pause_ui(canvas: CanvasLayer) -> void:
@@ -2592,13 +2939,40 @@ func _on_archive_cipher_rejected(_attempt: Array[int], clue: String) -> void:
 
 
 func _on_archive_cipher_progress(states: Array[int], active_slot: int) -> void:
-	_show_toast("符文 %d / 3 已对齐：%s" % [active_slot, str(states)])
+	if active_slot < 0:
+		_show_toast("三环已对齐：现在校准内层封印轮")
+	else:
+		_show_toast("符文 %d / 3 已对齐：请记录当前顺序" % (active_slot + 1))
 
 
 func _on_archive_mechanism_activated(mechanism_id: StringName) -> void:
 	if _narrative.activate_archive_mechanism(mechanism_id):
 		_sync_world_to_narrative()
 		_save_current_game()
+		if _player != null and is_instance_valid(_player):
+			_player.call_deferred("refresh_interaction_target")
+		return
+	# Visual interactables emit before the narrative can confirm the ordered
+	# mechanism.  Restore availability on a rejected/stale signal so an old
+	# collision cannot make the naming lens look permanently consumed.
+	for mechanism in _archive_present_mechanisms:
+		if mechanism.resonance_id == mechanism_id:
+			mechanism.set_activated(false)
+			mechanism.set_available(
+				_narrative.stage == _narrative.ARCHIVE_MECHANISMS
+				and _narrative.archive_cipher_solved
+				and mechanism_id == _narrative.get_next_archive_mechanism()
+			)
+	var echo_mechanism := _streamed_level(ECHO_LEVEL_PATH)
+	if echo_mechanism != null and echo_mechanism.has_method("get_counterweight_plate"):
+		var plate: Node = echo_mechanism.get_counterweight_plate()
+		if plate != null and plate.has_method("set_activated"):
+			plate.set_activated(false)
+			plate.set_available(
+				_narrative.stage == _narrative.ARCHIVE_MECHANISMS
+				and _narrative.archive_cipher_solved
+				and mechanism_id == _narrative.get_next_archive_mechanism()
+			)
 
 
 func _on_archive_mechanism_added(
@@ -3838,7 +4212,7 @@ func _pbr_material(
 	material.normal_texture = _profile_texture(surface_type, &"normal_texture")
 	if material.normal_texture == null:
 		material.normal_texture = _load_material_texture(root, "normal")
-	material.normal_scale = 0.78
+	material.normal_scale = 0.96
 	var profile := _surface_library.get_profile(surface_type) as MaterialProfile if (
 		_surface_library != null and not surface_type.is_empty()
 	) else null
@@ -3859,7 +4233,7 @@ func _pbr_material(
 	if height_texture != null and not triplanar:
 		material.heightmap_enabled = true
 		material.heightmap_texture = height_texture
-		material.heightmap_scale = 0.035
+		material.heightmap_scale = 0.045
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	material.uv1_scale = uv_scale
 	material.uv1_triplanar = triplanar
@@ -3930,14 +4304,19 @@ void vertex() {
 void fragment() {
 	vec2 world_uv = world_position.xz * 0.38;
 	vec4 soil = texture(albedo_texture, world_uv);
+	float puddle_noise = 0.5 + 0.5 * sin(world_position.x * 2.7 + sin(world_position.z * 1.9));
+	puddle_noise *= 0.78 + 0.22 * sin(world_position.z * 6.1 - world_position.x * 1.4);
 	float edge = min(min(UV.x, 1.0 - UV.x), min(UV.y, 1.0 - UV.y));
 	float feather = smoothstep(0.0, 0.115, edge);
 	vec3 wet_soil = soil.rgb * vec3(0.48, 0.55, 0.52);
-	ALBEDO = mix(soil.rgb * vec3(0.86, 0.82, 0.74), wet_soil, wetness * 0.62);
+	vec3 path_soil = soil.rgb * vec3(0.66, 0.62, 0.53);
+	path_soil = mix(path_soil, path_soil * vec3(0.68, 0.82, 0.78), smoothstep(0.42, 0.8, puddle_noise) * 0.4);
+	ALBEDO = mix(path_soil, wet_soil * vec3(0.78, 0.9, 0.88), wetness * (0.46 + puddle_noise * 0.28));
+	ALBEDO += vec3(0.07, 0.09, 0.075) * smoothstep(0.72, 0.98, puddle_noise) * wetness;
 	NORMAL_MAP = texture(normal_texture, world_uv).rgb;
 	NORMAL_MAP_DEPTH = 0.58;
-	ROUGHNESS = mix(texture(roughness_texture, world_uv).r, 0.26, wetness * 0.7);
-	SPECULAR = mix(0.32, 0.72, wetness);
+	ROUGHNESS = mix(texture(roughness_texture, world_uv).r, 0.2, wetness * (0.64 + puddle_noise * 0.18));
+	SPECULAR = mix(0.3, 0.82, wetness);
 	EMISSION = vec3(0.02, 0.05, 0.045) * rain_intensity * wetness * 0.025;
 	ALPHA = feather;
 }

@@ -1,16 +1,48 @@
 # 林地湖区实机视觉验证报告
 
-验证日期：2026-08-10
+验证日期：2026-08-11
 工程版本：0.6.2-alpha
 引擎：Godot 4.7.1 Stable，Vulkan Forward+
 显示表面：`DISPLAY=:1` / X11 VNC-0（1600×900，60 Hz）
 GPU：AMD Ryzen 5 PRO 4650U Renoir 集成显卡，RADV，Vulkan 1.3.255
 常规截图视口：1280×720
 
+## 2026-08-11 重制版增量截图
+
+以下截图来自当前未提交工作树的真实 Vulkan Forward+ 捕获，作为本轮角色动作、树冠、水面和水花
+的可复验索引；它们不替代 4K/Windows 性能验收：
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 林地玩法总览 | `previews/godot_prototype.png` | `95b0aee82bb0b82ba801729851d14ca6a235433030934981ed1d8e5253796aa9` |
+| 近景树冠（叶片图集） | `previews/forest_tree_detail.png` | `0263802daec12eadbd44cdf40048b8f65a2d3a922ca2310f7f4df7cc7e341789` |
+| 湖面低幅波浪/反射 | `previews/realistic_lake.png` | `46bfc5de13f465df847ec020ec8901e9f4792d6881662d74eec8d75527e76bbc` |
+| 入水软泡沫/水滴 | `previews/realistic_lake_splash.png` | `25ddbb00772d0b89f6b1171e2c09558bb800575a56f830de687fa3e11704e5dc` |
+| Walk 接触帧 | `previews/realistic_walk_contact.png` | `14705d2722795c84bef40aae5664b782faabbd2b462fabdcb9aee7978ba228ac` |
+| Walk 经过帧 | `previews/realistic_walk_passing.png` | `ba0ee3095ad92e9e2494bd52314ad7ef8a73227f8f8d4b373896f5f74d2c429a` |
+| Run | `previews/realistic_run.png` | `f7b0a25f62280dc16a15729d11526aa88ef2355da758682a15ee8cbec307eb0d` |
+| Jump | `previews/realistic_jump.png` | `1072490e0a7492e0f21090549a7faa2d4e47aad89383d33d84efb4613f4805c1` |
+| Interact | `previews/realistic_interact.png` | `59764c726437d061e05a949053816727737d154d849900cabde3150b78f21358` |
+
 这次验证是真实 Vulkan 渲染，不是 `--headless` CPU 冒烟。常规前后对比使用 X11 表面可见的
 1280×720 窗口；另通过真实 Vulkan `SubViewport` 完成了不依赖桌面尺寸的 3840×2160 离屏截图，
 并在 X11 VNC 临时 3840×2160 mode 上完成了原生窗口湖面截图。实体 4K 显示器和 Windows 驱动
-仍需单独复测。
+仍需单独复测。当前 4K 目标尺寸证据使用 `LUMINOUS_RENDER_SCALE=0.5`，只降低内部 3D 缓冲，
+不代表原生 1.0 帧时。
+
+### 本轮 4K 目标尺寸复验（内部渲染比例 0.5）
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面反射（最终捕获相机） | `previews/final4k_lake_lake_4k.png` | `d1d33ef6ac8ba724e361d9eee8124d1c1706fe81e77641426c4f11fa7fd051c3` |
+| 湖面水花（最终捕获相机） | `previews/final4k_lake_lake_splash_4k.png` | `924d9ee79e5677d16fdef49bbbad1e72bda7d755f11b089c6bfb12d1b7276483` |
+| 地面 | `previews/remaster_ground4k_ground_4k.png` | `cc78384746220140e31031c87e8b89f5a5c1208db626e73a9b41234113a35205` |
+| 湿泥 | `previews/remaster_wetmud4k_wet_mud_4k.png` | `183bc9f8d42bf5962ba4367056bf2c0436b76b92234117b0dda7bcf507b1fa03` |
+| 树冠（最终捕获相机） | `previews/final4k_tree2_tree_detail_4k.png` | `93ef1bb268a4b3e8130f0595582df3b19c355d4ec3e535721fe2a80af5153a3f` |
+| 角色 | `previews/remaster_character4k_character_clean_4k.png` | `15b54c106483123c12cfcf2256d023ecbe94808bb8cc80326706be2dca250711` |
+
+这些 PNG 均由 `file` 检查为 3840×2160，证明当前材质/光照/水面能生成目标尺寸；它们不替代原生
+4K 桌面性能或 Windows 驱动验收。
 
 ## 复验命令
 

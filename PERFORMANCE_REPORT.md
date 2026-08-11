@@ -1,13 +1,25 @@
 # 《微光林地：雨的名字》目标设备性能报告
 
 版本：0.6.2-alpha
-测量日期：2026-08-10
+测量日期：2026-08-11
 引擎：Godot 4.7.1 Stable  
 渲染路径：Vulkan Forward+
 
 本轮复验记录：2026-08-10。已通过 `DISPLAY=:1` 创建真实 X11/Vulkan surface，日志确认
 `Vulkan 1.3.255 - Forward+ - Using Device #0: AMD - AMD Unknown (RADV RENOIR)`；材质、反射探针、
 水纹和脚印均实际参与渲染。截图与前后对比见 `VISUAL_VALIDATION_REPORT.md`。
+
+### 2026-08-11 视觉重制后的性能边界
+
+本轮新增自定义天空/电影分级、八片草簇、叶片 alpha 图集、双层水面折射/反射、细雨条与程序骨骼层，
+并完成 `REGRESSION_OK tests=25`。高画质仍明确保持 `scaling_3d_scale=1.0`；为生成 3840×2160
+材质证据，`LUMINOUS_RENDER_SCALE=0.5` 只把内部 3D 缓冲降到 50%，输出 PNG 仍为 3840×2160，
+不能被解读为原生 4K 性能通过。当前环境的原生 4K/高画质 P95 仍不满足 41.7 ms，Windows/独立 GPU
+性能矩阵尚未建立；用户的验收优先级是画面和物理真实感，因此高画质效果不再因 Renoir 诊断数据回退。
+
+2026-08-11 的画质重制增量（骨骼动作层、30/20 叶片卡、低幅水面与软泡沫）已通过局部 Vulkan
+回归和截图验证，但尚未重跑 600 帧性能矩阵；旧的 2026-08-10 数字不能当作本轮最终性能结果。
+本轮不以设备性能作为画质取舍依据，Windows/独立 GPU 的真实帧时和显存仍是发布前必测项。
 
 本轮又在同一 X11 VNC 输出上临时切换到 3840×2160 mode，完成原生窗口尺寸的 Vulkan 采样；该
 surface 仍是虚拟显示输出，不等同于实体 4K 显示器或 Windows 驱动，但不再是 SubViewport/CPU
@@ -60,7 +72,7 @@ Renoir 使用共享系统内存。`Performance.RENDER_VIDEO_MEM_USED` 是 Godot 
 
 ## 3. 高画质档内容
 
-- Poly Haven Mossy Forest CC0 tonemapped PanoramaSkyMaterial、Filmic 色调映射和 Glow（原始 HDR/EXR 外置）。
+- Poly Haven Mossy Forest CC0 色调参考，运行时改用蓝金渐变天空 Shader、Filmic 色调映射和 Glow（原始 HDR/EXR 外置）。
 - SSR、SSAO、SSIL、SDFGI 与体积雾。
 - 45 米阴影范围。
 - 湖面折射、Fresnel、焦散和岸边泡沫。

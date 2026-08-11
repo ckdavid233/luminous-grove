@@ -148,11 +148,11 @@ func set_visual_quality_profile(profile: StringName) -> void:
 			_material.set_shader_parameter("foam_intensity", 0.98)
 			visual_effects_enabled = true
 		_:
-			_material.set_shader_parameter("micro_normal_strength", 0.52)
-			_material.set_shader_parameter("foam_intensity", 1.65)
-			_material.set_shader_parameter("reflection_strength", 1.45)
-			_material.set_shader_parameter("sparkle_intensity", 2.6)
-			_material.set_shader_parameter("caustic_intensity", 0.84)
+			_material.set_shader_parameter("micro_normal_strength", 0.24)
+			_material.set_shader_parameter("foam_intensity", 1.1)
+			_material.set_shader_parameter("reflection_strength", 0.78)
+			_material.set_shader_parameter("sparkle_intensity", 0.92)
+			_material.set_shader_parameter("caustic_intensity", 0.38)
 			visual_effects_enabled = true
 
 
@@ -341,11 +341,53 @@ func _create_surface_splash(
 	var effect_root := _obtain_splash_root()
 	# Keep pooled rings above the animated Gerstner crest. At the old 0.1 m
 	# offset the water depth pass could hide the splash completely.
-	effect_root.global_position = position + Vector3.UP * 0.24
+	effect_root.global_position = position + Vector3.UP * 0.16
+
+	# A soft foam sheet sits under the physical rings.  The procedural edge
+	# noise prevents the splash from reading as four perfect neon toruses and
+	# gives the camera a readable contact patch even when droplets are between
+	# frames.
+	var foam := MeshInstance3D.new()
+	foam.name = "SplashFoam"
+	var foam_mesh := QuadMesh.new()
+	foam_mesh.size = Vector2(2.0, 2.0)
+	var foam_shader := Shader.new()
+	foam_shader.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_draw_never;
+uniform vec3 tint : source_color = vec3(0.52, 0.91, 0.86);
+uniform float opacity = 0.7;
+uniform float seed = 0.0;
+
+float hash21(vec2 point) {
+	return fract(sin(dot(point, vec2(127.1, 311.7)) + seed) * 43758.5453);
+}
+
+void fragment() {
+	vec2 centered = UV * 2.0 - 1.0;
+	float radial = length(centered);
+	float ring = exp(-pow((radial - 0.56) * 8.0, 2.0));
+	float inner = exp(-pow((radial - 0.82) * 12.0, 2.0)) * 0.62;
+	float breakup = 0.78 + 0.22 * sin(UV.x * 17.0 + sin(UV.y * 13.0 + seed));
+	float outer_fade = 1.0 - smoothstep(0.76, 1.0, radial);
+	float mask = (ring + inner) * outer_fade * breakup;
+	ALBEDO = tint;
+	ALPHA = clamp(mask * opacity, 0.0, 0.82);
+}
+"""
+	var foam_material := ShaderMaterial.new()
+	foam_material.shader = foam_shader
+	foam_material.set_shader_parameter("opacity", 0.28 * clampf(strength, 0.35, 1.4))
+	foam_material.set_shader_parameter("seed", randf() * 20.0)
+	foam_mesh.material = foam_material
+	foam.mesh = foam_mesh
+	foam.rotation.x = -PI * 0.5
+	foam.scale = Vector3.ONE * (0.58 + strength * 0.24)
+	effect_root.add_child(foam)
 
 	var rings: Array[MeshInstance3D] = []
 	var ring_materials: Array[StandardMaterial3D] = []
-	for ring_index in 5:
+	for ring_index in 4:
 		var ring := MeshInstance3D.new()
 		ring.name = "SplashRing_%d" % (ring_index + 1)
 		var ring_mesh := TorusMesh.new()
@@ -356,21 +398,21 @@ func _create_surface_splash(
 		var ring_material := StandardMaterial3D.new()
 		ring_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		ring_material.albedo_color = Color(
-			0.63,
-			0.96,
-			0.94,
-			0.74 - ring_index * 0.14,
+			0.43,
+			0.86,
+			0.83,
+			0.48 - ring_index * 0.085,
 		)
 		ring_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 		ring_material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
-		ring_material.roughness = 0.12 + ring_index * 0.06
-		ring_material.no_depth_test = true
+		ring_material.roughness = 0.18 + ring_index * 0.06
+		ring_material.no_depth_test = false
 		ring_material.emission_enabled = true
 		ring_material.emission = Color(0.2, 0.72, 0.68)
-		ring_material.emission_energy_multiplier = 0.72
+		ring_material.emission_energy_multiplier = 0.24
 		ring_mesh.material = ring_material
 		ring.mesh = ring_mesh
-		ring.scale = Vector3(0.24 + ring_index * 0.035, 0.24 + ring_index * 0.035, 0.42 + ring_index * 0.08)
+		ring.scale = Vector3(0.18 + ring_index * 0.024, 0.18 + ring_index * 0.024, 0.31 + ring_index * 0.055)
 		ring.rotation.y = randf_range(-0.18, 0.18)
 		effect_root.add_child(ring)
 		rings.append(ring)
@@ -379,34 +421,34 @@ func _create_surface_splash(
 	var particles := GPUParticles3D.new()
 	particles.name = "SplashDroplets"
 	particles.one_shot = true
-	particles.amount = maxi(48, int(96.0 * strength))
-	particles.lifetime = 1.08
+	particles.amount = maxi(28, int(54.0 * strength))
+	particles.lifetime = 0.92
 	particles.explosiveness = 0.95
 	particles.randomness = 0.42
 	var process_material := ParticleProcessMaterial.new()
 	process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	process_material.emission_sphere_radius = 0.26 * strength
+	process_material.emission_sphere_radius = 0.2 * strength
 	process_material.direction = Vector3.UP
 	process_material.spread = 68.0
 	process_material.gravity = Vector3(0.0, -9.8, 0.0)
-	process_material.initial_velocity_min = 1.8 * strength
-	process_material.initial_velocity_max = 4.2 * strength
-	process_material.scale_min = 0.5
-	process_material.scale_max = 1.6
+	process_material.initial_velocity_min = 1.2 * strength
+	process_material.initial_velocity_max = 2.8 * strength
+	process_material.scale_min = 0.26
+	process_material.scale_max = 0.82
 	particles.process_material = process_material
 	var droplet_mesh := SphereMesh.new()
-	droplet_mesh.radius = 0.026
-	droplet_mesh.height = 0.12
+	droplet_mesh.radius = 0.016
+	droplet_mesh.height = 0.072
 	droplet_mesh.radial_segments = 5
 	droplet_mesh.rings = 3
 	var droplet_material := StandardMaterial3D.new()
 	droplet_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	droplet_material.albedo_color = Color(0.72, 0.95, 0.96, 0.88)
+	droplet_material.albedo_color = Color(0.58, 0.88, 0.9, 0.58)
 	droplet_material.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
 	droplet_material.roughness = 0.06
 	droplet_material.emission_enabled = true
 	droplet_material.emission = Color(0.32, 0.92, 0.88)
-	droplet_material.emission_energy_multiplier = 1.25
+	droplet_material.emission_energy_multiplier = 0.42
 	droplet_mesh.material = droplet_material
 	particles.draw_pass_1 = droplet_mesh
 	effect_root.add_child(particles)
@@ -423,9 +465,11 @@ func _create_surface_splash(
 		tween.set_trans(Tween.TRANS_QUAD)
 		tween.set_ease(Tween.EASE_OUT)
 		for ring_index in rings.size():
-			var ring_scale := 1.18 + strength * 0.42 + ring_index * 0.14
+			var ring_scale := 0.78 + strength * 0.3 + ring_index * 0.1
 			tween.tween_property(rings[ring_index], "scale", Vector3.ONE * ring_scale, 0.72 + ring_index * 0.08)
 			tween.tween_property(ring_materials[ring_index], "albedo_color:a", 0.0, 0.72 + ring_index * 0.08)
+		tween.tween_property(foam_material, "shader_parameter/opacity", 0.0, 0.72)
+		tween.tween_property(foam, "scale", Vector3.ONE * (1.35 + strength * 0.4), 0.72)
 		tween.chain().tween_callback(func() -> void: _release_splash_root(effect_root))
 
 

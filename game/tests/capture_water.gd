@@ -10,14 +10,25 @@ func _initialize() -> void:
 	var main := main_scene.instantiate()
 	root.add_child(main)
 
-	for _frame in 12:
+	# Let Main finish wiring the gameplay camera before replacing it.  If the
+	# validation camera wins the race with Player._ready(), the player's current
+	# camera can take the viewport back on the next frame and the lake capture
+	# becomes a close-up of the forest geometry instead of the water surface.
+	for _frame in 36:
 		await process_frame
 
 	var camera := Camera3D.new()
 	camera.fov = 58.0
 	camera.cull_mask = 5
+	for gameplay_camera in main.find_children("*", "Camera3D", true, false):
+		var owned_camera := gameplay_camera as Camera3D
+		if owned_camera != null:
+			owned_camera.clear_current(false)
+			owned_camera.current = false
 	camera.position = Vector3(-8.0, 3.25, -1.4)
 	main.add_child(camera)
+	if main.has_method("_create_camera_sky_backdrop"):
+		main.call("_create_camera_sky_backdrop", camera)
 	camera.look_at(Vector3(-8.0, 0.0, -8.0))
 	camera.make_current()
 	main.get_node("Forest").visible = false
@@ -55,6 +66,9 @@ func _initialize() -> void:
 		"WATER_CAPTURE_OK outputs=", OUTPUT_PATH, ",", SPLASH_OUTPUT_PATH,
 		" size=", image.get_size(),
 	)
+	camera.clear_current(false)
+	camera.current = false
+	camera.queue_free()
 	main.queue_free()
 	for _frame in 12:
 		await process_frame

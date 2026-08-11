@@ -75,6 +75,20 @@ func _initialize() -> void:
 	await _wait_for_animation_state(player, animation_player, &"Run")
 	player.call("_travel_animation", &"Idle")
 	player.set_physics_process(true)
+	player.velocity = Vector3(2.2, 0.0, 0.0)
+	await physics_frame
+	var procedural_before := skeleton.get_bone_pose_rotation(upperarm_bone)
+	for _frame in 6:
+		await physics_frame
+	var procedural_after := skeleton.get_bone_pose_rotation(upperarm_bone)
+	assert(
+		procedural_before.angle_to(procedural_after) > 0.018,
+		"Moving player must visibly swing the upper arm in the procedural layer",
+	)
+	assert(
+		(player.get("_procedural_bone_offsets") as Dictionary).size() >= 6,
+		"Runtime locomotion must add a visible procedural body-motion layer",
+	)
 	var quality_stats := player.get("_render_quality_stats") as Dictionary
 	assert(quality_stats.materials >= 9, "All character materials need runtime HQ copies")
 	assert(quality_stats.skin == 1, "Skin material classification failed")

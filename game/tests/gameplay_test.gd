@@ -113,6 +113,11 @@ func _initialize() -> void:
 		for _turn in cipher_code[slot]:
 			archive_cipher.rotate_puzzle()
 		await _request_target_interaction(player, archive_cipher, "archive cipher ring %d" % (slot + 1))
+	assert(not narrative.archive_cipher_solved, "The archive must expose its final lock step")
+	var lock_target := posmod(cipher_code[0] + cipher_code[1] + cipher_code[2], 5)
+	for _turn in lock_target:
+		archive_cipher.rotate_puzzle()
+	await _request_target_interaction(player, archive_cipher, "archive cipher final lock")
 	assert(narrative.archive_cipher_solved, "The three-ring archive cipher must have a solved state")
 	_assert_objective_target(main, "archive reflection mechanism")
 	var archive_present_mechanisms: Array = main.get("_archive_present_mechanisms")

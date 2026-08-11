@@ -71,10 +71,13 @@ const ARCHIVE_ANCHOR_ORDER_CARRY: Array[StringName] = [
 	&"archive_shape",
 ]
 const ARCHIVE_SEQUENCE_CLUE := "无形不能发声，无声不能命名。"
-const ARCHIVE_CIPHER_CODE_RETURN: Array[int] = [2, 4, 1]
-const ARCHIVE_CIPHER_CODE_CARRY: Array[int] = [3, 1, 4]
-const ARCHIVE_CIPHER_CLUE_RETURN := "听声锚点的回响是△，定形锚点的裂纹是◈，铭名锚点留下≈；按听声→定形→铭名排列。每一环只能顺时针校准。"
-const ARCHIVE_CIPHER_CLUE_CARRY := "携光后顺序被雨隙折返：第一环是✦，第二环仍听见≈，最后让铭名落在◈；每一环只能顺时针校准。"
+const ARCHIVE_GLYPH_VALUES := {
+	&"archive_voice": 2, # △
+	&"archive_shape": 4, # ◈
+	&"archive_name": 1, # ≈
+}
+const ARCHIVE_CIPHER_CLUE_RETURN := "残句规定顺序：无声→无形→命名。按五刻度读符号（◒0、≈1、△2、✦3、◈4）；湖面倒影把第一环再向前推三格。最后封印轮取三环步数之和除以五的余数。"
+const ARCHIVE_CIPHER_CLUE_CARRY := "携光后顺序被雨隙折返：重量→倒影→命名。仍按五刻度读符号；雨隙把第一环向前推一格。三环完成后，封印轮取步数总和除以五的余数。"
 const ARCHIVE_MECHANISM_ORDER: Array[StringName] = [
 	&"archive_reflection",
 	&"archive_counterweight",
@@ -259,11 +262,16 @@ func configure_archive_cipher(required: bool) -> void:
 
 
 func get_archive_cipher_code() -> Array[int]:
-	return (
-		ARCHIVE_CIPHER_CODE_CARRY.duplicate()
-		if alignment_id == &"carry_the_light"
-		else ARCHIVE_CIPHER_CODE_RETURN.duplicate()
-	)
+	var code: Array[int] = []
+	for anchor_id in get_archive_anchor_order():
+		code.append(int(ARCHIVE_GLYPH_VALUES.get(anchor_id, 0)))
+	# The first ring is deliberately not a direct transcription.  The phase
+	# clue makes the extra turn deducible, while wrong-order anchors still reset
+	# the sequence before the player ever reaches this console.
+	var first_ring_offset := 1 if alignment_id == &"carry_the_light" else 3
+	if not code.is_empty():
+		code[0] = posmod(code[0] + first_ring_offset, 5)
+	return code
 
 
 func get_archive_cipher_clue() -> String:

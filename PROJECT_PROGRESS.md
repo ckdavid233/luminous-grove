@@ -1,9 +1,46 @@
 # 微光林地：雨的名字 — 项目进度快照
 
-快照日期：2026-08-10
+快照日期：2026-08-11
 工程版本：0.6.2-alpha
 引擎：Godot 4.7.1 Stable  
 当前分支：`feature/art-refinement-0.6.2`
+
+## 2026-08-11 最终视觉复验（本轮提交前）
+
+本轮把试玩反馈对应的四条链路都落到可验证实现：角色在 GLB 动画上叠加可逆的脊柱、肩臂、腿部、头部
+骨骼层，Walk/Run/Interact 采样可见的重心与伸手阶段；低于 y=-1.75 会回到经过过滤的安全检查点并
+清空速度/交互状态；配重石回位后跨时相同步铭名透镜；档案三环现在由锚点符号、alignment 顺序、第一环
+偏移和五进制封印组成，错误确认会重置并保留线索。
+
+画质重制新增自定义蓝金天空、电影级 LUT/暗角/胶片颗粒、暖色神龛反弹光与冷色湖面轮廓光；地形保持
+129×129 高密度渲染网格，草簇升级为八片弯曲叶片，近景树叶接入带 alpha cutout 的叶片图集并保留
+树皮扫描 PBR。湖面实际恢复屏幕折射/反射采样，保留双层法线、Fresnel、深度吸收、焦散、岸线泡沫和
+水纹/飞溅池；雨水改为可读的细雨条、低发光水滴和池化软泡沫。
+
+真实 Vulkan 1280×720 截图与 SHA-256 已更新到 `VISUAL_VALIDATION_REPORT.md`。3840×2160 证据使用
+`LUMINOUS_RENDER_SCALE=0.5` 输出目标尺寸（不是原生 1.0 性能结论）。完整 `./tools/run_regression.sh`
+已通过 `REGRESSION_OK tests=25`，Windows 包会在本轮代码落盘后重新导出；当前环境没有 Windows，不能
+把 Linux PCK smoke 当作 Windows 实机启动证明。
+
+当前重新导出的便携包位于 `releases/LuminousGrove-Windows-x86_64-v0.6.2.zip`，大小 576,263,857
+bytes，SHA-256 为 `59267b3a5635270dac2f82c2767021ad0b6daa39f16c4d8b887f5742bd2edf53`；PCK smoke
+输出 `RELEASE_SMOKE_OK build=0.6.2-alpha campaign=8 quality=high echo_async=ready`。
+
+## 2026-08-11 画质重制与试玩反馈修复
+
+本轮把“能跑的原型”继续推向重制版镜头：角色不再只依赖根节点摆动，而是在 GLB 动画之上叠加
+躯干重心、反向摆臂、起停前倾、呼吸和交互伸手的骨骼层；第三人称相机缩短到 3.15m、FOV 调整为
+53°，让动作和服装材质在实际玩法镜头中可读。水面把过大的 Gerstner 波幅、屏幕反射扭曲和闪光
+压低，保留 Fresnel、低幅双层法线、深度吸收、岸线泡沫和反射探针；水花池增加带噪声的软泡沫接触层，
+雨滴与水面闪烁粒子改为更小、更低发光的材质，避免白色粒子盖住湖面。中远景树冠从圆球代理提升为
+30/20 张分层叶片卡，树叶沿高度、实例和风相位产生色差与摆动。真实 Vulkan 截图已重新生成：
+`previews/godot_prototype.png`、`forest_tree_detail.png`、`realistic_lake.png`、
+`realistic_lake_splash.png`；SHA-256 与动作截图索引见 `VISUAL_VALIDATION_REPORT.md`。
+
+本轮还把虚空恢复阈值提前到 y=-1.75 并保留安全检查点，三环档案谜题增加最终封印轮（步数和除以五取余），
+配重回位后由 NarrativeDirector 重同步铭名透镜和玩家交互目标。`player_animation_test.gd`、
+`presentation_test.gd`、`interactive_water_test.gd` 与完整 `REGRESSION_OK tests=25` 已通过；Windows 包
+需在本轮提交后重新导出。
 
 ## 当前可交付状态
 
@@ -165,10 +202,10 @@ Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能�
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮三环谜题、直接动画、虚空恢复与湖面 Shader 修复后已重新导出 PCK，
-  SHA-256 为 `6416d46ee5592b91c50cfeb5f28fa9e831bd6c8bdfebc34dfc54f8b986f97357`
-  （538,736,844 bytes）。ZIP SHA-256 为
-  `4891a22f474825072cedd0fe7bd81274948dd4cc596466954f7c2974bf245fee`
-  （576,248,808 bytes）。
+  SHA-256 为 `4aaf8dc676880e9c973da5949953e3ee97ae2e59d0434c0b22d1425b93f230cb`
+  （538,754,764 bytes）。ZIP SHA-256 为
+  `59267b3a5635270dac2f82c2767021ad0b6daa39f16c4d8b887f5742bd2edf53`
+  （576,263,857 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、

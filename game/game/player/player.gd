@@ -29,10 +29,10 @@ const SURFACE_PROBE := preload("res://game/world/surface_probe.gd")
 @export var coyote_time := 0.13
 @export var jump_buffer_time := 0.14
 @export var landing_animation_min_speed := 1.75
-@export var visual_breathing_strength := 0.012
-@export var visual_sway_strength := 0.028
-@export var visual_stride_response := 0.06
-@export var void_fall_threshold := -3.5
+@export var visual_breathing_strength := 0.018
+@export var visual_sway_strength := 0.045
+@export var visual_stride_response := 0.09
+@export var void_fall_threshold := -1.75
 
 @onready var model: Node3D = %Model
 @onready var camera_pivot: Node3D = %CameraPivot
@@ -61,6 +61,7 @@ var _visual_previous_speed := 0.0
 var _visual_base_position := Vector3.ZERO
 var _visual_base_scale := Vector3.ONE
 var _interaction_requested := false
+var _interaction_refresh_pending := false
 var _coyote_time_left := 0.0
 var _jump_buffer_left := 0.0
 var _landing_time_left := 0.0
@@ -80,6 +81,7 @@ var _left_foot_ik: SkeletonIK3D
 var _right_foot_ik: SkeletonIK3D
 var _left_foot_query: PhysicsRayQueryParameters3D
 var _right_foot_query: PhysicsRayQueryParameters3D
+var _procedural_bone_offsets: Dictionary = {}
 var _interaction_shape: SphereShape3D
 var _interaction_query: PhysicsShapeQueryParameters3D
 var _interaction_ray_query: PhysicsRayQueryParameters3D
@@ -140,6 +142,9 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("interact"):
 		_interaction_requested = true
 	_update_interaction_target()
+	if _interaction_refresh_pending:
+		_interaction_refresh_pending = false
+		_update_interaction_target()
 	if _interaction_requested:
 		request_interaction()
 		_interaction_requested = false
@@ -302,7 +307,7 @@ func _update_camera_motion(delta: float, horizontal_speed: float) -> void:
 		_camera_base_height + bob,
 		minf(1.0, delta * 9.0),
 	)
-	camera.fov = lerpf(camera.fov, 64.0 if _is_sprinting else 58.0, minf(1.0, delta * 5.5))
+	camera.fov = lerpf(camera.fov, 60.0 if _is_sprinting else 53.0, minf(1.0, delta * 5.5))
 
 
 func _update_visual_motion(delta: float) -> void:
@@ -320,7 +325,7 @@ func _update_visual_motion(delta: float) -> void:
 		2.5,
 	) / 2.5
 	_visual_previous_speed = lerpf(_visual_previous_speed, horizontal_speed, minf(1.0, delta * 10.0))
-	var gait_rate := 5.4 + horizontal_speed * 1.25
+	var gait_rate := 5.9 + horizontal_speed * 1.5
 	var gait := sin(_visual_time * gait_rate)
 	var counter_gait := cos(_visual_time * gait_rate * 0.5)
 	var grounded_weight := 1.0 if is_on_floor() else 0.35
@@ -334,7 +339,7 @@ func _update_visual_motion(delta: float) -> void:
 	)
 	model.position = model.position.lerp(
 		target_position,
-		minf(1.0, delta * 9.0),
+		minf(1.0, delta * 11.0),
 	)
 	var locomotion_pitch := clampf(-acceleration_ratio * 0.045, -0.045, 0.045)
 	var locomotion_roll := sway * 0.72
@@ -347,13 +352,93 @@ func _update_visual_motion(delta: float) -> void:
 		turn_lean + locomotion_roll,
 		minf(1.0, delta * 8.0),
 	)
-	var compression := clampf(step_lift * 0.18 - acceleration_ratio * 0.012, -0.018, 0.018)
+	var compression := clampf(step_lift * 0.24 - acceleration_ratio * 0.018, -0.028, 0.028)
 	var target_scale := _visual_base_scale * Vector3(
 		1.0 - compression,
 		1.0 + compression * 0.72,
 		1.0 - compression,
 	)
 	model.scale = model.scale.lerp(target_scale, minf(1.0, delta * 7.0))
+	_update_procedural_bones(
+		horizontal_speed,
+		speed_ratio,
+		grounded_weight,
+		gait,
+		counter_gait,
+		breath,
+		acceleration_ratio,
+	)
+
+
+func _update_procedural_bones(
+	horizontal_speed: float,
+	speed_ratio: float,
+	grounded_weight: float,
+	gait: float,
+	counter_gait: float,
+	breath: float,
+	acceleration_ratio: float,
+) -> void:
+	if _skeleton == null or not is_instance_valid(_skeleton):
+		return
+	# Keep the authored clip as the base pose and add a small, deterministic
+	# layer on top.  Imported clips can be subtle at the normal third-person
+	# camera distance; this makes the shoulders, torso and head visibly respond
+	# to gait, acceleration and breathing without replacing the mocap data.
+	var walking_weight := clampf(speed_ratio, 0.0, 1.18)
+	var interaction_weight := 1.0 if _interaction_time_left > 0.0 else 0.0
+	var gait_weight := walking_weight * (1.0 - interaction_weight)
+	var shoulder_swing := gait * 0.30 * gait_weight
+	var opposite_swing := -shoulder_swing
+	var torso_roll := gait * 0.085 * gait_weight
+	var torso_pitch := clampf(-acceleration_ratio * 0.11, -0.11, 0.11)
+	var head_counter := -torso_roll * 0.5
+	var idle_breath := breath * 1.6 + sin(_visual_time * 1.05) * 0.012
+	if interaction_weight > 0.0:
+		# The interact clip supplies the main reach.  A restrained anticipation
+		# and recovery layer makes the action read even if the imported clip is
+		# viewed between keyframes.
+		var interact_phase := 1.0 - clampf(_interaction_time_left / 1.65, 0.0, 1.0)
+		var reach := sin(interact_phase * PI) * 0.30
+		shoulder_swing = reach
+		opposite_swing = -reach * 0.22
+		torso_pitch = -reach * 0.10
+		torso_roll = reach * 0.045
+		idle_breath = 0.0
+	_apply_bone_offset(&"spine_01", Vector3(torso_pitch, 0.0, torso_roll))
+	_apply_bone_offset(&"spine_02", Vector3(torso_pitch * 0.68, 0.0, torso_roll * 0.78))
+	_apply_bone_offset(&"spine_03", Vector3(torso_pitch * 0.42, 0.0, torso_roll * 0.55))
+	_apply_bone_offset(&"upperarm_l", Vector3(shoulder_swing, 0.0, -shoulder_swing * 0.24))
+	_apply_bone_offset(&"upperarm_r", Vector3(opposite_swing, 0.0, -opposite_swing * 0.24))
+	_apply_bone_offset(&"lowerarm_l", Vector3(shoulder_swing * 0.42, 0.0, -shoulder_swing * 0.12))
+	_apply_bone_offset(&"lowerarm_r", Vector3(opposite_swing * 0.42, 0.0, -opposite_swing * 0.12))
+	_apply_bone_offset(&"thigh_l", Vector3(-shoulder_swing * 0.38, 0.0, 0.0))
+	_apply_bone_offset(&"thigh_r", Vector3(shoulder_swing * 0.38, 0.0, 0.0))
+	_apply_bone_offset(&"calf_l", Vector3(shoulder_swing * 0.22, 0.0, 0.0))
+	_apply_bone_offset(&"calf_r", Vector3(-shoulder_swing * 0.22, 0.0, 0.0))
+	_apply_bone_offset(
+		&"head",
+		Vector3(-torso_pitch * 0.35, head_counter, idle_breath * 0.42),
+	)
+	_apply_bone_offset(&"neck_01", Vector3(-torso_pitch * 0.18, head_counter * 0.5, 0.0))
+
+
+func _apply_bone_offset(bone_name: StringName, euler_offset: Vector3) -> void:
+	var bone_index := _skeleton.find_bone(bone_name)
+	if bone_index < 0:
+		return
+	var previous: Quaternion = _procedural_bone_offsets.get(
+		bone_index,
+		Quaternion.IDENTITY,
+	)
+	var current := _skeleton.get_bone_pose_rotation(bone_index)
+	# Remove only the offset written on the previous physics tick; the
+	# AnimationPlayer remains the source of the base pose and can transition
+	# between Walk/Run/Jump/Interact normally.
+	var base_pose := current * previous.inverse()
+	var next_offset := Basis.from_euler(euler_offset).get_rotation_quaternion()
+	_skeleton.set_bone_pose_rotation(bone_index, base_pose * next_offset)
+	_procedural_bone_offsets[bone_index] = next_offset
 
 
 func _setup_animation_tree() -> void:
@@ -613,7 +698,9 @@ func refresh_interaction_target() -> void:
 	# between two physics ticks. Expose an explicit refresh so the next input
 	# cannot use a stale, now-disabled interactable.
 	_interaction_target = null
-	_update_interaction_target()
+	_interaction_refresh_pending = true
+	prompt_label.text = ""
+	prompt_label.visible = false
 
 
 func set_visual_quality_profile(profile: StringName) -> void:

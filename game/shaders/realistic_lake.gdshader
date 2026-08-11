@@ -14,27 +14,27 @@ uniform vec3 caustic_color : source_color = vec3(0.22, 0.88, 0.80);
 uniform vec3 ripple_color : source_color = vec3(0.42, 0.98, 0.91);
 
 group_uniforms optics;
-uniform float absorption = 0.88;
-uniform float refraction_strength : hint_range(0.0, 0.08) = 0.026;
+uniform float absorption = 0.82;
+uniform float refraction_strength : hint_range(0.0, 0.08) = 0.012;
 uniform float fresnel_power : hint_range(1.0, 10.0) = 4.0;
-uniform float surface_roughness : hint_range(0.0, 1.0) = 0.045;
-uniform float micro_normal_strength : hint_range(0.0, 1.0) = 0.42;
+uniform float surface_roughness : hint_range(0.0, 1.0) = 0.12;
+uniform float micro_normal_strength : hint_range(0.0, 1.0) = 0.24;
 uniform float wetness : hint_range(0.0, 1.0) = 0.54;
 uniform float rain_intensity : hint_range(0.0, 1.0) = 0.68;
-uniform float reflection_strength : hint_range(0.0, 2.0) = 1.15;
-uniform float sparkle_intensity : hint_range(0.0, 4.0) = 1.8;
+uniform float reflection_strength : hint_range(0.0, 2.0) = 0.78;
+uniform float sparkle_intensity : hint_range(0.0, 4.0) = 0.92;
 
 group_uniforms waves;
 uniform float wave_speed = 0.72;
-uniform vec4 wave_1 = vec4(1.0, 0.15, 0.14, 5.8);
-uniform vec4 wave_2 = vec4(-0.4, 1.0, 0.085, 3.1);
-uniform vec4 wave_3 = vec4(0.7, -0.8, 0.045, 1.55);
-uniform vec4 wave_4 = vec4(-0.9, -0.25, 0.028, 0.82);
+uniform vec4 wave_1 = vec4(1.0, 0.15, 0.058, 5.8);
+uniform vec4 wave_2 = vec4(-0.4, 1.0, 0.036, 3.1);
+uniform vec4 wave_3 = vec4(0.7, -0.8, 0.019, 1.55);
+uniform vec4 wave_4 = vec4(-0.9, -0.25, 0.011, 0.82);
 
 group_uniforms shoreline;
 uniform float foam_width : hint_range(0.01, 2.0) = 0.58;
-uniform float foam_intensity : hint_range(0.0, 3.0) = 1.45;
-uniform float caustic_intensity : hint_range(0.0, 3.0) = 0.62;
+uniform float foam_intensity : hint_range(0.0, 3.0) = 1.1;
+uniform float caustic_intensity : hint_range(0.0, 3.0) = 0.38;
 
 group_uniforms interaction;
 uniform vec2 ripple_origins[32];
@@ -149,13 +149,13 @@ void fragment() {
 	ripple_x += sin(world_position.z * 9.3 - TIME * 1.07) * 0.72;
 	float ripple_z = cos(world_position.z * 6.3 - TIME * 0.71);
 	ripple_z += cos(world_position.x * 10.1 + TIME * 0.94) * 0.62;
-	vec2 normal_a = vec2(ripple_x, ripple_z) * micro_normal_strength * 0.13;
+	vec2 normal_a = vec2(ripple_x, ripple_z) * micro_normal_strength * 0.078;
 	vec2 normal_b = vec2(
 		sin(world_position.z * 16.0 - TIME * 1.52),
 		cos(world_position.x * 18.4 + TIME * 1.28)
-	) * micro_normal_strength * 0.075;
+	) * micro_normal_strength * 0.045;
 	NORMAL_MAP = vec3(mix(normal_a, normal_b, 0.46) * 0.5 + 0.5, 1.0);
-	NORMAL_MAP_DEPTH = micro_normal_strength * (1.0 + wetness * 0.32);
+	NORMAL_MAP_DEPTH = micro_normal_strength * (0.86 + wetness * 0.22);
 
 	float radial = clamp(length((UV - vec2(0.5)) * 2.0), 0.0, 1.0);
 	float center_depth = 1.0 - smoothstep(0.18, 0.92, radial);
@@ -193,18 +193,34 @@ void fragment() {
 	float fresnel = pow(1.0 - view_alignment, fresnel_power);
 	fresnel = mix(0.025, 1.0, fresnel);
 	vec2 reflection_uv = clamp(
-		SCREEN_UV + vec2(normal_a.x, -normal_a.y) * (0.08 + fresnel * 0.06),
+		SCREEN_UV + vec2(normal_a.x, -normal_a.y) * (0.034 + fresnel * 0.028),
 		vec2(0.001),
 		vec2(0.999)
 	);
-	vec3 scene_reflection = textureLod(screen_texture, reflection_uv, 1.0).rgb;
-	vec3 reflected = mix(reflection_color, scene_reflection * vec3(0.48, 0.72, 0.9), 0.22);
-	reflected *= (0.72 + 0.28 * value_noise(world_position.xz * 0.18)) * reflection_strength;
-	vec3 final_color = mix(transmitted, reflected, fresnel * (0.46 + wetness * 0.18));
+	vec3 scene_reflection = textureLod(screen_texture, reflection_uv, 2.0).rgb;
+	float reflection_luma = dot(scene_reflection, vec3(0.2126, 0.7152, 0.0722));
+	vec3 neutral_reflection = mix(
+		vec3(reflection_luma * 0.74),
+		scene_reflection * vec3(0.38, 0.68, 0.82),
+		0.64
+	);
+	vec3 sky_reflection = mix(
+		vec3(0.20, 0.39, 0.47),
+		vec3(0.04, 0.10, 0.18),
+		clamp(normalize(VIEW).y * 0.5 + 0.5, 0.0, 1.0)
+	);
+	// Keep screen-space reflection as a very small breakup term.  A full
+	// strength sample mirrors the off-screen shrine/trees as stretched slabs
+	// on Radeon and reads as an oil smear; the probe/sky supplies the broad
+	// reflection while this term preserves local scene contact.
+	vec3 reflected = mix(sky_reflection, neutral_reflection, 0.06);
+	reflected = mix(reflection_color, reflected, 0.86);
+	reflected *= (0.82 + 0.12 * value_noise(world_position.xz * 0.18)) * reflection_strength;
+	vec3 final_color = mix(transmitted, reflected, fresnel * (0.24 + wetness * 0.10));
 	final_color *= mix(vec3(0.86, 0.98, 1.02), vec3(0.62, 0.84, 0.98), center_depth * 0.68);
 	float sun_glitter = pow(max(dot(normalize(vec3(0.42, 0.86, 0.27)), normalize(reflect(-VIEW, NORMAL))), 0.0), 74.0);
 	sun_glitter *= (0.25 + 0.75 * value_noise(world_position.xz * 8.0 + TIME * 0.18));
-	final_color += vec3(0.62, 0.95, 0.88) * sun_glitter * sparkle_intensity * (0.18 + fresnel * 0.82);
+	final_color += vec3(0.64, 0.91, 0.86) * sun_glitter * sparkle_intensity * (0.12 + fresnel * 0.68);
 	final_color = mix(final_color, foam_color, foam);
 	final_color = mix(final_color, foam_color, interaction_strength * 0.22);
 	float ring_highlight = interaction_crest * ripple_glow;
@@ -213,7 +229,7 @@ void fragment() {
 	ALBEDO = final_color;
 	ROUGHNESS = mix(surface_roughness, 0.72, max(foam, ring_highlight * 0.35));
 	ROUGHNESS = mix(ROUGHNESS, 0.02, wetness * 0.42);
-	SPECULAR = 0.98;
+	SPECULAR = 0.34;
 	METALLIC = 0.0;
 	EMISSION = ripple_color * (ring_highlight * 0.08 + sun_glitter * 0.035) + caustic_color * caustic * 0.012;
 }
