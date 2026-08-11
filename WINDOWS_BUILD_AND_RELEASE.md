@@ -4,7 +4,7 @@
 构建日期：2026-08-11
 目标：64 位 Windows 便携 Release
 
-## 1. 可交付物
+## 1. 可交付物（收尾提交）
 
 目录版：
 
@@ -21,8 +21,8 @@
 最终 ZIP：
 
 ```text
-size: 576,263,857 bytes
-SHA256: 59267b3a5635270dac2f82c2767021ad0b6daa39f16c4d8b887f5742bd2edf53
+size: 578,607,845 bytes
+SHA256: 4b77d92bab1d91165b52c8d23d0b4969dee7d02ca81eb96f37eb49cc45b3e4da
 integrity: unzip -t passed, 4 entries, no errors
 ```
 
@@ -31,7 +31,7 @@ integrity: unzip -t passed, 4 entries, no errors
 | 文件 | 用途 | 大小 |
 |---|---|---:|
 | `LuminousGrove.exe` | Godot 4.7.1 Windows x86_64 Release 程序 | 109,071,872 bytes |
-| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 538,754,764 bytes |
+| `LuminousGrove.pck` | 游戏脚本、场景、模型、贴图与音频资源 | 541,289,800 bytes |
 | `README.txt` | 玩家启动、操作与故障排除 | 随包 |
 | `BUILD_MANIFEST.txt` | 构建来源、验证结果与核心文件哈希 | 随包 |
 
@@ -65,11 +65,12 @@ RELEASE_SMOKE_OK build=0.6.2-alpha campaign=8 quality=high echo_async=ready
 - 工程侧 25 项回归还覆盖真实输入、移动状态、水体边界、环境几何与碰撞。
 - 本次 PCK 包含 ObjectiveGuide 目标距离提示；脚本回归会隐藏 HUD 引导并验证每个主线阶段都有可解析目标。
 - ZIP 已通过 `unzip -t` 完整性检查，4 个条目无错误；SHA256 已写入同名 `.sha256` 文件。
-- 本轮 v8 三环谜题、对齐偏移线索、直接 AnimationPlayer 动作、虚空恢复、叶片图集、电影天空、水面
-  屏幕折射/反射和粒子改动已重新导出；完整回归为 `REGRESSION_OK tests=25`。当前核心文件校验值：
+- 本轮 v8 三环谜题、对齐偏移线索、直接 AnimationPlayer 动作、虚空恢复、叶片图集、近景树冠/树根、
+  地表植物图集、电影天空、水面屏幕折射/反射和粒子改动已重新导出；完整回归为
+  `REGRESSION_OK tests=25`。当前核心文件校验值：
   EXE `430307b1ec7e4039de2ee783f9cd4f7191276e7c33f1c6450946f36763154277`，PCK
-  `4aaf8dc676880e9c973da5949953e3ee97ae2e59d0434c0b22d1425b93f230cb`，ZIP
-  `59267b3a5635270dac2f82c2767021ad0b6daa39f16c4d8b887f5742bd2edf53`。
+  `e15ee9de223a8715e6d4f3eaf6d97f01c356490fad1eae079608028b5e85b01f`，ZIP
+  `4b77d92bab1d91165b52c8d23d0b4969dee7d02ca81eb96f37eb49cc45b3e4da`。
 
 PCK 自检证明导出的游戏数据与脚本可由 4.7.1 运行时读取；它不等于执行 Windows EXE。
 release smoke 会忽略开发者用户存档，从林地基线验证 Echo Ruins 异步加载，并在成功标志后直接

@@ -167,7 +167,11 @@ void fragment() {
 	);
 	vec3 refracted_scene = textureLod(screen_texture, refracted_uv, 0.0).rgb;
 	vec3 absorption_color = mix(shallow_color, deep_color, center_depth * absorption);
-	vec3 transmitted = mix(absorption_color, refracted_scene * absorption_color * 0.92, 0.1);
+	// Let shallow water reveal a little of the stone/shore below it.  The old
+	// 10% transmission made the surface read as opaque teal paint in closeups;
+	// this controlled blend keeps depth absorption while restoring contact
+	// detail and believable refraction.
+	vec3 transmitted = mix(absorption_color, refracted_scene * absorption_color * 0.92, 0.22);
 	float caustic = caustic_pattern(world_position.xz * 1.85, TIME * 1.18);
 	float caustic_secondary = caustic_pattern(world_position.xz * 3.7 + vec2(4.1, -2.7), TIME * -0.72);
 	transmitted += caustic_color * (caustic * 0.72 + caustic_secondary * 0.28) * caustic_intensity * (0.22 + center_depth * 0.78);
@@ -197,7 +201,7 @@ void fragment() {
 		vec2(0.001),
 		vec2(0.999)
 	);
-	vec3 scene_reflection = textureLod(screen_texture, reflection_uv, 2.0).rgb;
+	vec3 scene_reflection = textureLod(screen_texture, reflection_uv, 1.0).rgb;
 	float reflection_luma = dot(scene_reflection, vec3(0.2126, 0.7152, 0.0722));
 	vec3 neutral_reflection = mix(
 		vec3(reflection_luma * 0.74),
@@ -213,7 +217,7 @@ void fragment() {
 	// strength sample mirrors the off-screen shrine/trees as stretched slabs
 	// on Radeon and reads as an oil smear; the probe/sky supplies the broad
 	// reflection while this term preserves local scene contact.
-	vec3 reflected = mix(sky_reflection, neutral_reflection, 0.06);
+	vec3 reflected = mix(sky_reflection, neutral_reflection, 0.12);
 	reflected = mix(reflection_color, reflected, 0.86);
 	reflected *= (0.82 + 0.12 * value_noise(world_position.xz * 0.18)) * reflection_strength;
 	vec3 final_color = mix(transmitted, reflected, fresnel * (0.24 + wetness * 0.10));

@@ -5,7 +5,7 @@
 引擎：Godot 4.7.1 Stable  
 当前分支：`feature/art-refinement-0.6.2`
 
-## 2026-08-11 最终视觉复验（本轮提交前）
+## 2026-08-11 最终视觉复验（收尾提交）
 
 本轮把试玩反馈对应的四条链路都落到可验证实现：角色在 GLB 动画上叠加可逆的脊柱、肩臂、腿部、头部
 骨骼层，Walk/Run/Interact 采样可见的重心与伸手阶段；低于 y=-1.75 会回到经过过滤的安全检查点并
@@ -13,18 +13,23 @@
 偏移和五进制封印组成，错误确认会重置并保留线索。
 
 画质重制新增自定义蓝金天空、电影级 LUT/暗角/胶片颗粒、暖色神龛反弹光与冷色湖面轮廓光；地形保持
-129×129 高密度渲染网格，草簇升级为八片弯曲叶片，近景树叶接入带 alpha cutout 的叶片图集并保留
-树皮扫描 PBR。湖面实际恢复屏幕折射/反射采样，保留双层法线、Fresnel、深度吸收、焦散、岸线泡沫和
+129×129 高密度渲染网格，草簇升级为八片弯曲叶片，近景树叶接入带 alpha cutout 的叶片图集并补充
+近景树冠填充、树根外翻和地表植物图集，同时保留树皮扫描 PBR。湖面实际恢复屏幕折射/反射采样，保留双层法线、Fresnel、深度吸收、焦散、岸线泡沫和
 水纹/飞溅池；雨水改为可读的细雨条、低发光水滴和池化软泡沫。
 
 真实 Vulkan 1280×720 截图与 SHA-256 已更新到 `VISUAL_VALIDATION_REPORT.md`。3840×2160 证据使用
 `LUMINOUS_RENDER_SCALE=0.5` 输出目标尺寸（不是原生 1.0 性能结论）。完整 `./tools/run_regression.sh`
-已通过 `REGRESSION_OK tests=25`，Windows 包会在本轮代码落盘后重新导出；当前环境没有 Windows，不能
+已通过 `REGRESSION_OK tests=25`，Windows 包已在收尾代码落盘后重新导出；当前环境没有 Windows，不能
 把 Linux PCK smoke 当作 Windows 实机启动证明。
 
-当前重新导出的便携包位于 `releases/LuminousGrove-Windows-x86_64-v0.6.2.zip`，大小 576,263,857
-bytes，SHA-256 为 `59267b3a5635270dac2f82c2767021ad0b6daa39f16c4d8b887f5742bd2edf53`；PCK smoke
+当前重新导出的便携包位于 `releases/LuminousGrove-Windows-x86_64-v0.6.2.zip`，大小 578,607,845
+bytes，SHA-256 为 `4b77d92bab1d91165b52c8d23d0b4969dee7d02ca81eb96f37eb49cc45b3e4da`；PCK smoke
 输出 `RELEASE_SMOKE_OK build=0.6.2-alpha campaign=8 quality=high echo_async=ready`。
+
+本次收尾提交同步更新了发布 PCK 的运行时植物图集白名单；目录包核心校验为 EXE
+`430307b1ec7e4039de2ee783f9cd4f7191276e7c33f1c6450946f36763154277`、PCK
+`e15ee9de223a8715e6d4f3eaf6d97f01c356490fad1eae079608028b5e85b01f`。仓库之后不再继续扩展功能，
+仅保留目标 Windows 设备上的启动、输入、驱动和性能验收。
 
 ## 2026-08-11 画质重制与试玩反馈修复
 
@@ -202,16 +207,19 @@ Renoir 设备的 4K 瓶颈同时来自像素量和场景几何/特效，不能�
 - EXE 为 PE32+ x86-64 GUI executable；
 - 导出 PCK 通过 Linux 同版本 `--release-smoke`；
 - ZIP `unzip -t` 通过；本轮三环谜题、直接动画、虚空恢复与湖面 Shader 修复后已重新导出 PCK，
-  SHA-256 为 `4aaf8dc676880e9c973da5949953e3ee97ae2e59d0434c0b22d1425b93f230cb`
-  （538,754,764 bytes）。ZIP SHA-256 为
-  `59267b3a5635270dac2f82c2767021ad0b6daa39f16c4d8b887f5742bd2edf53`
-  （576,263,857 bytes）。
+  SHA-256 为 `e15ee9de223a8715e6d4f3eaf6d97f01c356490fad1eae079608028b5e85b01f`
+  （541,289,800 bytes）。ZIP SHA-256 为
+  `4b77d92bab1d91165b52c8d23d0b4969dee7d02ca81eb96f37eb49cc45b3e4da`
+  （578,607,845 bytes）。
 
 发行包位于本机 `releases/`，按 `.gitignore` 不进入源码仓库；构建命令、文件哈希和人工验收
 要求见 `WINDOWS_BUILD_AND_RELEASE.md`。由于构建机是 Linux，真实 Windows 10/11 启动、
 驱动、全屏、手柄和 SmartScreen 仍是发布前人工验收项。
 
-## 下一阶段：8K 英雄资产、原生桌面性能复测与角色镜头精修
+## 收尾后的唯一待办：目标 Windows 设备验收
+
+源码与功能开发在本提交后冻结；仅需在真实 Windows 10/11 设备完成启动、输入、全屏、驱动、性能
+和至少一轮完整流程验收，并把结果作为发行记录，不再继续扩大本仓库功能范围。
 
 4K runtime 已接入，原生 X11 3840×2160 窗口已完成实测但 P95 仍远超 41.7 ms；下一阶段只为
 英雄镜头启用 8K，并在实体 4K 桌面/独立 GPU/Windows 上重新测量高质量档，再继续角色起步、

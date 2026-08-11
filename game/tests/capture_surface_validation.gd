@@ -183,6 +183,10 @@ func _capture_tree() -> void:
 	trees.multimesh.visible_instance_count = 1
 	var trees_two := _main.get_node_or_null("Forest/DetailedTrees_2")
 	var trees_three := _main.get_node_or_null("Forest/DetailedTrees_3")
+	var near_fill_two := _main.get_node_or_null("Forest/NearCanopyFill_2")
+	var near_fill_three := _main.get_node_or_null("Forest/NearCanopyFill_3")
+	var near_roots_two := _main.get_node_or_null("Forest/NearTreeRoots_2")
+	var near_roots_three := _main.get_node_or_null("Forest/NearTreeRoots_3")
 	var mid_trunks := _main.get_node_or_null("Forest/MidTreeTrunks")
 	var mid_canopies := _main.get_node_or_null("Forest/MidTreeCanopies")
 	var far_trunks := _main.get_node_or_null("Forest/FarTreeTrunks")
@@ -191,6 +195,14 @@ func _capture_tree() -> void:
 		trees_two.visible = false
 	if trees_three != null:
 		trees_three.visible = false
+	if near_fill_two != null:
+		near_fill_two.visible = false
+	if near_fill_three != null:
+		near_fill_three.visible = false
+	if near_roots_two != null:
+		near_roots_two.visible = false
+	if near_roots_three != null:
+		near_roots_three.visible = false
 	if mid_trunks != null:
 		mid_trunks.visible = false
 	if mid_canopies != null:

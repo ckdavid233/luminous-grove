@@ -89,20 +89,20 @@ static func apply_profile(character_root: Node, profile: StringName) -> void:
 static func _configure_skin(material: StandardMaterial3D) -> void:
 	material.subsurf_scatter_enabled = true
 	material.subsurf_scatter_skin_mode = true
-	material.subsurf_scatter_strength = 0.18
+	material.subsurf_scatter_strength = 0.12
 	material.subsurf_scatter_transmittance_enabled = true
-	material.subsurf_scatter_transmittance_depth = 0.12
-	material.subsurf_scatter_transmittance_boost = 0.12
-	material.metallic_specular = 0.42
-	material.roughness = clampf(material.roughness, 0.42, 0.62)
+	material.subsurf_scatter_transmittance_depth = 0.1
+	material.subsurf_scatter_transmittance_boost = 0.08
+	material.metallic_specular = 0.28
+	material.roughness = clampf(material.roughness, 0.5, 0.7)
 
 
 static func _configure_eyes(material: StandardMaterial3D) -> void:
 	material.clearcoat_enabled = true
-	material.clearcoat = 0.72
-	material.clearcoat_roughness = 0.08
-	material.metallic_specular = 0.55
-	material.roughness = 0.16
+	material.clearcoat = 0.62
+	material.clearcoat_roughness = 0.1
+	material.metallic_specular = 0.42
+	material.roughness = 0.2
 
 
 static func _configure_hair(
@@ -110,9 +110,9 @@ static func _configure_hair(
 	has_tangents: bool,
 ) -> void:
 	material.anisotropy_enabled = has_tangents
-	material.anisotropy = 0.34 if has_tangents else 0.0
-	material.metallic_specular = 0.48
-	material.roughness = minf(material.roughness, 0.42)
+	material.anisotropy = 0.28 if has_tangents else 0.0
+	material.metallic_specular = 0.34
+	material.roughness = clampf(material.roughness, 0.36, 0.52)
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 
@@ -150,7 +150,7 @@ static func _apply_imported_normal_map(
 		return
 	material.normal_enabled = true
 	material.normal_texture = texture
-	material.normal_scale = 0.72
+	material.normal_scale = 0.88
 
 
 static func _mesh_has_tangents(mesh: Mesh, surface_index: int) -> bool:

@@ -68,6 +68,7 @@ var _world_environment: WorldEnvironment
 var _sun: DirectionalLight3D
 var _lake_fill: OmniLight3D
 var _grass_instance: MultiMeshInstance3D
+var _ground_cover_instance: MultiMeshInstance3D
 var _grass_material: ShaderMaterial
 var _footprint_pool
 var _forest_tree_instances: Array[MultiMeshInstance3D] = []
@@ -820,7 +821,7 @@ func _create_water() -> void:
 	material.shader = load("res://shaders/realistic_lake.gdshader")
 	material.set_shader_parameter("wetness", 0.62)
 	material.set_shader_parameter("rain_intensity", 0.78)
-	material.set_shader_parameter("reflection_strength", 0.78)
+	material.set_shader_parameter("reflection_strength", 0.88)
 	material.set_shader_parameter("sparkle_intensity", 0.92)
 	material.set_shader_parameter("foam_intensity", 1.1)
 	material.set_shader_parameter("caustic_intensity", 0.38)
@@ -1145,6 +1146,15 @@ func _create_forest() -> void:
 		load("res://content/vfx/leaf_petals_atlas.png"),
 	)
 	leaf_material.set_shader_parameter("leaf_atlas_enabled", true)
+	var near_fill_material := leaf_material.duplicate(true) as ShaderMaterial
+	near_fill_material.set_shader_parameter("ambient_lift", 0.16)
+	near_fill_material.set_shader_parameter("leaf_contrast", 1.02)
+	near_fill_material.set_shader_parameter("wind_strength", 0.105)
+	near_fill_material.set_shader_parameter("dense_canopy", true)
+	var proxy_leaf_material := leaf_material.duplicate(true) as ShaderMaterial
+	proxy_leaf_material.set_shader_parameter("ambient_lift", 0.08)
+	proxy_leaf_material.set_shader_parameter("leaf_contrast", 0.98)
+	proxy_leaf_material.set_shader_parameter("dense_canopy", true)
 	var tree_colliders := StaticBody3D.new()
 	tree_colliders.name = "TreeColliders"
 	tree_colliders.collision_layer = 1
@@ -1229,8 +1239,145 @@ func _create_forest() -> void:
 		tree_instances.multimesh = multimesh
 		forest.add_child(tree_instances)
 		_forest_tree_instances.append(tree_instances)
-	_create_mid_tree_proxies(forest, mid_tree_transforms, bark_material, leaf_material)
-	_create_far_tree_proxies(forest, far_tree_transforms, bark_material, leaf_material)
+		# The imported tree keeps its authored trunk/branch silhouette, but its
+		# leaf cards are intentionally sparse so it can be used as a lightweight
+		# runtime asset.  Add a small, per-variant near canopy fill instead of one
+		# global overlay: validation cameras can hide a variant without leaving
+		# orphaned cards from another tree in the shot.
+		_create_near_canopy_fill(
+			forest,
+			variant_index + 1,
+			near_tree_transforms,
+			near_fill_material,
+		)
+		_create_near_tree_roots(
+			forest,
+			variant_index + 1,
+			near_tree_transforms,
+			bark_material,
+		)
+	_create_mid_tree_proxies(forest, mid_tree_transforms, bark_material, proxy_leaf_material)
+	_create_far_tree_proxies(forest, far_tree_transforms, bark_material, proxy_leaf_material)
+
+
+func _create_near_canopy_fill(
+	parent: Node3D,
+	variant_index: int,
+	transforms: Array[Transform3D],
+	leaf_material: Material,
+) -> void:
+	if transforms.is_empty():
+		return
+	var cluster_offsets := [
+		Vector3(0.0, 3.18, 0.0),
+		Vector3(-0.62, 3.82, 0.16),
+		Vector3(0.68, 4.02, -0.2),
+		Vector3(0.04, 4.72, 0.34),
+	]
+	var cluster_scales := [
+		Vector3(1.04, 0.82, 0.98),
+		Vector3(0.8, 0.72, 0.76),
+		Vector3(0.84, 0.76, 0.8),
+		Vector3(0.66, 0.62, 0.64),
+	]
+	var canopy_mesh := _create_canopy_cluster_mesh(leaf_material, 18)
+	var canopy_multimesh := MultiMesh.new()
+	canopy_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	canopy_multimesh.use_custom_data = true
+	canopy_multimesh.instance_count = transforms.size() * cluster_offsets.size()
+	canopy_multimesh.mesh = canopy_mesh
+	var canopies := MultiMeshInstance3D.new()
+	canopies.name = "NearCanopyFill_%d" % variant_index
+	canopies.multimesh = canopy_multimesh
+	canopies.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	canopies.visibility_range_begin = 0.0
+	canopies.visibility_range_end = 18.0
+	canopies.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	parent.add_child(canopies)
+	_forest_proxy_instances.append(canopies)
+	for tree_index in transforms.size():
+		var source := transforms[tree_index]
+		var scale := source.basis.get_scale()
+		var rotation_basis := source.basis.orthonormalized()
+		for cluster_index in cluster_offsets.size():
+			var phase := float(tree_index * 7 + cluster_index * 13 + variant_index * 3)
+			var yaw := phase * 0.37
+			var tilt := deg_to_rad(-11.0 + fmod(phase * 3.1, 22.0))
+			var cluster_basis := rotation_basis * Basis.from_euler(
+				Vector3(tilt, yaw, deg_to_rad(sin(phase) * 9.0))
+			)
+			var cluster_scale: Vector3 = cluster_scales[cluster_index]
+			var instance_index := tree_index * cluster_offsets.size() + cluster_index
+			canopy_multimesh.set_instance_transform(
+				instance_index,
+				Transform3D(
+					cluster_basis.scaled(
+						Vector3(scale.x, scale.y, scale.z) * cluster_scale
+					),
+					source.origin + rotation_basis * (
+						cluster_offsets[cluster_index] * Vector3(scale.x, scale.y, scale.z)
+					),
+				),
+			)
+			canopy_multimesh.set_instance_custom_data(
+				instance_index,
+				Color(
+					_rng.randf_range(0.08, 0.92),
+					_rng.randf_range(0.16, 0.98),
+					_rng.randf(),
+					1.0,
+				),
+			)
+
+
+func _create_near_tree_roots(
+	parent: Node3D,
+	variant_index: int,
+	transforms: Array[Transform3D],
+	bark_material: Material,
+) -> void:
+	if transforms.is_empty():
+		return
+	var root_mesh := CylinderMesh.new()
+	root_mesh.top_radius = 0.09
+	root_mesh.bottom_radius = 0.62
+	root_mesh.height = 0.62
+	root_mesh.radial_segments = 7
+	root_mesh.rings = 2
+	root_mesh.material = bark_material
+	var root_multimesh := MultiMesh.new()
+	root_multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	root_multimesh.instance_count = transforms.size() * 4
+	root_multimesh.mesh = root_mesh
+	var roots := MultiMeshInstance3D.new()
+	roots.name = "NearTreeRoots_%d" % variant_index
+	roots.multimesh = root_multimesh
+	roots.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	roots.visibility_range_begin = 0.0
+	roots.visibility_range_end = 18.0
+	roots.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	parent.add_child(roots)
+	_forest_proxy_instances.append(roots)
+	for tree_index in transforms.size():
+		var source := transforms[tree_index]
+		var scale := source.basis.get_scale()
+		var rotation_basis := source.basis.orthonormalized()
+		for root_index in 4:
+			var angle := float(root_index) * TAU * 0.25 + float(tree_index) * 0.47
+			var direction := Vector3(cos(angle), 0.0, sin(angle))
+			var root_basis := rotation_basis * Basis.from_euler(Vector3(0.0, angle, 0.0))
+			var root_scale := Vector3(
+				scale.x * (0.72 if root_index % 2 == 0 else 0.54),
+				scale.y * 0.92,
+				scale.z * 0.46,
+			)
+			root_multimesh.set_instance_transform(
+				tree_index * 4 + root_index,
+				Transform3D(
+					root_basis.scaled(root_scale),
+					source.origin + direction * (0.28 * scale.x) + Vector3.UP * 0.29,
+				),
+			)
 
 
 func _create_mid_tree_proxies(
@@ -1522,13 +1669,13 @@ func _create_canopy_cluster_mesh(material: Material, leaf_count: int) -> ArrayMe
 			sin(elevation),
 			sin(azimuth) * cos(elevation),
 		).normalized()
-		var center := direction * (0.42 + float(leaf_index % 4) * 0.13)
+		var center := direction * (0.48 + float(leaf_index % 4) * 0.15)
 		var axis := Vector3.UP.cross(direction)
 		if axis.length_squared() < 0.01:
 			axis = Vector3.RIGHT
 		axis = axis.normalized()
-		var width := 0.22 + float(leaf_index % 4) * 0.035
-		var length := 0.52 + float((leaf_index * 5) % 5) * 0.075
+		var width := 0.27 + float(leaf_index % 4) * 0.042
+		var length := 0.64 + float((leaf_index * 5) % 5) * 0.09
 		var base := vertices.size()
 		var left := center - axis * width
 		var right := center + axis * width
@@ -1670,6 +1817,122 @@ func _create_grass() -> void:
 			Color(_rng.randf(), _rng.randf(), 0.0, 1.0),
 		)
 	_apply_grass_quality()
+	_create_ground_cover()
+	_apply_grass_quality()
+
+
+func _create_ground_cover() -> void:
+	# Broad atlas clumps break up the repeated sedge blades in the camera's
+	# foreground.  Three crossed cards per instance give a soft, volumetric
+	# silhouette while the alpha-scissor keeps the transparent atlas background
+	# out of the depth buffer.
+	var cover_mesh := ArrayMesh.new()
+	var vertices := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var indices := PackedInt32Array()
+	var card_angles := [0.0, PI * 0.52, PI * 1.04]
+	for card_index in card_angles.size():
+		var angle: float = card_angles[card_index]
+		var right := Vector3(cos(angle), 0.0, sin(angle)) * 0.42
+		var forward := Vector3(-sin(angle), 0.0, cos(angle))
+		var height := 0.58 + float(card_index % 2) * 0.08
+		var base := vertices.size()
+		vertices.append_array(
+			PackedVector3Array([
+				-right,
+				right,
+				-right + Vector3.UP * height,
+				right + Vector3.UP * height,
+			])
+		)
+		for _vertex in 4:
+			normals.append(forward)
+		var atlas_column := card_index % 3
+		var atlas_row := (card_index * 2 + 1) % 6
+		var cell_size := Vector2(1.0 / 3.0, 1.0 / 6.0)
+		var cell_origin := Vector2(float(atlas_column), float(atlas_row)) * cell_size
+		var inset := Vector2(0.012, 0.018)
+		uvs.append_array(
+			PackedVector2Array([
+				cell_origin + Vector2(inset.x, cell_size.y - inset.y),
+				cell_origin + Vector2(cell_size.x - inset.x, cell_size.y - inset.y),
+				cell_origin + Vector2(inset.x, inset.y),
+				cell_origin + Vector2(cell_size.x - inset.x, inset.y),
+			])
+		)
+		indices.append_array(
+			PackedInt32Array([
+				base,
+				base + 2,
+				base + 1,
+				base + 1,
+				base + 2,
+				base + 3,
+			])
+		)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	cover_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var cover_material := StandardMaterial3D.new()
+	cover_material.albedo_texture = load("res://content/vfx/forest_plants_atlas.png")
+	cover_material.albedo_color = Color(0.58, 0.72, 0.46, 0.84)
+	cover_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	cover_material.alpha_scissor_threshold = 0.38
+	cover_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	cover_material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	cover_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	cover_material.roughness = 0.84
+	cover_material.metallic_specular = 0.2
+	cover_material.backlight_enabled = true
+	cover_material.backlight = Color(0.16, 0.32, 0.15)
+	cover_mesh.surface_set_material(0, cover_material)
+	var multimesh := MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_custom_data = true
+	multimesh.instance_count = 320
+	multimesh.mesh = cover_mesh
+	var instance := MultiMeshInstance3D.new()
+	instance.name = "GroundCover"
+	instance.multimesh = multimesh
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	instance.visibility_range_end = 30.0
+	instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	add_child(instance)
+	_ground_cover_instance = instance
+	for index in multimesh.instance_count:
+		var position_2d := Vector2.ZERO
+		for _attempt in 80:
+			position_2d = Vector2(
+				_rng.randf_range(-31.0, 31.0),
+				_rng.randf_range(-31.0, 31.0),
+			)
+			var lake_normalized := Vector2(
+				(position_2d.x + 8.0) / 7.7,
+				(position_2d.y + 8.0) / 5.2,
+			)
+			if lake_normalized.length() <= 1.05 or _is_near_forest_path(position_2d, 0.6):
+				continue
+			break
+		var position := Vector3(
+			position_2d.x,
+			FOREST_TERRAIN.height_at(position_2d.x, position_2d.y) + 0.018,
+			position_2d.y,
+		)
+		var rotation := _rng.randf_range(0.0, TAU)
+		var scale := _rng.randf_range(0.34, 0.64)
+		var basis := Basis.from_euler(Vector3(0.0, rotation, 0.0)).scaled(
+			Vector3(scale, scale * _rng.randf_range(0.82, 1.16), scale)
+		)
+		multimesh.set_instance_transform(index, Transform3D(basis, position))
+		multimesh.set_instance_custom_data(
+			index,
+			Color(_rng.randf_range(0.08, 0.92), _rng.randf_range(0.2, 1.0), _rng.randf(), 1.0),
+		)
 
 
 func _create_grass_clump_mesh() -> ArrayMesh:
@@ -2054,6 +2317,7 @@ func _register_wetness_materials() -> void:
 		"LakeShore",
 		"Forest",
 		"Grass",
+		"GroundCover",
 		"Shrine",
 		"WindBell",
 	]:
@@ -2443,6 +2707,19 @@ func _apply_quality_profile() -> void:
 	if _world_environment == null or _world_environment.environment == null:
 		return
 	var environment := _world_environment.environment
+	var viewport := get_viewport()
+	if viewport != null:
+		# Alpha-tested leaves and rain streaks benefit more from stable edge
+		# coverage than from a softer post-process blur.  The high profile keeps
+		# the Forward+ resolve conservative here because SDFGI, volumetric fog and
+		# dense alpha-tested foliage already consume a large multisampled target.
+		viewport.msaa_3d = (
+			Viewport.MSAA_DISABLED
+			if _quality_profile == &"high"
+			else Viewport.MSAA_2X
+			if _quality_profile == &"balanced"
+			else Viewport.MSAA_DISABLED
+		)
 	match _quality_profile:
 		&"balanced":
 			environment.ssr_enabled = true
@@ -2587,16 +2864,22 @@ func get_dynamic_resolution_frame_ms() -> float:
 func _apply_grass_quality() -> void:
 	if _grass_instance == null or _grass_instance.multimesh == null:
 		return
+	var cover_count := 320
 	match _quality_profile:
 		&"balanced":
 			_grass_instance.multimesh.visible_instance_count = 10000
 			_grass_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			cover_count = 220
 		&"performance":
 			_grass_instance.multimesh.visible_instance_count = 5200
 			_grass_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			cover_count = 120
 		_:
 			_grass_instance.multimesh.visible_instance_count = 16000
 			_grass_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	if _ground_cover_instance != null and _ground_cover_instance.multimesh != null:
+		_ground_cover_instance.multimesh.visible_instance_count = cover_count
+		_ground_cover_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 func _apply_forest_quality() -> void:
@@ -2628,7 +2911,15 @@ func _apply_forest_quality() -> void:
 		tree_instances.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	for proxy in _forest_proxy_instances:
 		proxy.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		if str(proxy.name).begins_with("MidTree"):
+		if str(proxy.name).begins_with("NearCanopyFill") or str(proxy.name).begins_with("NearTreeRoots"):
+			proxy.cast_shadow = (
+				GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				if _quality_profile == &"performance"
+				else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			)
+			proxy.visibility_range_begin = 0.0
+			proxy.visibility_range_end = minf(detailed_end, 18.0)
+		elif str(proxy.name).begins_with("MidTree"):
 			proxy.visibility_range_begin = mid_begin
 			proxy.visibility_range_end = mid_end
 		else:

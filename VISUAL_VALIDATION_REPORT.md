@@ -7,9 +7,23 @@
 GPU：AMD Ryzen 5 PRO 4650U Renoir 集成显卡，RADV，Vulkan 1.3.255
 常规截图视口：1280×720
 
+## 2026-08-11 收尾代码视觉样本
+
+以下是收尾代码在本机 Vulkan 检查阶段生成的代表性样本；PNG 仍按仓库策略忽略，仅记录尺寸和哈希。
+它们用于确认近景树冠/树根、地表覆盖、角色轮廓光与湖面传输/反射已经进入运行时，不替代 Windows
+实机验收或性能矩阵。
+
+| 镜头 | 文件 | SHA-256 |
+|---|---|---|
+| 湖面反射 | `previews/visualpass_lake.png` | `15bae938a0fc9c0f5a742d686e07f782f9e05c88235049a95ada0ef10fd30a9a` |
+| 湖面水花 | `previews/visualpass_lake_splash.png` | `0965f809a735d025ff41326939cc2c99af40ded8a906f8ecce9f9a6660acd36b` |
+| 角色轮廓光 | `previews/visualpass_character_clean.png` | `50259e610661f1dc11d92753a4e7aa8a46a66297d74814890c8620dca0dbafa7` |
+| 地表植物覆盖 | `previews/visualpass3_ground.png` | `d56897d7753f693538aa6f9877df8757c675aa76626b6d5db5b9a9f6dad0550b` |
+| 近景树冠/树根 | `previews/visualpass6_tree_detail.png` | `0a468708fcd9c1b1c948aedc47d299b60b9457ca65146150ae9d916c9d4d83e3` |
+
 ## 2026-08-11 重制版增量截图
 
-以下截图来自当前未提交工作树的真实 Vulkan Forward+ 捕获，作为本轮角色动作、树冠、水面和水花
+以下截图来自本轮收尾代码的真实 Vulkan Forward+ 捕获，作为本轮角色动作、树冠、水面和水花
 的可复验索引；它们不替代 4K/Windows 性能验收：
 
 | 镜头 | 文件 | SHA-256 |

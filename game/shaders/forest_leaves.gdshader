@@ -10,6 +10,8 @@ uniform float wind_strength = 0.075;
 uniform float wetness : hint_range(0.0, 1.0) = 0.54;
 uniform float rain_intensity : hint_range(0.0, 1.0) = 0.62;
 uniform float leaf_contrast : hint_range(0.0, 2.0) = 1.18;
+uniform float ambient_lift : hint_range(0.0, 0.35) = 0.0;
+uniform bool dense_canopy = false;
 varying vec3 world_position;
 varying float height_tint;
 varying vec4 instance_variation;
@@ -50,10 +52,25 @@ void fragment() {
 		// cell per instance keeps neighboring cards from repeating the same
 		// silhouette while the alpha cutout removes the rectangular card edge.
 		vec2 cell_size = vec2(0.25, 1.0 / 6.0);
-		vec2 cell = vec2(
+		vec2 atlas_index = vec2(
 			floor(fract(instance_variation.b * 1.73) * 4.0),
 			floor(fract(instance_variation.r * 2.11) * 6.0)
-		) * cell_size;
+		);
+		if (dense_canopy) {
+			float dense_choice = floor(fract(instance_variation.b * 4.17) * 5.0);
+			if (dense_choice < 1.0) {
+				atlas_index = vec2(0.0, 1.0);
+			} else if (dense_choice < 2.0) {
+				atlas_index = vec2(1.0, 1.0);
+			} else if (dense_choice < 3.0) {
+				atlas_index = vec2(2.0, 1.0);
+			} else if (dense_choice < 4.0) {
+				atlas_index = vec2(0.0, 3.0);
+			} else {
+				atlas_index = vec2(2.0, 3.0);
+			}
+		}
+		vec2 cell = atlas_index * cell_size;
 		vec4 leaf_sample = texture(leaf_atlas, cell + fract(UV) * cell_size);
 		if (leaf_sample.a < 0.08) {
 			discard;
@@ -67,14 +84,27 @@ void fragment() {
 	float edge = smoothstep(0.015, 0.18, min(UV.x, 1.0 - UV.x));
 	float serration = 0.92 + sin(UV.y * 24.0 + UV.x * 7.0) * 0.045;
 	shaded = mix(shaded * 0.62, shaded * serration, edge);
-	shaded = mix(shaded, sun_color * 0.88, center_line * 0.2);
+	float vein = center_line * smoothstep(0.04, 0.2, UV.y)
+		* (0.82 + 0.18 * sin(UV.y * 31.0 + UV.x * 3.0));
+	shaded = mix(shaded, shaded * vec3(0.58, 0.72, 0.46), vein * 0.18);
+	shaded = mix(shaded, sun_color * 0.88, center_line * 0.12);
 	float warm_shift = (instance_variation.r - 0.5) * 0.18 + (variation - 0.5) * 0.1;
 	shaded *= vec3(1.0 + warm_shift * 0.32, 1.0 + warm_shift * 0.16, 1.0 - warm_shift * 0.2);
 	shaded = mix(shaded, shaded * vec3(0.72, 0.84, 0.79), wetness * 0.14);
 	ALBEDO = pow(max(shaded, vec3(0.0)), vec3(0.94))
 		* mix(0.78, 1.16, variation) * leaf_contrast;
+	NORMAL_MAP = vec3(
+		(sin(UV.y * 24.0 + UV.x * 4.0) * 0.08),
+		(cos(UV.y * 18.0 - UV.x * 5.0) * 0.08),
+		1.0
+	);
+	NORMAL_MAP_DEPTH = 0.24;
 	ROUGHNESS = mix(0.88, 0.34, wetness * 0.72);
 	SPECULAR = mix(0.24, 0.72, wetness);
 	BACKLIGHT = mix(mid_color, sun_color, height_tint * 0.45)
 		* (0.42 + rain_intensity * 0.2);
+	// Layered canopy cards can face away from the key light.  A restrained
+	// emissive lift keeps those leaves readable in shadow without flattening the
+	// authored directional lighting on the detailed GLB leaves.
+	EMISSION = ALBEDO * ambient_lift;
 }

@@ -150,7 +150,7 @@ func set_visual_quality_profile(profile: StringName) -> void:
 		_:
 			_material.set_shader_parameter("micro_normal_strength", 0.24)
 			_material.set_shader_parameter("foam_intensity", 1.1)
-			_material.set_shader_parameter("reflection_strength", 0.78)
+			_material.set_shader_parameter("reflection_strength", 0.88)
 			_material.set_shader_parameter("sparkle_intensity", 0.92)
 			_material.set_shader_parameter("caustic_intensity", 0.38)
 			visual_effects_enabled = true

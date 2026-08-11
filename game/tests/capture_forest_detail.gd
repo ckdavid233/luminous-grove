@@ -18,6 +18,10 @@ func _initialize() -> void:
 	trees.multimesh.visible_instance_count = 1
 	main.get_node("Forest/DetailedTrees_2").visible = false
 	main.get_node("Forest/DetailedTrees_3").visible = false
+	main.get_node("Forest/NearCanopyFill_2").visible = false
+	main.get_node("Forest/NearCanopyFill_3").visible = false
+	main.get_node("Forest/NearTreeRoots_2").visible = false
+	main.get_node("Forest/NearTreeRoots_3").visible = false
 	main.get_node("Forest/MidTreeTrunks").visible = false
 	main.get_node("Forest/MidTreeCanopies").visible = false
 	main.get_node("Forest/FarTreeTrunks").visible = false
